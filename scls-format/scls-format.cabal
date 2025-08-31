@@ -1,0 +1,99 @@
+cabal-version:      3.4
+name:               scls-format
+version:            0.1.0.0
+synopsis:           A library for realing and serializing SCLS files
+description:        This is a reference implementation of library for reading and writing SCLS files.
+                    See CIP for the format: link
+license:            Apache-2.0
+license-file:       LICENSE
+author:             Tweag IO Team
+copyright:          2024 (c) Modus Create, Inc.
+category:           Codec
+build-type:         Simple
+extra-doc-files:    CHANGELOG.md
+-- extra-source-files:
+
+common warnings
+    ghc-options: -Wall
+
+library
+    import:           warnings
+    exposed-modules:
+      Cardano.SCLS.Internal.Frame
+      Cardano.SCLS.Internal.Block.Internal.Class
+      Cardano.SCLS.Internal.Version
+
+      Cardano.SCLS.Internal.Block.Hdr
+      Cardano.SCLS.Internal.Block.Chunk
+      Cardano.SCLS.Internal.Block.Manifest
+
+      Cardano.Types.Network
+      Cardano.Types.SlotNo
+    -- other-modules:
+    other-extensions:
+      AllowAmbiguousTypes
+      DataKinds
+      FunctionalDependencies
+      LambdaCase
+      OverloadedStrings
+      RecordWildCards
+      ViewPatterns
+    default-extensions:
+      DerivingStrategies
+      StrictData
+    build-depends:
+      base ^>=4.20.1.0,
+      mempack,
+      binary,
+      bytestring,
+      base16-bytestring,
+      containers,
+
+      mtl,
+      text
+
+
+    hs-source-dirs:   src
+    default-language: GHC2021
+
+executable example-read-file
+   import: warnings
+   hs-source-dirs:   examples/read-file
+   main-is:          Main.hs
+   build-depends:
+     base,
+     scls-format
+
+executable example-write-file
+   import: warnings
+   hs-source-dirs:   examples/write-file
+   main-is:          Main.hs
+   build-depends:
+      base,
+      scls-format,
+      bytestring,
+      containers,
+      text
+
+executable example-extract-by-ns
+   import: warnings
+   hs-source-dirs:   examples/extract-by-ns
+   main-is:          Main.hs
+   build-depends:
+     base,
+     scls-format,
+     bytestring,
+     filepath,
+     text
+
+test-suite scls-format-test
+    import:           warnings
+    default-language: GHC2021
+    -- other-modules:
+    -- other-extensions:
+    type:             exitcode-stdio-1.0
+    hs-source-dirs:   test
+    main-is:          Main.hs
+    build-depends:
+        base ^>=4.20.1.0,
+        scls-format
