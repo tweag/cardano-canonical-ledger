@@ -6,7 +6,6 @@ Thank you for your interest in contributing! We welcome contributions from the c
 
 - Use [GitHub Issues](../../issues) to report bugs or request features.
 
-
 ## Setting up the build tools
 
 ### Using nix
@@ -15,7 +14,20 @@ TODO
 
 ### Using cabal
 
+In order to work with the project you need to install [GHC](https://www.haskell.org/ghc/) and [cabal](https://www.haskell.org/cabal/) tools, we suggest installing them using [GHCup](https://www.haskell.org/ghcup/) project. For working with
+this project you need to have GHC>=9.6 and cabal>=3.10
+
+To install ghcup follow the instructions on site. After installing run
+
+```
+ghcup tui
+```
+
+And select recommended versions of GHC an cabal.
+
 ## Building the project
+
+To build the project in the project directory run command:
 
 ``` sh
 cabal build all
@@ -23,7 +35,7 @@ cabal build all
 
 ## Testing
 
-TODO
+To run tests in the project directory run command:
 
 ``` sh
 cabal test all
@@ -31,7 +43,11 @@ cabal test all
 
 ## Generating documentation and setting up hoogle
 
-TODO
+To generate documentation run
+
+``` sh
+cabal haddock all
+```
 
 ## How to Contribute
 

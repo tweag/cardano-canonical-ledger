@@ -6,12 +6,7 @@ node implementations.
 
 ## Overview
 
-
-## Getting Started
-
 ### Prerequisites
-
-TODO: add nix shell file.
 
 - Haskell (recommended version: GHC 9.6+)
 - Cabal or Stack
@@ -22,4 +17,4 @@ See the [docs](./docs) directory for detailed documentation.
 
 ## Contributing
 
-Contributions are welcome! Please see [CONTRIBUTING.md](./CONTRIBUTING.md) for guidelines.
+Contributions are welcome! Please see [CONTRIBUTING.md](./Contributing.md) for guidelines.

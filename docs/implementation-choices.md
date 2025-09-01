@@ -13,4 +13,3 @@ work best for our scenario because it's optimized for streaming writing and read
 when we do not know the size of data in advance. However the file format is optimized
 and structured in the way that we know either exact sizes or the boundaries. As a
 result we may work with more efficient structures that removes some checks.
-
