@@ -74,7 +74,7 @@ fetchOffsetFrame handle (FrameView size block_type offset) = do
 --
 -- In order to use this method, the programmer should know the type to the
 -- block in advance.
-decodeFrame :: forall t b . KnownNat t => IsFrameBlock t b => ByteArrayFrame -> Maybe (FrameView b)
+decodeFrame :: forall t b . IsFrameBlock t b => ByteArrayFrame -> Maybe (FrameView b)
 decodeFrame (FrameView size block_type contents) = do
     if natVal (Proxy :: Proxy t) ==  fromIntegral block_type
          -- TODO this thing may fail, we need to be more careful here
@@ -102,7 +102,7 @@ fetchNextFrame handle (FrameView size _type offset) = do
   where
     next_offset = offset + fromIntegral size
 
-hWriteFrame :: forall t b . (KnownNat t, IsFrameBlock t b) => Handle -> b -> IO Int
+hWriteFrame :: forall t b . (IsFrameBlock t b) => Handle -> b -> IO Int
 hWriteFrame handle b =
     let contents = runPut (encodeBlockContents b)
         block_type = fromIntegral (natVal (Proxy :: Proxy t))
