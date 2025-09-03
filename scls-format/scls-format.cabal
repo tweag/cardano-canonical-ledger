@@ -6,7 +6,7 @@ description:        This is a reference implementation of library for reading an
                     See CIP for the format: link
 license:            Apache-2.0
 license-file:       LICENSE
-author:             Tweag IO Team
+author:             Tweag IO Team <cardano-cls@tweag.io>
 copyright:          2024 (c) Modus Create, Inc.
 category:           Codec
 build-type:         Simple
@@ -42,7 +42,7 @@ library
       DerivingStrategies
       StrictData
     build-depends:
-      base ^>=4.20.1.0,
+      base >=4.18 && <5,
       mempack,
       binary,
       bytestring,
@@ -95,5 +95,5 @@ test-suite scls-format-test
     hs-source-dirs:   test
     main-is:          Main.hs
     build-depends:
-        base ^>=4.20.1.0,
+        base >=4.18 && <5,
         scls-format

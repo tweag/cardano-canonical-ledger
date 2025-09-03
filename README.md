@@ -6,9 +6,6 @@ node implementations.
 
 ## Overview
 
-
-## Getting Started
-
 ### Prerequisites
 
 - Nix (with flakes support)
@@ -24,4 +21,4 @@ See the [docs](./docs) directory for detailed documentation.
 
 ## Contributing
 
-Contributions are welcome! Please see [CONTRIBUTING.md](./CONTRIBUTING.md) for guidelines.
+Contributions are welcome! Please see [CONTRIBUTING.md](./Contributing.md) for guidelines.
