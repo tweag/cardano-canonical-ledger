@@ -8,7 +8,6 @@
     haskell-language-server = "latest";
     hlint = "latest";
     fourmolu = "latest";
-    stylish-haskell = "latest";
     weeder = "latest";
   };
 
