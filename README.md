@@ -11,7 +11,9 @@ node implementations.
 
 ### Prerequisites
 
-TODO: add nix shell file.
+- Nix (with flakes support)
+
+or
 
 - Haskell (recommended version: GHC 9.6+)
 - Cabal or Stack
