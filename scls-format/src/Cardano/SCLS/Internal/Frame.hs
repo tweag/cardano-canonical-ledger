@@ -28,7 +28,7 @@ import GHC.TypeLits
 
 -- | A structure for a container in the SCLS format
 --
--- Frame is a block with the size and it's contents in binary
+-- Frame is a block with the size and its contents in binary
 -- form.
 --
 -- The frame is opaque object so we can use it in order to parse
@@ -63,7 +63,7 @@ type ByteArrayFrame = FrameView BS.ByteString
 -- This method is used to decouple the parsing and interpretation of the
 -- block from IO opearations
 --
--- Changes an offset of the heandle to the end of the fetched block.
+-- The position of the `Handle` will be updated to the end of the fetched block.
 fetchOffsetFrame :: Handle -> OffsetFrame -> IO (ByteArrayFrame)
 fetchOffsetFrame handle (FrameView size block_type offset) = do
     hSeek handle AbsoluteSeek (fromIntegral offset)
@@ -74,7 +74,7 @@ fetchOffsetFrame handle (FrameView size block_type offset) = do
 --
 -- In order to use this method, the programmer should know the type to the
 -- block in advance.
-decodeFrame :: forall t b . KnownNat t => IsFrameBlock t b => ByteArrayFrame -> Maybe (FrameView b)
+decodeFrame :: forall t b . IsFrameBlock t b => ByteArrayFrame -> Maybe (FrameView b)
 decodeFrame (FrameView size block_type contents) = do
     if natVal (Proxy :: Proxy t) ==  fromIntegral block_type
          -- TODO this thing may fail, we need to be more careful here
@@ -102,7 +102,7 @@ fetchNextFrame handle (FrameView size _type offset) = do
   where
     next_offset = offset + fromIntegral size
 
-hWriteFrame :: forall t b . (KnownNat t, IsFrameBlock t b) => Handle -> b -> IO Int
+hWriteFrame :: forall t b . (IsFrameBlock t b) => Handle -> b -> IO Int
 hWriteFrame handle b =
     let contents = runPut (encodeBlockContents b)
         block_type = fromIntegral (natVal (Proxy :: Proxy t))

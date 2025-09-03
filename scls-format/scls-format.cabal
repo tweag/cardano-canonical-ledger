@@ -7,7 +7,7 @@ description:        This is a reference implementation of library for reading an
 license:            Apache-2.0
 license-file:       LICENSE
 author:             Tweag IO Team <cardano-cls@tweag.io>
-copyright:          2024 (c) Modus Create, Inc.
+copyright:          2025 (c) Modus Create, Inc.
 category:           Codec
 build-type:         Simple
 extra-doc-files:    CHANGELOG.md

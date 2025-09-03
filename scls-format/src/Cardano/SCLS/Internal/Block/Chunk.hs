@@ -25,9 +25,12 @@ import Data.Text (Text)
 import Cardano.SCLS.Internal.Block.Internal.Class
 
 data ChunkFormat
-  = ChunkFormatRaw
-  | ChunkFormatZstd
-  | ChunkFormatZstdE
+  = -- | Entries are stored uncompressed
+    ChunkFormatRaw
+  | -- | Chunk is compressed with seekable zstd
+    ChunkFormatZstd
+  | -- | Entries are individually compressed with seekable zstd
+    ChunkFormatZstdE
   deriving (Show)
 
 instance Binary ChunkFormat where
@@ -70,7 +73,7 @@ instance IsFrameBlock 0x10 Chunk where
     put chunkFormat
     putWord32be (fromIntegral (BS.length namespace_bytes) :: Word32)
     putByteString namespace_bytes
-    -- TODO: encode data depending on it's format
+    -- TODO: encode data depending on its format
     putWord32be (fromIntegral (BS.length chunkData) :: Word32)
     putByteString chunkData
     putWord32be chunkEntriesCount
@@ -83,7 +86,7 @@ instance IsFrameBlock 0x10 Chunk where
     chunkFormat <- get
     namespace_size <- getWord32be
     chunkNamespace <- T.decodeUtf8 <$> getByteString (fromIntegral namespace_size)
-    -- TODO: decode data depending on it's format
+    -- TODO: decode data depending on its format
     data_size <- getWord32be
     chunkData <- getByteString (fromIntegral data_size)
     chunkEntriesCount <- getWord32be
