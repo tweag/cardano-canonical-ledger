@@ -28,7 +28,7 @@ import GHC.TypeLits
 
 -- | A structure for a container in the SCLS format
 --
--- Frame is a block with the size and it's contents in binary
+-- Frame is a block with the size and its contents in binary
 -- form.
 --
 -- The frame is opaque object so we can use it in order to parse
@@ -63,7 +63,7 @@ type ByteArrayFrame = FrameView BS.ByteString
 -- This method is used to decouple the parsing and interpretation of the
 -- block from IO opearations
 --
--- Changes an offset of the heandle to the end of the fetched block.
+-- The position of the `Handle` will be updated to the end of the fetched block.
 fetchOffsetFrame :: Handle -> OffsetFrame -> IO (ByteArrayFrame)
 fetchOffsetFrame handle (FrameView size block_type offset) = do
     hSeek handle AbsoluteSeek (fromIntegral offset)
