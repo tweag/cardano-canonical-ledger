@@ -12,7 +12,7 @@ on:
 
 jobs:
     build_and_test_nix:
-        name: Test and build TODOs API
+        name: Test and build canocical-ledger-state using Nix
         runs-on: ubuntu-latest
         steps:
         - name: git checkout
@@ -27,6 +27,8 @@ jobs:
                 dist-newstyle/
             key: canonical-ledger-state-${{ hashFiles('cabal.project','flake.lock') }}
         - uses: nicknovitski/nix-develop@v1
+          with:
+            arguments: "--accept-flake-config"
         - name: Build
           run: cabal build all
         - name: Test
