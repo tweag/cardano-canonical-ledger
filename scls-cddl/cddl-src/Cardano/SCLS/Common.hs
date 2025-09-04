@@ -12,7 +12,7 @@
 module Cardano.SCLS.Common where
 
 import Codec.CBOR.Cuddle.Huddle
-import Data.Bounded (Bounded (maxBound, minBound))
+import Data.Enum (Bounded (..))
 import Data.Function (($))
 import Data.Int (Int64)
 import Data.Word
