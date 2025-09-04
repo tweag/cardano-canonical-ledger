@@ -1,4 +1,4 @@
-name: Check and build the using (Nix)
+name: Check and build using (Nix)
 
 on:
   push:
