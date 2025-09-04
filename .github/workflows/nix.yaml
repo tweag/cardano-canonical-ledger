@@ -15,22 +15,19 @@ jobs:
         name: Test and build TODOs API
         runs-on: ubuntu-latest
         steps:
-          - name: git checkout
-            uses: actions/checkout@v3
-          - name: Install Nix
-            uses: DeterminateSystems/nix-installer-action@main
-          - uses: DeterminateSystems/magic-nix-cache-action@main
-          - name: Set up cache
-            uses: actions/cache@v3
-            with:
-              path: |
+        - name: git checkout
+          uses: actions/checkout@v3
+        - name: Install Nix
+          uses: DeterminateSystems/nix-installer-action@main
+        - uses: DeterminateSystems/magic-nix-cache-action@main
+        - name: Set up cache
+          uses: actions/cache@v3
+          with:
+            path: |
                 dist-newstyle/
-              key: canonical-ledger-state-${{ hashFiles('cabal.project','flake.lock') }}
-          - name: Build
-            run: |
-              nix develop --command \
-                cabal build all
-          - name: Test
-            run: |
-              nix develop --command \
-                cabal test all
+            key: canonical-ledger-state-${{ hashFiles('cabal.project','flake.lock') }}
+        - uses: nicknovitski/nix-develop@v1
+        - name: Build
+          run: cabal build all
+        - name: Test
+          run: cabal test all
