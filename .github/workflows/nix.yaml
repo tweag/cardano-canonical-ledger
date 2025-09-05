@@ -1,0 +1,35 @@
+name: Check and build using (Nix)
+
+on:
+  push:
+    branches:
+      - "*"
+    tags:
+      - "v*.*.*"
+  pull_request:
+    branches:
+      - "*"
+
+jobs:
+    build_and_test_nix:
+        name: Test and build canonical-ledger-state using Nix
+        runs-on: ubuntu-latest
+        steps:
+        - name: git checkout
+          uses: actions/checkout@v3
+        - name: Install Nix
+          uses: DeterminateSystems/nix-installer-action@main
+        - uses: DeterminateSystems/magic-nix-cache-action@main
+        - name: Set up cache
+          uses: actions/cache@v3
+          with:
+            path: |
+                dist-newstyle/
+            key: canonical-ledger-state-${{ hashFiles('cabal.project','flake.lock') }}
+        - uses: nicknovitski/nix-develop@v1
+          with:
+            arguments: "--accept-flake-config"
+        - name: Build
+          run: cabal build all
+        - name: Test
+          run: cabal test all
