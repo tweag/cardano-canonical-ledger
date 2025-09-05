@@ -26,6 +26,18 @@ library
     hs-source-dirs:   src
     default-language: GHC2021
 
+executable gen-cddl
+    import: warnings
+    hs-source-dirs:   gen-cddl
+    main-is:          Main.hs
+    build-depends:
+      base,
+      containers,
+      cuddle,
+      filepath,
+      prettyprinter,
+      scls-cddl:cddl-src
+    
 library cddl-src
     import: warnings
     exposed-modules:
