@@ -1,9 +1,10 @@
 module Cardano.SCLS.CDDL where
 
-import qualified Cardano.SCLS.Namespace.UTxO as UTxO
-import qualified Data.Map.Strict as Map
-import Codec.CBOR.Cuddle.Huddle (Rule)
+import Cardano.SCLS.Namespace.UTxO qualified as UTxO
+import Codec.CBOR.Cuddle.Huddle (Huddle, HuddleItem (HIRule), collectFromInit)
+import Data.Map.Strict qualified as Map
 
-namespaces :: Map.Map String Rule
-namespaces = Map.fromList
-  [ ("utxo", UTxO.record_entry)]
+namespaces :: Map.Map String Huddle
+namespaces =
+  Map.fromList
+    [("utxo", collectFromInit [HIRule UTxO.record_entry])]
