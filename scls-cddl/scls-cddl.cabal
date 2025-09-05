@@ -22,7 +22,7 @@ library
     exposed-modules:  MyLib
     -- other-modules:
     -- other-extensions:
-    build-depends:    base >=4.20.1.0
+    build-depends:    base >=4.18
     hs-source-dirs:   src
     default-language: GHC2021
 
@@ -46,7 +46,7 @@ library cddl-src
         Cardano.SCLS.Common
         Cardano.SCLS.Namespace.UTxO
     build-depends:
-        base >= 4.20.1.0,
+        base >= 4.18,
         containers,
         cuddle,
         heredoc
@@ -63,5 +63,5 @@ test-suite scls-cddl-test
     hs-source-dirs:   test
     main-is:          Main.hs
     build-depends:
-        base >=4.20.1.0,
+        base >=4.18,
         scls-cddl
