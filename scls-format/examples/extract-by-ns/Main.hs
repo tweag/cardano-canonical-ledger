@@ -4,13 +4,13 @@
 -- it will generate files "{namespace}.data"
 -- for each namespace it sees
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# OPTIONS_GHC -fno-warn-incomplete-uni-patterns #-} -- this is a tempororary file
 module Main
   where
 
 import Data.Function (fix)
 import Data.Char
 import qualified Data.Text as T
-import System.FilePath
 import qualified Data.ByteString as BS
 import Cardano.SCLS.Internal.Frame
 import Cardano.SCLS.Internal.Block.Chunk

@@ -83,7 +83,6 @@ executable example-extract-by-ns
      base,
      scls-format,
      bytestring,
-     filepath,
      text
 
 test-suite scls-format-test
