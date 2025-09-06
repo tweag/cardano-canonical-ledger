@@ -50,7 +50,6 @@ library
       base16-bytestring,
       containers,
 
-      mtl,
       text
 
 
