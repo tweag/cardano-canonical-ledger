@@ -162,17 +162,9 @@ jobs:
           echo "packages: ${PKGDIR_scls_format}" >> cabal.project
           echo "packages: ${PKGDIR_scls_cddl}" >> cabal.project
           echo "package scls-format" >> cabal.project
-          echo "    ghc-options: -Werror=missing-methods -Werror=missing-fields" >> cabal.project
+          echo "    ghc-options: -Werror=missing-methods -Werror=missing-fields -Werror=unused-packages -Werror=incomplete-patterns -Werror=incomplete-uni-patterns" >> cabal.project
           echo "package scls-cddl" >> cabal.project
-          echo "    ghc-options: -Werror=missing-methods -Werror=missing-fields" >> cabal.project
-          echo "package scls-format" >> cabal.project
-          echo "    ghc-options: -Werror=unused-packages" >> cabal.project
-          echo "package scls-cddl" >> cabal.project
-          echo "    ghc-options: -Werror=unused-packages" >> cabal.project
-          echo "package scls-format" >> cabal.project
-          echo "    ghc-options: -Werror=incomplete-patterns -Werror=incomplete-uni-patterns" >> cabal.project
-          echo "package scls-cddl" >> cabal.project
-          echo "    ghc-options: -Werror=incomplete-patterns -Werror=incomplete-uni-patterns" >> cabal.project
+          echo "    ghc-options: -Werror=missing-methods -Werror=missing-fields -Werror=unused-packages -Werror=incomplete-patterns -Werror=incomplete-uni-patterns" >> cabal.project
           cat >> cabal.project <<EOF
           EOF
           $HCPKG list --simple-output --names-only | perl -ne 'for (split /\s+/) { print "constraints: any.$_ installed\n" unless /^(scls-cddl|scls-format)$/; }' >> cabal.project.local
