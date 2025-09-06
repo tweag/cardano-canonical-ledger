@@ -12,13 +12,14 @@
 module Cardano.SCLS.Common where
 
 import Codec.CBOR.Cuddle.Huddle
-import Data.Enum (Bounded (..))
 import Data.Function (($))
 import Data.Int (Int64)
 import Data.Word
 import GHC.Integer (Integer)
 import GHC.Real (Integral (toInteger))
+import Prelude (Bounded (..)) -- after drop of the GHC-9.10 we can switch to Data.Bounded
 import Text.Heredoc
+
 
 --------------------------------------------------------------------------------
 -- Records
