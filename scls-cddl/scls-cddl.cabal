@@ -2,7 +2,8 @@ cabal-version:      3.14
 name:               scls-cddl
 version:            0.1.0.0
 synopsis:           CDDL Namespace Definitions and Serialisation Code
--- description:
+description:        A library for defining CDDL schema for Cardano Ledger State namespaces,
+                    generation of the test data and files validation.
 homepage:           https://github.com/tweag/cardano-canonical-ledger
 license:            Apache-2.0
 license-file:       LICENSE
@@ -20,23 +21,24 @@ common warnings
 
 library
     import:           warnings
+    default-language: GHC2021
     exposed-modules:  MyLib
     -- other-modules:
     -- other-extensions:
-    build-depends:    base >=4.18
+    build-depends:    base >=4.18 && <4.22
     hs-source-dirs:   src
-    default-language: GHC2021
 
 executable gen-cddl
     import: warnings
+    default-language: GHC2021
     hs-source-dirs:   gen-cddl
     main-is:          Main.hs
     build-depends:
-      base,
-      containers,
-      cuddle,
-      filepath,
-      prettyprinter,
+      base >=4.18 && <4.22,
+      containers >=0.6 && <0.8,
+      cuddle >= 0.5 && <1,
+      filepath >=1.4 && <1.6,
+      prettyprinter >=1.7.1 && <1.8,
       scls-cddl:cddl-src
 
 library cddl-src
@@ -47,10 +49,10 @@ library cddl-src
         Cardano.SCLS.Common
         Cardano.SCLS.Namespace.UTxO
     build-depends:
-        base >= 4.18,
-        containers,
-        cuddle,
-        heredoc
+        base >=4.18 && <4.22,
+        containers >=0.6 && <0.8,
+        cuddle >= 0.5 && <1,
+        heredoc >= 0.2 && <1
     hs-source-dirs:
         cddl-src
     default-language: GHC2021
@@ -64,5 +66,5 @@ test-suite scls-cddl-test
     hs-source-dirs:   test
     main-is:          Main.hs
     build-depends:
-        base >=4.18,
+        base >=4.18 && <4.22,
         scls-cddl
