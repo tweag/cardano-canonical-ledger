@@ -1,4 +1,6 @@
 module Main (main) where
 
+import qualified MyLib
+
 main :: IO ()
-main = putStrLn "Test suite not yet implemented."
+main = const (putStrLn "Test suite not yet implemented.") (MyLib.someFunc)
