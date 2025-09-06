@@ -13,6 +13,7 @@ category:           Data
 build-type:         Simple
 extra-doc-files:    CHANGELOG.md
 -- extra-source-files:
+tested-with: GHC ==9.12.1 || ==9.10.2 || ==9.8.4
 
 common warnings
     ghc-options: -Wall
@@ -37,7 +38,7 @@ executable gen-cddl
       filepath,
       prettyprinter,
       scls-cddl:cddl-src
-    
+
 library cddl-src
     import: warnings
     exposed-modules:
@@ -53,7 +54,7 @@ library cddl-src
     hs-source-dirs:
         cddl-src
     default-language: GHC2021
-    
+
 test-suite scls-cddl-test
     import:           warnings
     default-language: GHC2021
