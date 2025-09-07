@@ -19,6 +19,13 @@ or
 
 See the [docs](./docs) directory for detailed documentation.
 
+To generate cddl files use 
+
+```
+cabal run gen-cddl -- target_directory
+```
+
+
 ## Contributing
 
 Contributions are welcome! Please see [CONTRIBUTING.md](./Contributing.md) for guidelines.

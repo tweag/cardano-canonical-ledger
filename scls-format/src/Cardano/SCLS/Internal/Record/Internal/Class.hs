@@ -1,11 +1,13 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE FunctionalDependencies #-}
-
-module Cardano.SCLS.Internal.Record.Internal.Class (
-  IsFrameRecord (..),
-) where
+{-# LANGUAGE AllowAmbiguousTypes #-}
+module Cardano.SCLS.Internal.Record.Internal.Class
+  ( IsFrameRecord(..)
+  , SomeRecord(..)
+  ) where
 
 import Data.Binary -- TODO: I'd like to switch to the `mempack` library
+import Data.Typeable
 import GHC.TypeLits
 
 -- TODO: Update the CIP reference
@@ -19,3 +21,12 @@ around as required by CIP.
 class (KnownNat t) => IsFrameRecord t a | a -> t where
   decodeRecordContents :: Get a
   encodeRecordContents :: a -> Put
+
+
+-- | Existential wrapper for any record that has an instance of
+-- `IsFrameRecord`. It's useful for passing records around without
+-- knowing their exact type.
+--
+--
+--
+data SomeRecord = forall t a. (Typeable a, IsFrameRecord t a) => SomeRecord a

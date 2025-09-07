@@ -11,10 +11,10 @@ module Main where
 
 import Cardano.SCLS.Internal.Frame
 import Cardano.SCLS.Internal.Record.Chunk
-import Data.ByteString qualified as BS
+import qualified Data.ByteString as BS
 import Data.Char
 import Data.Function (fix)
-import Data.Text qualified as T
+import qualified Data.Text as T
 import System.Environment
 import System.IO
 

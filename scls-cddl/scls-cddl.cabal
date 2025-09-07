@@ -43,6 +43,7 @@ executable gen-cddl
 
 library cddl-src
     import: warnings
+    visibility: public
     exposed-modules:
         Cardano.SCLS.CDDL
     other-modules:
