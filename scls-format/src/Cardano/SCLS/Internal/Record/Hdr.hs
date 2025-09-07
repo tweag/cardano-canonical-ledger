@@ -1,12 +1,12 @@
 {-# LANGUAGE DataKinds #-}
-module Cardano.SCLS.Internal.Block.Hdr
+module Cardano.SCLS.Internal.Record.Hdr
   ( Hdr(..)
   , mkHdr
   ) where
 
 import Foreign
 
-import Cardano.SCLS.Internal.Block.Internal.Class
+import Cardano.SCLS.Internal.Record.Internal.Class
 import Cardano.SCLS.Internal.Version (Version(..), packVersion)
 import Cardano.Types.Network
 import Cardano.Types.SlotNo
@@ -17,7 +17,7 @@ import Data.Binary.Get.Internal (readN)
 import Data.ByteString.Builder.Internal hiding (putBuilder)
 import Data.ByteString.Unsafe (unsafeUseAsCString)
 
--- | Header block.
+-- | Header record.
 data Hdr = Hdr
   { magic :: Word64
   , version :: Word32
@@ -27,15 +27,15 @@ data Hdr = Hdr
   deriving (Show)
   -- deriving MemPack via (AsStorable Hdr)
 
-instance IsFrameBlock 0 Hdr where
-  encodeBlockContents a = putBuilder (ensureFree (sizeOf (undefined::Hdr)) <> builder step) where
+instance IsFrameRecord 0 Hdr where
+  encodeRecordContents a = putBuilder (ensureFree (sizeOf (undefined::Hdr)) <> builder step) where
     step k (BufferRange op ope) = do
       poke (castPtr op) a
       k (BufferRange (op `advancePtr` sizeOf (undefined :: Hdr)) ope)
-  decodeBlockContents = readN (sizeOf (undefined :: Hdr)) $ \b ->
+  decodeRecordContents = readN (sizeOf (undefined :: Hdr)) $ \b ->
     unsafePerformIO $ unsafeUseAsCString b (peek . castPtr)
 
--- | Storable instance for a Header block
+-- | Storable instance for a Header record
 instance Storable Hdr where
   sizeOf _ = 24
   alignment _ = 8
@@ -53,7 +53,7 @@ instance Storable Hdr where
     pokeByteOff ptr 16 slotNo
 
 
--- | Creates header block for the current version.
+-- | Creates header record for the current version.
 mkHdr :: NetworkId -> SlotNo -> Hdr
 mkHdr networkId slotNo = Hdr
   { magic = 1397506899 -- "SCLS\0"

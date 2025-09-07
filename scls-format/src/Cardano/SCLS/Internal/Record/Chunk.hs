@@ -5,7 +5,7 @@
 -- header and footer parts, so we can access them without loading the entire contents of the chunk.
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE DataKinds #-}
-module Cardano.SCLS.Internal.Block.Chunk
+module Cardano.SCLS.Internal.Record.Chunk
   ( Chunk(..)
   , ChunkFormat(..)
   , DebugChunk(..)
@@ -22,7 +22,7 @@ import qualified Data.ByteString.Char8 as BS8
 import Data.Text.Encoding qualified as T
 import Data.Text (Text)
 
-import Cardano.SCLS.Internal.Block.Internal.Class
+import Cardano.SCLS.Internal.Record.Internal.Class
 
 data ChunkFormat
   = -- | Entries are stored uncompressed
@@ -67,8 +67,8 @@ instance Show DebugChunk where
     ", hash=" ++ show chunkHash ++
     "}"
 
-instance IsFrameBlock 0x10 Chunk where
-  encodeBlockContents Chunk{..} = do
+instance IsFrameRecord 0x10 Chunk where
+  encodeRecordContents Chunk{..} = do
     putWord64be chunkSeq
     put chunkFormat
     putWord32be (fromIntegral (BS.length namespace_bytes) :: Word32)
@@ -80,7 +80,7 @@ instance IsFrameBlock 0x10 Chunk where
     putByteString chunkHash
     where
       namespace_bytes = T.encodeUtf8 chunkNamespace
-  decodeBlockContents = do
+  decodeRecordContents = do
     _ <- getWord8 -- type offset: TODO: it does not look sane to me!
     chunkSeq <- getWord64be
     chunkFormat <- get
