@@ -19,7 +19,7 @@ main = do
     [file_name] <- getArgs
     withFile file_name ReadMode $ \handle -> do
         flip fix headerOffset $ \go record -> do
-            putStrLn $ "Fetching next block after current offset #" ++ show (frameViewContent record)
+            putStrLn $ "Fetching next record after current offset #" ++ show (frameViewContent record)
             next <- fetchNextFrame handle record
             case next of
                 Just next_record -> do
