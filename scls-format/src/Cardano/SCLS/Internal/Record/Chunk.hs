@@ -18,11 +18,11 @@ import Data.Binary (Binary (..))
 import Data.Binary.Get (getByteString, getWord32be, getWord64be, getWord8)
 import Data.Binary.Put
 import Data.ByteString (ByteString)
-import Data.ByteString qualified as BS
-import Data.ByteString.Char8 qualified as BS8
+import qualified Data.ByteString as BS
 import Data.Text (Text)
-import Data.Text.Encoding qualified as T
-import Data.Word
+import qualified Data.Text.Encoding  as T
+import Data.Word (Word32, Word64)
+import qualified Crypto.Hash.BLAKE2.BLAKE2bp as Blake2
 
 import Cardano.SCLS.Internal.Record.Internal.Class
 
@@ -109,5 +109,5 @@ mkChunk seqno format namespace chunkData entriesCount =
     , chunkNamespace = namespace
     , chunkData = chunkData
     , chunkEntriesCount = entriesCount
-    , chunkHash = BS.replicate (28 - 8) 0 <> BS8.pack "DEADF00D" -- TODO: implement hash calculation
+    , chunkHash = Blake2.hash 28 mempty chunkData
     }
