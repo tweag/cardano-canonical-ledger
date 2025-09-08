@@ -1,0 +1,60 @@
+cabal-version: 3.4
+name: scls-merkle-tree
+version: 0.1.0.0
+description: A library for constructing running Merkle Trees
+license: Apache-2.0
+license-file: LICENSE
+author: Tweag IO Team <cardano-cls@tweag.io>
+copyright: 2025 (c) Modus Create, Inc.
+build-type: Simple
+extra-source-files:
+  README.md
+
+common warnings
+  ghc-options: -Wall
+
+library
+  import: warnings
+  exposed-modules:
+    Cardano.SCLS.MerkleTree
+    Cardano.SCLS.MerkleTree.Constructor
+
+  other-modules:
+    Paths_scls_merkle_tree
+
+  autogen-modules:
+    Paths_scls_merkle_tree
+
+  hs-source-dirs:
+    src
+
+  build-depends:
+    base >=4.7 && <5,
+    bytestring >=0.12.0.0 && <0.13.0.0,
+    crypton >=1.0.0 && <1.1.0,
+    memory >=0.18.0 && <0.19.0
+
+  default-language: GHC2021
+
+test-suite scls-merkle-tree-test
+  import: warnings
+  type: exitcode-stdio-1.0
+  main-is: Spec.hs
+  other-modules:
+    Paths_scls_merkle_tree
+
+  autogen-modules:
+    Paths_scls_merkle_tree
+
+  hs-source-dirs:
+    test
+
+  build-depends:
+    QuickCheck >=2.16.0 && <2.17.0,
+    base >=4.7 && <5,
+    bytestring >=0.12.0.0 && <0.13.0.0,
+    crypton >=1.0.0 && <1.1.0,
+    merkle-tree,
+    scls-merkle-tree,
+
+  default-language: GHC2021
