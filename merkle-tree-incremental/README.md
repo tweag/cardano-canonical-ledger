@@ -1,13 +1,13 @@
-# SCLS Merkle Tree Library
+# Merkle Tree Library
 
 A Haskell library providing incremental Merkle tree construction for the Cardano Canonical Ledger State (SCLS) project. This library enables efficient Merkle tree building without requiring all data to be available upfront.
 
 ## Installation and Usage
 
-Add `scls-merkle-tree` as a dependency in your `cabal.project` or `.cabal` file:
+Add `merkle-tree-incremental` as a dependency in your `cabal.project` or `.cabal` file:
 
 ```cabal
-build-depends: scls-merkle-tree
+build-depends: merkle-tree-incremental
 ```
 
 ### Basic Usage
@@ -15,8 +15,8 @@ build-depends: scls-merkle-tree
 The library is parameterized by any `HashAlgorithm` from the `crypton` library, allowing you to choose the hashing function:
 
 ```haskell
-import Cardano.SCLS.MerkleTree (getMerkleHash, merkleTreeHash)
-import Cardano.SCLS.MerkleTree.Constructor
+import Crypto.Hash.MerkleTreeIncremental (getMerkleHash, merkleTreeHash)
+import Crypto.Hash.MerkleTreeIncremental.Constructor
 import Crypto.Hash.Algorithms (SHA3_256, Blake2b_160)
 import qualified Data.ByteString.Char8 as C
 
@@ -68,8 +68,8 @@ The constructor maintains a stack of partial tree nodes, where each node has:
 
 The library exposes two main modules:
 
-- `Cardano.SCLS.MerkleTree`: Core Merkle tree types and operations
-- `Cardano.SCLS.MerkleTree.Constructor`: Incremental constructor functionality
+- `Crypto.Hash.MerkleTree`: Core Merkle tree types and operations
+- `Crypto.Hash.MerkleTree.Constructor`: Incremental constructor functionality
 
 ### Testing and Verification
 
@@ -78,7 +78,7 @@ The library includes a property-based test using QuickCheck that verifies the in
 Run tests with:
 
 ```bash
-cabal test scls-merkle-tree-test
+cabal test merkle-tree-incremental-test
 ```
 
 ### Space Complexity

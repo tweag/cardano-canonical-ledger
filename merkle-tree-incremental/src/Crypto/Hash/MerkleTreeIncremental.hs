@@ -1,4 +1,4 @@
-module Cardano.SCLS.MerkleTree (
+module Crypto.Hash.MerkleTreeIncremental (
     MerkleTree (..),
     MerkleHash,
     merkleTreeHash,

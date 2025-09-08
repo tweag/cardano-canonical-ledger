@@ -1,4 +1,4 @@
-module Cardano.SCLS.MerkleTree.Constructor (
+module Crypto.Hash.MerkleTreeIncremental.Constructor (
     Constructor,
     empty,
     add,
@@ -6,7 +6,7 @@ module Cardano.SCLS.MerkleTree.Constructor (
 )
 where
 
-import Cardano.SCLS.MerkleTree (MerkleHash, MerkleTree (MerkleTreeEmpty, MerkleTreeRoot), leafHash, nodeHash)
+import Crypto.Hash.MerkleTreeIncremental (MerkleHash, MerkleTree (MerkleTreeEmpty, MerkleTreeRoot), leafHash, nodeHash)
 import Crypto.Hash (HashAlgorithm)
 import Data.ByteString qualified as B
 
