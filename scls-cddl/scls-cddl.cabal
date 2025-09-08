@@ -34,11 +34,11 @@ executable gen-cddl
     hs-source-dirs:   gen-cddl
     main-is:          Main.hs
     build-depends:
-      base >=4.18 && <4.22,
-      containers >=0.6 && <0.8,
-      cuddle >= 0.5 && <1,
-      filepath >=1.4 && <1.6,
-      prettyprinter >=1.7.1 && <1.8,
+      base >=4.18 && <5,
+      containers >=0.6,
+      cuddle >= 0.5,
+      filepath >=1.4,
+      prettyprinter,
       scls-cddl:cddl-src
 
 library cddl-src
@@ -49,10 +49,10 @@ library cddl-src
         Cardano.SCLS.Common
         Cardano.SCLS.Namespace.UTxO
     build-depends:
-        base >=4.18 && <4.22,
-        containers >=0.6 && <0.8,
-        cuddle >= 0.5 && <1,
-        heredoc >= 0.2 && <1
+        base >=4.18 && <5,
+        containers >=0.6,
+        cuddle >= 0.5,
+        heredoc >= 0.2
     hs-source-dirs:
         cddl-src
     default-language: GHC2021
@@ -66,5 +66,5 @@ test-suite scls-cddl-test
     hs-source-dirs:   test
     main-is:          Main.hs
     build-depends:
-        base >=4.18 && <4.22,
+        base >=4.18 && <5,
         scls-cddl
