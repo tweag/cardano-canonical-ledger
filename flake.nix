@@ -19,7 +19,7 @@
             cardanoCanonicalLedger = final.haskell-nix.hix.project {
               src = ./.;
               # uncomment with your current system for `nix flake show` to work:
-              # evalSystem = "x86_64-linux";
+              evalSystem = "x86_64-linux";
             };
           })
         ];
@@ -28,7 +28,25 @@
           inherit (haskellNix) config;
         };
         flake = pkgs.cardanoCanonicalLedger.flake { };
-      in flake // { legacyPackages = pkgs; });
+        pre-commit-check = pre-commit-hooks.lib.${system}.run {
+          src = ./.;
+          hooks = {
+            fourmolu.enable = true;
+            nixfmt-classic.enable = true;
+            cabal-gild.enable = true;
+          };
+        };
+      in flake // {
+        legacyPackages = pkgs;
+        checks = { pre-commit-check = pre-commit-check; };
+        devShells = {
+          default = flake.devShells.default.overrideAttrs (oldAttrs: {
+            inherit (pre-commit-check) shellHook;
+            buildInputs = (oldAttrs.buildInputs or [ ])
+              ++ pre-commit-check.enabledPackages;
+          });
+        };
+      });
 
   # --- Flake Local Nix Configuration ----------------------------
   nixConfig = {
