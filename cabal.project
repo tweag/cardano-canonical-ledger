@@ -1,3 +1,4 @@
 packages:
   scls-format
+  scls-cddl
   scls-merkle-tree

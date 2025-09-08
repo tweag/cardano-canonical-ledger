@@ -20,12 +20,12 @@ library
     import:           warnings
     exposed-modules:
       Cardano.SCLS.Internal.Frame
-      Cardano.SCLS.Internal.Block.Internal.Class
       Cardano.SCLS.Internal.Version
 
-      Cardano.SCLS.Internal.Block.Hdr
-      Cardano.SCLS.Internal.Block.Chunk
-      Cardano.SCLS.Internal.Block.Manifest
+      Cardano.SCLS.Internal.Record.Internal.Class
+      Cardano.SCLS.Internal.Record.Hdr
+      Cardano.SCLS.Internal.Record.Chunk
+      Cardano.SCLS.Internal.Record.Manifest
 
       Cardano.Types.Network
       Cardano.Types.SlotNo

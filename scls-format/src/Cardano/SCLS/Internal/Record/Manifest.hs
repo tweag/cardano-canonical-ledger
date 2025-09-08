@@ -1,10 +1,10 @@
 -- |
--- Manifest block for file integrity and summary information.
+-- Manifest record for file integrity and summary information.
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE ViewPatterns #-}
-module Cardano.SCLS.Internal.Block.Manifest
+module Cardano.SCLS.Internal.Record.Manifest
   ( Manifest(..)
   , ManifestSummary(..)
   ) where
@@ -20,7 +20,7 @@ import qualified Data.Map.Strict as Map
 import Data.Text (Text)
 import Data.Text.Encoding qualified as T
 
-import Cardano.SCLS.Internal.Block.Internal.Class
+import Cardano.SCLS.Internal.Record.Internal.Class
 
 -- | Manifest summary information
 data ManifestSummary = ManifestSummary
@@ -29,7 +29,7 @@ data ManifestSummary = ManifestSummary
   , comment :: Maybe Text -- ^ optional comment
   } deriving (Show)
 
--- | Manifest block
+-- | Manifest record
 --
 data Manifest = Manifest
   { totalEntries :: Word64 -- ^ number of entries
@@ -40,8 +40,8 @@ data Manifest = Manifest
   , summary :: ManifestSummary -- ^ summary information
   } deriving (Show)
 
-instance IsFrameBlock 0x01 Manifest where
-  encodeBlockContents Manifest{..} = do
+instance IsFrameRecord 0x01 Manifest where
+  encodeRecordContents Manifest{..} = do
     putWord64be totalEntries
     putWord64be totalChunks
     encodeSummary summary
@@ -66,7 +66,7 @@ instance IsFrameBlock 0x01 Manifest where
         putWord32be (fromIntegral $ BS.length cBytes)
         putByteString cBytes
 
-  decodeBlockContents = do
+  decodeRecordContents = do
     _ <- getWord8
     totalEntries <- getWord64be
     totalChunks <- getWord64be
