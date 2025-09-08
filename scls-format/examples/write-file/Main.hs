@@ -10,9 +10,9 @@ import qualified Data.Text as T
 import Data.List (genericLength)
 import System.IO
 import System.Environment (getArgs)
-import Cardano.SCLS.Internal.Block.Hdr
-import Cardano.SCLS.Internal.Block.Chunk
-import Cardano.SCLS.Internal.Block.Manifest
+import Cardano.SCLS.Internal.Record.Hdr
+import Cardano.SCLS.Internal.Record.Chunk
+import Cardano.SCLS.Internal.Record.Manifest
 import Cardano.Types.Network
 import Cardano.Types.SlotNo
 
