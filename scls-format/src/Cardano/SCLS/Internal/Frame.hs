@@ -61,7 +61,7 @@ type ByteArrayFrame = FrameView BS.ByteString
 -- | /O(N)/ Materialize data in the frame by fetching it from the file.
 --
 -- This method is used to decouple the parsing and interpretation of the
--- record from IO opearations
+-- record from IO operations
 --
 -- The position of the `Handle` will be updated to the end of the fetched record.
 fetchOffsetFrame :: Handle -> OffsetFrame -> IO (ByteArrayFrame)
