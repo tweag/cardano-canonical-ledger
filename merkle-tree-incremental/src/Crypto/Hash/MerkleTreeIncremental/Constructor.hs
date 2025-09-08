@@ -6,9 +6,9 @@ module Crypto.Hash.MerkleTreeIncremental.Constructor (
 )
 where
 
-import Crypto.Hash.MerkleTreeIncremental (MerkleHash, MerkleTree (MerkleTreeEmpty, MerkleTreeRoot), leafHash, nodeHash)
 import Crypto.Hash (HashAlgorithm)
-import Data.ByteString qualified as B
+import Crypto.Hash.MerkleTreeIncremental (MerkleHash, MerkleTree (MerkleTreeEmpty, MerkleTreeRoot), leafHash, nodeHash)
+import Data.ByteArray (ByteArrayAccess)
 
 newtype Constructor a = Constructor [ConstructorNode a]
 
@@ -21,7 +21,7 @@ data ConstructorNode a = ConstructorNode
 empty :: Constructor a
 empty = Constructor []
 
-add :: (HashAlgorithm a) => Constructor a -> B.ByteString -> Constructor a
+add :: (HashAlgorithm a, ByteArrayAccess b) => Constructor a -> b -> Constructor a
 add (Constructor constructor) bytes =
     join (Constructor (ConstructorNode{cLevel = 0, cHash = leafHash bytes} : constructor))
 
