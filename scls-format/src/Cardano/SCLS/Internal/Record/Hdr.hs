@@ -1,21 +1,24 @@
 {-# LANGUAGE DataKinds #-}
-module Cardano.SCLS.Internal.Record.Hdr
-  ( Hdr(..)
-  , mkHdr
-  ) where
+
+module Cardano.SCLS.Internal.Record.Hdr (
+  Hdr (..),
+  mkHdr,
+) where
 
 import Foreign
 
 import Cardano.SCLS.Internal.Record.Internal.Class
-import Cardano.SCLS.Internal.Version (Version(..), packVersion)
+import Cardano.SCLS.Internal.Version (Version (..), packVersion)
 import Cardano.Types.Network
 import Cardano.Types.SlotNo
 
-import System.IO.Unsafe (unsafePerformIO) -- TODO: switch to non-pure interface instead
-import Data.Binary.Put (putBuilder)
+-- TODO: switch to non-pure interface instead
+
 import Data.Binary.Get.Internal (readN)
+import Data.Binary.Put (putBuilder)
 import Data.ByteString.Builder.Internal hiding (putBuilder)
 import Data.ByteString.Unsafe (unsafeUseAsCString)
+import System.IO.Unsafe (unsafePerformIO)
 
 -- | Header record.
 data Hdr = Hdr
@@ -25,10 +28,12 @@ data Hdr = Hdr
   , slotNo :: SlotNo
   }
   deriving (Show)
-  -- deriving MemPack via (AsStorable Hdr)
+
+-- deriving MemPack via (AsStorable Hdr)
 
 instance IsFrameRecord 0 Hdr where
-  encodeRecordContents a = putBuilder (ensureFree (sizeOf (undefined::Hdr)) <> builder step) where
+  encodeRecordContents a = putBuilder (ensureFree (sizeOf (undefined :: Hdr)) <> builder step)
+   where
     step k (BufferRange op ope) = do
       poke (castPtr op) a
       k (BufferRange (op `advancePtr` sizeOf (undefined :: Hdr)) ope)
@@ -52,12 +57,12 @@ instance Storable Hdr where
     pokeByteOff ptr 12 networkId
     pokeByteOff ptr 16 slotNo
 
-
 -- | Creates header record for the current version.
 mkHdr :: NetworkId -> SlotNo -> Hdr
-mkHdr networkId slotNo = Hdr
-  { magic = 1397506899 -- "SCLS\0"
-  , version = packVersion V1
-  , networkId = networkId
-  , slotNo = slotNo
-  }
+mkHdr networkId slotNo =
+  Hdr
+    { magic = 1397506899 -- "SCLS\0"
+    , version = packVersion V1
+    , networkId = networkId
+    , slotNo = slotNo
+    }

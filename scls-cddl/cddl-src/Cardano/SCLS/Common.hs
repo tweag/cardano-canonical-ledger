@@ -17,9 +17,9 @@ import Data.Int (Int64)
 import Data.Word
 import GHC.Integer (Integer)
 import GHC.Real (Integral (toInteger))
-import Prelude (Bounded (..)) -- after drop of the GHC-9.10 we can switch to Data.Bounded
+-- after drop of the GHC-9.10 we can switch to Data.Bounded
 import Text.Heredoc
-
+import Prelude (Bounded (..))
 
 --------------------------------------------------------------------------------
 -- Records
@@ -29,8 +29,8 @@ generic_record :: (IsType0 t1, IsType0 t2) => t1 -> t2 -> GRuleCall
 generic_record = binding2 $ \t1 t2 ->
   "generic_record"
     =:= mp
-      [ "key" ==> t1,
-        "value" ==> t2
+      [ "key" ==> t1
+      , "value" ==> t2
       ]
 
 --------------------------------------------------------------------------------

@@ -1,21 +1,23 @@
--- |
--- Cardano bridge type that connects the network with cardano types.
---
--- All the network types are explicit and updates should be added to CIP first.
---
-module Cardano.Types.Network
-  ( NetworkId(..)
-  ) where
+{- |
+Cardano bridge type that connects the network with cardano types.
 
+All the network types are explicit and updates should be added to CIP first.
+-}
+module Cardano.Types.Network (
+  NetworkId (..),
+) where
+
+import Data.Word (Word32)
 import Foreign (castPtr)
 import Foreign.Storable
-import Data.Word (Word32)
 
 -- | Identity of the network
 data NetworkId
-    = Mainnet -- ^ Main cardano network
-    | Testnet -- ^ Test network
-    deriving (Eq, Show)
+  = -- | Main cardano network
+    Mainnet
+  | -- | Test network
+    Testnet
+  deriving (Eq, Show)
 
 -- TODO: define mempack or another class type for data serialisation
 

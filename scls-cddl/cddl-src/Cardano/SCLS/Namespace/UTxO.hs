@@ -5,34 +5,36 @@
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
+
 {-# HLINT ignore "Use camelCase" #-}
 
 module Cardano.SCLS.Namespace.UTxO where
 
-import Codec.CBOR.Cuddle.Huddle
-import Codec.CBOR.Cuddle.Comments ((//-))
 import Cardano.SCLS.Common
-import Text.Heredoc (str)
+import Codec.CBOR.Cuddle.Comments ((//-))
+import Codec.CBOR.Cuddle.Huddle
 import Data.Function (($))
 import Data.Word (Word)
-
+import Text.Heredoc (str)
 
 record_entry :: Rule
 record_entry = "record_entry" =:= generic_record tx_in tx_out
 
 tx_in :: Rule
-tx_in = "tx_in" =:= arr [
-    a hash32,
-    a (VUInt `sized` (2 :: Word))
-  ]
+tx_in =
+  "tx_in"
+    =:= arr
+      [ a hash32
+      , a (VUInt `sized` (2 :: Word))
+      ]
 
 tx_out :: Rule
 tx_out = "tx_out" =:= arr [0, a shelley_tx_out] / arr [1, a babbage_tx_out]
 
 shelley_tx_out :: Rule
-shelley_tx_out = "shelley_tx_out" =:= 
-    arr [a address, "amount" ==> value, opt ("datum_hash" ==> hash32)]
-
+shelley_tx_out =
+  "shelley_tx_out"
+    =:= arr [a address, "amount" ==> value, opt ("datum_hash" ==> hash32)]
 
 babbage_tx_out :: Rule
 babbage_tx_out =
@@ -59,12 +61,12 @@ plutus_data =
     / bounded_bytes
 
 data' :: Rule
-data' = "data" =:= tag 24 (VBytes `cbor` plutus_data)        
+data' = "data" =:= tag 24 (VBytes `cbor` plutus_data)
 
 datum_option :: Rule
 datum_option = "datum_option" =:= arr [0, a hash32] / arr [1, a data']
 
-constr :: IsType0 x => x -> GRuleCall
+constr :: (IsType0 x) => x -> GRuleCall
 constr = binding $ \x ->
   comment
     [str|NEW
@@ -87,7 +89,7 @@ script =
     / (arr [1, a VBytes] //- "Plutus V1")
     / (arr [2, a VBytes] //- "Plutus V2")
     / (arr [3, a VBytes] //- "Plutus V3")
-    
+
 native_script :: Rule
 native_script =
   "native_script"
@@ -119,4 +121,3 @@ invalid_before = "invalid_before" =:~ grp [4, a slot_no]
 
 invalid_hereafter :: Named Group
 invalid_hereafter = "invalid_hereafter" =:~ grp [5, a slot_no]
-    

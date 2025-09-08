@@ -1,26 +1,28 @@
--- |
---
--- A chunk of the actual data that is stored in the file.
--- In order to efficiently store and retrieve data chunk is split into
--- header and footer parts, so we can access them without loading the entire contents of the chunk.
-{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE DataKinds #-}
-module Cardano.SCLS.Internal.Record.Chunk
-  ( Chunk(..)
-  , ChunkFormat(..)
-  , DebugChunk(..)
-  , mkChunk
-  ) where
+{-# LANGUAGE RecordWildCards #-}
 
-import Data.Word
-import Data.Binary (Binary(..))
-import Data.Binary.Get (getWord8, getWord64be, getWord32be, getByteString)
+{- |
+
+A chunk of the actual data that is stored in the file.
+In order to efficiently store and retrieve data chunk is split into
+header and footer parts, so we can access them without loading the entire contents of the chunk.
+-}
+module Cardano.SCLS.Internal.Record.Chunk (
+  Chunk (..),
+  ChunkFormat (..),
+  DebugChunk (..),
+  mkChunk,
+) where
+
+import Data.Binary (Binary (..))
+import Data.Binary.Get (getByteString, getWord32be, getWord64be, getWord8)
 import Data.Binary.Put
 import Data.ByteString (ByteString)
-import qualified Data.ByteString as BS
-import qualified Data.ByteString.Char8 as BS8
-import Data.Text.Encoding qualified as T
+import Data.ByteString qualified as BS
+import Data.ByteString.Char8 qualified as BS8
 import Data.Text (Text)
+import Data.Text.Encoding qualified as T
+import Data.Word
 
 import Cardano.SCLS.Internal.Record.Internal.Class
 
@@ -47,25 +49,31 @@ instance Binary ChunkFormat where
 
 -- | Data chunk, undecoded version. Loads entire data in memory.
 data Chunk = Chunk
-    { chunkSeq  :: Word64
-    , chunkFormat :: ChunkFormat
-    , chunkNamespace :: Text
-    , chunkData :: BS.ByteString -- Use buffer instead (?) or even values generator
-    , chunkEntriesCount :: Word32
-    , chunkHash :: ByteString -- 28 bytes
-    }
+  { chunkSeq :: Word64
+  , chunkFormat :: ChunkFormat
+  , chunkNamespace :: Text
+  , chunkData :: BS.ByteString -- Use buffer instead (?) or even values generator
+  , chunkEntriesCount :: Word32
+  , chunkHash :: ByteString -- 28 bytes
+  }
 
 newtype DebugChunk = DebugChunk Chunk
 
 instance Show DebugChunk where
   show (DebugChunk Chunk{..}) =
-    "Chunk{seq=" ++ show chunkSeq ++
-    ", format=" ++ show chunkFormat ++
-    ", namespace=" ++ show chunkNamespace ++
-    ", data.len=" ++ show (BS.length chunkData) ++
-    ", entries=" ++ show chunkEntriesCount ++
-    ", hash=" ++ show chunkHash ++
-    "}"
+    "Chunk{seq="
+      ++ show chunkSeq
+      ++ ", format="
+      ++ show chunkFormat
+      ++ ", namespace="
+      ++ show chunkNamespace
+      ++ ", data.len="
+      ++ show (BS.length chunkData)
+      ++ ", entries="
+      ++ show chunkEntriesCount
+      ++ ", hash="
+      ++ show chunkHash
+      ++ "}"
 
 instance IsFrameRecord 0x10 Chunk where
   encodeRecordContents Chunk{..} = do
@@ -78,8 +86,8 @@ instance IsFrameRecord 0x10 Chunk where
     putByteString chunkData
     putWord32be chunkEntriesCount
     putByteString chunkHash
-    where
-      namespace_bytes = T.encodeUtf8 chunkNamespace
+   where
+    namespace_bytes = T.encodeUtf8 chunkNamespace
   decodeRecordContents = do
     _ <- getWord8 -- type offset: TODO: it does not look sane to me!
     chunkSeq <- getWord64be
@@ -94,11 +102,12 @@ instance IsFrameRecord 0x10 Chunk where
     pure Chunk{..}
 
 mkChunk :: Word64 -> ChunkFormat -> Text -> BS.ByteString -> Word32 -> Chunk
-mkChunk seqno format namespace chunkData entriesCount = Chunk
+mkChunk seqno format namespace chunkData entriesCount =
+  Chunk
     { chunkSeq = seqno
     , chunkFormat = format
     , chunkNamespace = namespace
     , chunkData = chunkData
     , chunkEntriesCount = entriesCount
-    , chunkHash = BS.replicate (28-8) 0 <> BS8.pack "DEADF00D" -- TODO: implement hash calculation
+    , chunkHash = BS.replicate (28 - 8) 0 <> BS8.pack "DEADF00D" -- TODO: implement hash calculation
     }

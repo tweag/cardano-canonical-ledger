@@ -1,7 +1,7 @@
-module Cardano.SCLS.Internal.Version
-  ( Version(..)
-  , packVersion
-  ) where
+module Cardano.SCLS.Internal.Version (
+  Version (..),
+  packVersion,
+) where
 
 import Data.Word
 
