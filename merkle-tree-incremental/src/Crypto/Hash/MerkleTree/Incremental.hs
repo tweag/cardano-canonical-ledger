@@ -1,4 +1,4 @@
-module Crypto.Hash.MerkleTreeIncremental (
+module Crypto.Hash.MerkleTree.Incremental (
     MerkleTree (..),
     MerkleHash,
     merkleTreeHash,

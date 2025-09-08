@@ -1,7 +1,7 @@
 import Crypto.Hash.Algorithms (SHA3_256)
 import Crypto.Hash.MerkleTree (mkMerkleTree, mtHash)
-import Crypto.Hash.MerkleTreeIncremental (getMerkleRootHex)
-import Crypto.Hash.MerkleTreeIncremental.MerkleTreeState
+import Crypto.Hash.MerkleTree.Incremental (getMerkleRootHex)
+import Crypto.Hash.MerkleTree.Incremental.MerkleTreeState
 import Data.ByteString.Char8 qualified as C
 
 import Test.QuickCheck

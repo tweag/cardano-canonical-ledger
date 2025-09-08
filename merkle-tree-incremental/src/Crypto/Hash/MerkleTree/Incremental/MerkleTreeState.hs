@@ -1,4 +1,4 @@
-module Crypto.Hash.MerkleTreeIncremental.MerkleTreeState (
+module Crypto.Hash.MerkleTree.Incremental.MerkleTreeState (
     MerkleTreeState,
     empty,
     add,
@@ -7,7 +7,7 @@ module Crypto.Hash.MerkleTreeIncremental.MerkleTreeState (
 where
 
 import Crypto.Hash (HashAlgorithm)
-import Crypto.Hash.MerkleTreeIncremental (MerkleHash, MerkleTree (MerkleTreeEmpty, MerkleTreeRoot), leafHash, nodeHash)
+import Crypto.Hash.MerkleTree.Incremental (MerkleHash, MerkleTree (MerkleTreeEmpty, MerkleTreeRoot), leafHash, nodeHash)
 import Data.ByteArray (ByteArrayAccess)
 
 newtype MerkleTreeState a = MerkleTreeState [MerkleTreeStateNode a]

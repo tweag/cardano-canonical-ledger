@@ -16,8 +16,8 @@ common warnings
 library
   import: warnings
   exposed-modules:
-    Crypto.Hash.MerkleTreeIncremental
-    Crypto.Hash.MerkleTreeIncremental.MerkleTreeState
+    Crypto.Hash.MerkleTree.Incremental
+    Crypto.Hash.MerkleTree.Incremental.MerkleTreeState
 
   other-modules:
     Paths_merkle_tree_incremental
