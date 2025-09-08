@@ -101,6 +101,16 @@ To generate documentation run
 cabal haddock all
 ```
 
+## Pre-commit hooks
+
+This project uses pre-commit hooks to ensure code quality and consistency. The hooks include:
+
+- **fourmolu**: Haskell code formatting
+- **nixfmt**: Nix file formatting  
+- **cabal-gild**: Cabal file formatting
+
+These hooks are automatically configured by the Nix shell environment. To use them, simply make your changes and commit as usual. The hooks will run automatically before each commit.
+
 ## How to Contribute
 
 1. **Fork the repository** and create your branch from `main`.
