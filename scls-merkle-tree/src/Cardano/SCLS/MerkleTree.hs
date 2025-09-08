@@ -45,7 +45,7 @@ merkleHash bytes = mkMerkleHash $ BA.convertToBase BA.Base16 (hash @_ @a bytes)
 -- | Hash function to use for merkle tree
 leafHash :: forall a. (HashAlgorithm a) => B.ByteString -> MerkleHash a
 leafHash bytes =
-    merkleHash @a (B.singleton 0 <> BA.convert bytes)
+    merkleHash @a (B.singleton 0 <> bytes)
 
 nodeHash :: forall a. (HashAlgorithm a) => MerkleHash a -> MerkleHash a -> MerkleHash a
 nodeHash h1 h2 = merkleHash @a $ mconcat $ [B.singleton 1, BA.convert h1, BA.convert h2]
