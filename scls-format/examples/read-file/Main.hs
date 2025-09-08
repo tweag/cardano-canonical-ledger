@@ -2,12 +2,12 @@
 --
 -- TODO: use some streaming library instead of the current approach?
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# OPTIONS_GHC -fno-warn-incomplete-uni-patterns #-} -- this is a tempororary file
 module Main
   where
 
 import System.IO
 import Data.Function (fix)
-import Data.Foldable (for_)
 import Cardano.SCLS.Internal.Frame
 import System.Environment (getArgs)
 import Cardano.SCLS.Internal.Record.Hdr
