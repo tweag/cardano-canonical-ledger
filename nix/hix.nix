@@ -9,6 +9,7 @@
     hlint = "latest";
     fourmolu = "latest";
     weeder = "latest";
+    cabal-gild = "latest";
   };
 
   # Non-Haskell shell tools go here
