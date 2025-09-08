@@ -15,18 +15,18 @@ build-depends: merkle-tree-incremental
 The library is parameterized by any `HashAlgorithm` from the `crypton` library, allowing you to choose the hashing function:
 
 ```haskell
-import Crypto.Hash.MerkleTreeIncremental (getMerkleHash, merkleTreeHash)
-import Crypto.Hash.MerkleTreeIncremental.Constructor
-import Crypto.Hash.Algorithms (SHA3_256, Blake2b_160)
+import Crypto.Hash.MerkleTree.Incremental (add, empty, encodeMerkleHashHex, finalize, merkleRootHash)
+import Crypto.Hash.Algorithms (SHA3_256(SHA3_256))
 import qualified Data.ByteString.Char8 as C
 
-let constructor = add (empty :: Constructor SHA3_256) (C.pack "entry1")
-let constructor' = add constructor (C.pack "entry2")
-let merkleTree = finalize constructor'
-let rootHash = getMerkleHash $ merkleTreeHash merkleTree
+let state = add (empty SHA3_256) (C.pack "entry1")
+let state' = add state (C.pack "entry2")
+let merkleTree = finalize state'
+let rootHash = encodeMerkleHashHex $ merkleRootHash merkleTree
 
 -- Or use a different hash algorithm
-let constructor = add (empty :: Constructor Blake2b_160) (C.pack "entry1")
+import Crypto.Hash.Algorithms (Blake2b_160(Blake2b_160))
+let state = add (empty Blake2b_160) (C.pack "entry1")
 ```
 
 ## Algorithm and Approach
@@ -35,7 +35,7 @@ This library implements an **incremental constructor** that builds Merkle trees 
 
 ### Key Components
 
-1. **Incremental Constructor**: A stack of `ConstructorNode` elements, each containing a level and hash
+1. **Incremental Constructor**: A stack of `MerkleTreeStateNode` elements, each containing a level and hash
 2. **Pluggable Hash Algorithms**: Parameterized by any `HashAlgorithm` from the `crypton` library (SHA256, SHA3-256, BLAKE2b, etc.)
 3. **Level-based Joining**: Nodes at the same level are automatically combined to build the tree bottom-up, thus minimizing memory usage
 
@@ -66,10 +66,9 @@ The constructor maintains a stack of partial tree nodes, where each node has:
 
 ## API Reference
 
-The library exposes two main modules:
+The library exposes one module:
 
-- `Crypto.Hash.MerkleTree`: Core Merkle tree types and operations
-- `Crypto.Hash.MerkleTree.Constructor`: Incremental constructor functionality
+- `Crypto.Hash.MerkleTree.Incremental`: Core Merkle tree types and constructor operations
 
 ### Testing and Verification
 
@@ -85,7 +84,7 @@ cabal test merkle-tree-incremental-test
 
 The algorithm has **O(log n)** space complexity where n is the number of entries added.
 
-The constructor maintains a stack of `ConstructorNode` elements, where each node represents a partial tree at a specific level. The key insight is that at any given time, there can be at most one node per level in the stack.
+The constructor maintains a stack of `MerkleTreeStateNode` elements, where each node represents a partial tree at a specific level. The key insight is that at any given time, there can be at most one node per level in the stack.
 
 **Analysis:**
 
