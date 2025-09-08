@@ -7,7 +7,7 @@ import Test.QuickCheck
 
 prop_merkle_root_equal :: [String] -> Bool
 prop_merkle_root_equal entries =
-  (getMerkleHash $ merkleTreeHash merkleTree1) == mtHash merkleTree2
+    (getMerkleHash $ merkleTreeHash merkleTree1) == mtHash merkleTree2
   where
     entries_bytes = map C.pack entries
     constructor = foldl add (empty :: Constructor SHA3_256) entries_bytes
@@ -16,4 +16,4 @@ prop_merkle_root_equal entries =
 
 main :: IO ()
 main = do
-  quickCheck prop_merkle_root_equal
+    quickCheck prop_merkle_root_equal
