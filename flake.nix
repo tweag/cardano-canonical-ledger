@@ -3,7 +3,11 @@
   inputs.haskellNix.url = "github:input-output-hk/haskell.nix";
   inputs.nixpkgs.follows = "haskellNix/nixpkgs-unstable";
   inputs.flake-utils.url = "github:numtide/flake-utils";
-  outputs = { self, nixpkgs, flake-utils, haskellNix }:
+  inputs.pre-commit-hooks = {
+    url = "github:cachix/pre-commit-hooks.nix";
+    inputs.nixpkgs.follows = "nixpkgs";
+  };
+  outputs = { self, nixpkgs, flake-utils, haskellNix, pre-commit-hooks }:
     let
       supportedSystems =
         [ "x86_64-linux" "x86_64-darwin" "aarch64-linux" "aarch64-darwin" ];
@@ -24,7 +28,25 @@
           inherit (haskellNix) config;
         };
         flake = pkgs.cardanoCanonicalLedger.flake { };
-      in flake // { legacyPackages = pkgs; });
+        pre-commit-check = pre-commit-hooks.lib.${system}.run {
+          src = ./.;
+          hooks = {
+            fourmolu.enable = true;
+            nixfmt-classic.enable = true;
+            cabal-gild.enable = true;
+          };
+        };
+      in flake // {
+        legacyPackages = pkgs;
+        checks = { pre-commit-check = pre-commit-check; };
+        devShells = {
+          default = flake.devShells.default.overrideAttrs (oldAttrs: {
+            inherit (pre-commit-check) shellHook;
+            buildInputs = (oldAttrs.buildInputs or [ ])
+              ++ pre-commit-check.enabledPackages;
+          });
+        };
+      });
 
   # --- Flake Local Nix Configuration ----------------------------
   nixConfig = {
