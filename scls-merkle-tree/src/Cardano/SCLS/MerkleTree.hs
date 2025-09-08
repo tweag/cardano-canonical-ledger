@@ -40,7 +40,7 @@ merkleTreeHash MerkleTreeEmpty = merkleHash mempty
 merkleTreeHash (MerkleTreeRoot h) = h
 
 merkleHash :: forall a. (HashAlgorithm a) => B.ByteString -> MerkleHash a
-merkleHash bytes = mkMerkleHash ((BA.convertToBase BA.Base16 (hash @_ @a bytes)))
+merkleHash bytes = mkMerkleHash $ BA.convertToBase BA.Base16 (hash @_ @a bytes)
 
 -- | Hash function to use for merkle tree
 leafHash :: forall a. (HashAlgorithm a) => B.ByteString -> MerkleHash a
