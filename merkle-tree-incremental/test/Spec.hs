@@ -3,7 +3,7 @@ import Crypto.Hash.MerkleTree (mkMerkleTree, mtHash)
 import Crypto.Hash.MerkleTreeIncremental (getMerkleHash, merkleTreeHash)
 import Crypto.Hash.MerkleTreeIncremental.Constructor
 import Data.ByteString.Char8 qualified as C
-import Test.QuickChec
+import Test.QuickCheck
 
 prop_merkle_root_equal :: [String] -> Bool
 prop_merkle_root_equal entries =
