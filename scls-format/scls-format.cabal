@@ -63,6 +63,7 @@ library
     filepath,
     memory,
     mempack,
+    merkle-tree-incremental,
     mtl,
     pqueue,
     primitive,
