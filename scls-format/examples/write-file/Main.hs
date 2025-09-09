@@ -2,13 +2,13 @@
 
 module Main where
 
-import Cardano.SCLS.Internal.Serializer.Reference (serialize)
+import Cardano.SCLS.Internal.Serializer.Reference.Impl (serialize)
 import Cardano.Types.Network
 import Cardano.Types.SlotNo
-import qualified Data.ByteString as BS
-import qualified Data.ByteString.Lazy as BSL
+import Data.ByteString qualified as BS
+import Data.ByteString.Lazy qualified as BSL
 import Data.Int (Int64)
-import qualified Data.Text as T
+import Data.Text qualified as T
 import System.Environment (getArgs)
 
 -- TODO: introduce a context for file generator
