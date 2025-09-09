@@ -13,5 +13,10 @@
   };
 
   # Non-Haskell shell tools go here
-  shell.buildInputs = with pkgs; [ nixfmt-classic ];
+  shell.buildInputs = let
+    # Add this for editors which expect to use hls-wrapper
+    hls-wrapper = pkgs.writeShellScriptBin "haskell-language-server-wrapper" ''
+      exec haskell-language-server "$@"
+    '';
+  in with pkgs; [ nixfmt-classic hls-wrapper ];
 }
