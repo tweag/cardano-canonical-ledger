@@ -11,20 +11,24 @@ module Cardano.SCLS.Internal.Record.Chunk (
   Chunk (..),
   ChunkFormat (..),
   DebugChunk (..),
+  ChunkDigest (..),
   mkChunk,
 ) where
 
+import Crypto.Hash (Blake2b_160, Digest, HashAlgorithm (hashDigestSize), digestFromByteString, hash, hashDigestSize)
 import Data.Binary (Binary (..))
 import Data.Binary.Get (getByteString, getWord32be, getWord64be, getWord8)
 import Data.Binary.Put
-import Data.ByteString (ByteString)
-import qualified Data.ByteString as BS
+import Data.ByteArray qualified as BA
+import Data.ByteString qualified as BS
 import Data.Text (Text)
-import qualified Data.Text.Encoding  as T
+import Data.Text.Encoding qualified as T
 import Data.Word (Word32, Word64)
-import qualified Crypto.Hash.BLAKE2.BLAKE2bp as Blake2
 
 import Cardano.SCLS.Internal.Record.Internal.Class
+
+newtype ChunkDigest = ChunkDigest (Digest Blake2b_160)
+  deriving (Show)
 
 data ChunkFormat
   = -- | Entries are stored uncompressed
@@ -54,7 +58,7 @@ data Chunk = Chunk
   , chunkNamespace :: Text
   , chunkData :: BS.ByteString -- Use buffer instead (?) or even values generator
   , chunkEntriesCount :: Word32
-  , chunkHash :: ByteString -- 28 bytes
+  , chunkHash :: ChunkDigest
   }
 
 newtype DebugChunk = DebugChunk Chunk
@@ -75,6 +79,14 @@ instance Show DebugChunk where
       ++ show chunkHash
       ++ "}"
 
+instance Binary ChunkDigest where
+  put (ChunkDigest digest) = putByteString (BA.convert digest)
+  get = do
+    bytes <- getByteString (hashDigestSize (undefined :: Blake2b_160))
+    case digestFromByteString bytes of
+      Nothing -> fail "Invalid digest"
+      Just d -> pure (ChunkDigest d)
+
 instance IsFrameRecord 0x10 Chunk where
   encodeRecordContents Chunk{..} = do
     putWord64be chunkSeq
@@ -85,7 +97,7 @@ instance IsFrameRecord 0x10 Chunk where
     putWord32be (fromIntegral (BS.length chunkData) :: Word32)
     putByteString chunkData
     putWord32be chunkEntriesCount
-    putByteString chunkHash
+    put chunkHash
    where
     namespace_bytes = T.encodeUtf8 chunkNamespace
   decodeRecordContents = do
@@ -98,7 +110,7 @@ instance IsFrameRecord 0x10 Chunk where
     data_size <- getWord32be
     chunkData <- getByteString (fromIntegral data_size)
     chunkEntriesCount <- getWord32be
-    chunkHash <- getByteString 28
+    chunkHash <- get
     pure Chunk{..}
 
 mkChunk :: Word64 -> ChunkFormat -> Text -> BS.ByteString -> Word32 -> Chunk
@@ -109,5 +121,5 @@ mkChunk seqno format namespace chunkData entriesCount =
     , chunkNamespace = namespace
     , chunkData = chunkData
     , chunkEntriesCount = entriesCount
-    , chunkHash = Blake2.hash 28 mempty chunkData
+    , chunkHash = ChunkDigest $ hash chunkData
     }

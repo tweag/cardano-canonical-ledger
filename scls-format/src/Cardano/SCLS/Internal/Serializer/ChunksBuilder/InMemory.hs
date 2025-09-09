@@ -23,7 +23,8 @@ module Cardano.SCLS.Internal.Serializer.ChunksBuilder.InMemory (
 import Cardano.SCLS.Internal.Record.Chunk
 import Cardano.SCLS.Internal.Serializer.MemPack
 import Control.Monad.Primitive
-import Crypto.Hash.BLAKE2.BLAKE2bp qualified as Blake2
+import Crypto.Hash (Blake2b_160, Context, hashFinalize, hashInit, hashUpdate)
+import Data.ByteArray qualified as BA
 import Data.ByteString (ByteString)
 import Data.ByteString.Internal (unsafePackLenLiteral)
 import Data.MemPack
@@ -33,21 +34,21 @@ import Data.Typeable
 import Foreign.Ptr
 import Unsafe.Coerce (unsafeCoerce)
 
-type Digest = Blake2.BLAKE2bpState
+type Digest = Context Blake2b_160
 
 -- Dummy implementation of the merke tree functions, this implementation
 -- will be changed to the real one once merkle-tree-iterative  library will
 -- be merged.
 merkleInitialize :: Digest
-merkleInitialize = Blake2.initialize 28
+merkleInitialize = hashInit
 merkleFinalize :: Digest -> ByteString
-merkleFinalize = Blake2.finalize 28
+merkleFinalize = BA.convert . hashFinalize
 merkleUpdate :: (Buffer u) => Digest -> u -> Digest
 merkleUpdate d u =
   Buffer.buffer
     u
-    (\bytes -> Blake2.update (pinnedByteArrayToByteString (ByteArray bytes)) d)
-    (\addr -> Blake2.update (unsafePackLenLiteral (bufferByteCount u) addr) d)
+    (\bytes -> hashUpdate d (pinnedByteArrayToByteString (ByteArray bytes)))
+    (\addr -> hashUpdate d (unsafePackLenLiteral (bufferByteCount u) addr))
 
 data ChunkItem = ChunkItem
   { chunkItemFormat :: ChunkFormat
