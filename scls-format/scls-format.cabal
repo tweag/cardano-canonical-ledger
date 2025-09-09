@@ -29,7 +29,8 @@ library
     Cardano.SCLS.Internal.Record.Manifest
     Cardano.SCLS.Internal.Serializer.ChunksBuilder.InMemory
     Cardano.SCLS.Internal.Serializer.MemPack
-    Cardano.SCLS.Internal.Serializer.Reference
+    Cardano.SCLS.Internal.Serializer.Reference.Dump
+    Cardano.SCLS.Internal.Serializer.Reference.Impl
     Cardano.SCLS.Internal.Version
     Cardano.Types.Network
     Cardano.Types.SlotNo
@@ -80,6 +81,7 @@ executable example-read-file
 
 executable example-write-file
   import: warnings
+  default-language: GHC2021
   hs-source-dirs: examples/write-file
   main-is: Main.hs
   build-depends:
