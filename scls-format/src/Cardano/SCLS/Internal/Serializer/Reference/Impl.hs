@@ -24,7 +24,7 @@ import VectorBuilder.MVector qualified as Builder
 At this point it accepts values from one namespace only.
 -}
 serialize ::
-  (Foldable f, MemPack a, Ord a, Typeable a) =>
+  (MemPack a, Ord a, Typeable a) =>
   -- | path to resulting file
   FilePath ->
   -- | Network identifier
@@ -34,13 +34,20 @@ serialize ::
   -- | Namespace for the data entries
   Text ->
   -- | Input stream of entries to serialize, can be unsorted
-  f a ->
+  (S.Stream (S.Of a) IO ()) ->
   IO ()
 serialize resultFilePath network slotNo namespace stream = do
   withFile resultFilePath WriteMode \handle -> do
     let hdr = mkHdr network slotNo
-    let !orderedStream = runST do
-          mv <- Builder.build (Builder.foldable stream)
-          Tim.sort mv
-          V.unsafeFreeze mv
+    !orderedStream <- mkVector stream
     dumpToHandle handle namespace hdr (S.each orderedStream)
+ where
+  mkVector :: (Ord a) => S.Stream (S.Of a) IO () -> IO (V.Vector a)
+  mkVector = S.fold_
+    do \x e -> x <> Builder.singleton e
+    do Builder.empty
+    do
+      \builder -> runST do
+        mv <- Builder.build builder
+        Tim.sort mv
+        V.unsafeFreeze mv

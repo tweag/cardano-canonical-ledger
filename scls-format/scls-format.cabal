@@ -28,6 +28,7 @@ library
     Cardano.SCLS.Internal.Record.Internal.Class
     Cardano.SCLS.Internal.Record.Manifest
     Cardano.SCLS.Internal.Serializer.ChunksBuilder.InMemory
+    Cardano.SCLS.Internal.Serializer.External.Impl
     Cardano.SCLS.Internal.Serializer.MemPack
     Cardano.SCLS.Internal.Serializer.Reference.Dump
     Cardano.SCLS.Internal.Serializer.Reference.Impl
@@ -58,11 +59,15 @@ library
     bytestring,
     containers,
     crypton,
+    directory,
+    filepath,
     memory,
     mempack,
     mtl,
+    pqueue,
     primitive,
     streaming,
+    temporary,
     text,
     vector,
     vector-algorithms,
@@ -88,6 +93,7 @@ executable example-write-file
     base,
     bytestring,
     scls-format,
+    streaming,
     text,
 
 executable example-extract-by-ns

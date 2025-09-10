@@ -18,6 +18,7 @@ import Codec.CBOR.Cuddle.Huddle
 import Codec.CBOR.Term (encodeTerm)
 import Codec.CBOR.Write (toStrictByteString)
 import Control.Monad (replicateM)
+import Data.Function ((&))
 import Data.List (sort)
 import Data.Map.Strict qualified as Map
 import Data.Text (Text)
@@ -59,7 +60,7 @@ main = runTestTTAndExit tests
           Mainnet
           (SlotNo 1)
           namespace
-          (fmap (RawBytes) encoded_data)
+          (S.each encoded_data & S.map RawBytes)
         withNamespacedData
           fileName
           namespace
