@@ -1,71 +1,77 @@
-cabal-version:      3.14
-name:               scls-cddl
-version:            0.1.0.0
-synopsis:           CDDL Namespace Definitions and Serialisation Code
-description:        A library for defining CDDL schema for Cardano Ledger State namespaces,
-                    generation of the test data and files validation.
-homepage:           https://github.com/tweag/cardano-canonical-ledger
-license:            Apache-2.0
-license-file:       LICENSE
-author:             Tweag IO Team <cardano-cls@tweag.io>
-maintainer:         cardano-cls@tweag.io
+cabal-version: 3.14
+name: scls-cddl
+version: 0.1.0.0
+synopsis: CDDL Namespace Definitions and Serialisation Code
+description:
+  A library for defining CDDL schema for Cardano Ledger State namespaces,
+  generation of the test data and files validation.
+
+homepage: https://github.com/tweag/cardano-canonical-ledger
+license: Apache-2.0
+license-file: LICENSE
+author: Tweag IO Team <cardano-cls@tweag.io>
+maintainer: cardano-cls@tweag.io
 -- copyright:
-category:           Data
-build-type:         Simple
-extra-doc-files:    CHANGELOG.md
+category: Data
+build-type: Simple
+extra-doc-files: CHANGELOG.md
 -- extra-source-files:
-tested-with: GHC ==9.12.1 || ==9.10.2 || ==9.8.4
+tested-with: ghc ==9.12.1 || ==9.10.2 || ==9.8.4
 
 common warnings
-    ghc-options: -Wall
+  ghc-options: -Wall
 
 library
-    import:           warnings
-    default-language: GHC2021
-    exposed-modules:  MyLib
-    -- other-modules:
-    -- other-extensions:
-    build-depends:    base >=4.18 && <4.22
-    hs-source-dirs:   src
+  import: warnings
+  default-language: GHC2021
+  exposed-modules: MyLib
+  -- other-modules:
+  -- other-extensions:
+  build-depends: base >=4.18 && <4.22
+  hs-source-dirs: src
 
 executable gen-cddl
-    import: warnings
-    default-language: GHC2021
-    hs-source-dirs:   gen-cddl
-    main-is:          Main.hs
-    build-depends:
-      base >=4.18 && <5,
-      containers >=0.6,
-      cuddle >= 0.5,
-      filepath >=1.4,
-      prettyprinter,
-      scls-cddl:cddl-src
+  import: warnings
+  default-language: GHC2021
+  hs-source-dirs: gen-cddl
+  main-is: Main.hs
+  build-depends:
+    base >=4.18 && <5,
+    containers >=0.6,
+    cuddle >= 0.5,
+    filepath >=1.4,
+    prettyprinter,
+    scls-cddl:cddl-src
 
 library cddl-src
-    import: warnings
-    visibility: public
-    exposed-modules:
-        Cardano.SCLS.CDDL
-    other-modules:
-        Cardano.SCLS.Common
-        Cardano.SCLS.Namespace.UTxO
-    build-depends:
-        base >=4.18 && <5,
-        containers >=0.6,
-        cuddle >= 0.5,
-        heredoc >= 0.2
-    hs-source-dirs:
-        cddl-src
-    default-language: GHC2021
+  import: warnings
+  visibility: public
+  exposed-modules:
+    Cardano.SCLS.CDDL
+
+  other-modules:
+    Cardano.SCLS.Common
+    Cardano.SCLS.Namespace.UTxO
+
+  build-depends:
+    base >=4.18 && <5,
+    containers >=0.6,
+    cuddle >=0.5,
+    heredoc >=0.2
+
+  hs-source-dirs:
+    cddl-src
+
+  default-language: GHC2021
 
 test-suite scls-cddl-test
-    import:           warnings
-    default-language: GHC2021
-    -- other-modules:
-    -- other-extensions:
-    type:             exitcode-stdio-1.0
-    hs-source-dirs:   test
-    main-is:          Main.hs
-    build-depends:
-        base >=4.18 && <5,
-        scls-cddl
+  import: warnings
+  default-language: GHC2021
+  -- other-modules:
+  -- other-extensions:
+  type: exitcode-stdio-1.0
+  hs-source-dirs: test
+  main-is: Main.hs
+  build-depends:
+    base >=4.18 && <5,
+    scls-cddl
