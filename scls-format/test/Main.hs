@@ -2,8 +2,9 @@ module Main (main) where
 
 import Cardano.SCLS.CDDL (namespaces)
 import Cardano.SCLS.Internal.Reader (withNamespacedData)
+import Cardano.SCLS.Internal.Serializer.External.Impl qualified as External (serialize)
 import Cardano.SCLS.Internal.Serializer.MemPack
-import Cardano.SCLS.Internal.Serializer.Reference.Impl (serialize)
+import Cardano.SCLS.Internal.Serializer.Reference.Impl qualified as Reference (serialize)
 import Cardano.Types.Network (NetworkId (..))
 import Cardano.Types.SlotNo (SlotNo (..))
 import Codec.CBOR.Cuddle.CBOR.Gen (generateCBORTerm')
@@ -29,6 +30,8 @@ import System.IO.Temp (withSystemTempDirectory)
 import System.Random.Stateful (applyAtomicGen, globalStdGen)
 import Test.HUnit
 
+type SerializeF = FilePath -> NetworkId -> SlotNo -> Text -> S.Stream (S.Of RawBytes) IO () -> IO ()
+
 main :: IO ()
 main = runTestTTAndExit tests
  where
@@ -42,11 +45,18 @@ main = runTestTTAndExit tests
   roundTriptests =
     TestLabel "Roundtrip tests" $
       TestList
-        [ TestLabel n $ TestCase $ roundtrip (T.pack n) (toCDDL huddle)
+        [ mkRountripTestsFor "Reference" Reference.serialize
+        , mkRountripTestsFor "External" External.serialize
+        ]
+  mkRountripTestsFor :: String -> SerializeF -> Test
+  mkRountripTestsFor groupName serialize =
+    TestLabel groupName $
+      TestList
+        [ TestLabel n $ TestCase $ roundtrip (T.pack n) (toCDDL huddle) serialize
         | (n, huddle) <- Map.toList namespaces
         ]
-  roundtrip :: Text -> CDDL -> Assertion
-  roundtrip namespace cddl = do
+  roundtrip :: Text -> CDDL -> SerializeF -> Assertion
+  roundtrip namespace cddl serialize = do
     case buildMonoCTree =<< buildResolvedCTree (buildRefCTree $ asMap cddl) of
       Left err -> assertFailure $ "Failed to build CTree: " ++ show err
       Right mt -> withSystemTempDirectory "scls-format-test-XXXXXX" $ \fn -> do
