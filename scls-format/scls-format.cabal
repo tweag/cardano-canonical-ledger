@@ -114,7 +114,7 @@ test-suite scls-format-test
     cuddle >=0.5,
     filepath,
     random >=1.2,
-    scls-cddl:{cddl-src},
+    scls-cddl,
     scls-format,
     streaming >=0.2.4.0,
     temporary,

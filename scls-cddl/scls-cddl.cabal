@@ -23,29 +23,6 @@ common warnings
 
 library
   import: warnings
-  default-language: GHC2021
-  exposed-modules: MyLib
-  -- other-modules:
-  -- other-extensions:
-  build-depends: base >=4.18 && <4.22
-  hs-source-dirs: src
-
-executable gen-cddl
-  import: warnings
-  default-language: GHC2021
-  hs-source-dirs: gen-cddl
-  main-is: Main.hs
-  build-depends:
-    base >=4.18 && <5,
-    containers >=0.6,
-    cuddle >= 0.5,
-    filepath >=1.4,
-    prettyprinter,
-    scls-cddl:cddl-src
-
-library cddl-src
-  import: warnings
-  visibility: public
   exposed-modules:
     Cardano.SCLS.CDDL
 
@@ -64,14 +41,15 @@ library cddl-src
 
   default-language: GHC2021
 
-test-suite scls-cddl-test
+executable gen-cddl
   import: warnings
   default-language: GHC2021
-  -- other-modules:
-  -- other-extensions:
-  type: exitcode-stdio-1.0
-  hs-source-dirs: test
+  hs-source-dirs: gen-cddl
   main-is: Main.hs
   build-depends:
     base >=4.18 && <5,
+    containers >=0.6,
+    cuddle >=0.5,
+    filepath >=1.4,
+    prettyprinter,
     scls-cddl

@@ -1,0 +1,35 @@
+cabal-version: 3.14
+name: scls-cbor
+version: 0.1.0.0
+synopsis: CBOR utilities for the Cardano Canonical Ledger State
+-- description:
+homepage: https://github.com/tweag/cardano-canonical-ledger
+license: Apache-2.0
+license-file: LICENSE
+author: Tweag IO Team
+maintainer: cardano-scls@tweag.io
+-- copyright:
+category: Data
+build-type: Simple
+extra-doc-files: CHANGELOG.md
+
+-- extra-source-files:
+common warnings
+  ghc-options: -Wall
+
+library
+  import: warnings
+  exposed-modules:
+    Cardano.SCLS.CBOR.Canonical
+
+  -- other-modules:
+  -- other-extensions:
+  build-depends:
+    base ^>=4.20.1.0,
+    bytestring,
+    cborg,
+    containers,
+    scls-format
+
+  hs-source-dirs: src
+  default-language: GHC2021
