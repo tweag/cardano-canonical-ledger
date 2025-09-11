@@ -42,17 +42,21 @@ serialize ::
   NetworkId ->
   -- | Slot of the current transaction
   SlotNo ->
-  -- | Namespace for the data entries
-  Text ->
   -- | Input stream of entries to serialize, can be unsorted
-  Stream (Of a) IO () ->
+  S.Stream (S.Of (Text, S.Stream (S.Of a) IO ())) IO () ->
   IO ()
-serialize resultFilePath network slotNo namespace stream = do
-  withTempDirectory (takeDirectory resultFilePath) "tmp.XXXXXX" \tmpDir -> do
-    prepareExternalSort tmpDir stream
-    let !hdr = mkHdr network slotNo
-    withFile resultFilePath WriteMode \handle -> do
-      kMerge tmpDir do dumpToHandle handle namespace hdr
+serialize resultFilePath network slotNo inputStream = do
+  let !hdr = mkHdr network slotNo
+  inputStream & S.head_ >>= \case
+    Nothing -> pure ()
+    -- TODO: write empty file or throw error?
+    -- withFile resultFilePath WriteMode \handle -> do
+    --   dumpToHandle handle hdr (DataStream (S.each []))
+    Just (namespace, stream) ->
+      withTempDirectory (takeDirectory resultFilePath) "tmp.XXXXXX" \tmpDir -> do
+        prepareExternalSort tmpDir stream
+        withFile resultFilePath WriteMode \handle -> do
+          kMerge tmpDir namespace do dumpToHandle handle hdr
 
 {- | Simple version of the preparation step for external sorting.
 It just splits an input into the sorted chunks of the fixed size.
@@ -81,11 +85,11 @@ prepareExternalSort tmpDir stream =
         Tim.sort mv
         V.unsafeFreeze mv
 
-kMerge :: FilePath -> (Stream (Of RawBytes) IO () -> IO a) -> IO a
-kMerge tmpDir f = do
+kMerge :: FilePath -> Text -> (DataStream RawBytes -> IO a) -> IO a
+kMerge tmpDir namespace f = do
   bracket openAll closeAll \handles -> do
     pq <- mkPQ handles
-    f (loop pq)
+    f (DataStream (S.yield (namespace :> loop pq)))
  where
   openAll = listDirectory tmpDir >>= mapM (\t -> openFile (tmpDir </> t) ReadMode)
   closeAll = mapM hClose

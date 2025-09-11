@@ -9,6 +9,7 @@ Manifest record for file integrity and summary information.
 module Cardano.SCLS.Internal.Record.Manifest (
   Manifest (..),
   ManifestSummary (..),
+  NamespaceInfo (..),
 ) where
 
 import Data.Binary.Get (getByteString, getWord32be, getWord64be, getWord8)
@@ -17,6 +18,7 @@ import Data.ByteString (ByteString)
 import Data.ByteString qualified as BS
 import Data.Foldable (traverse_)
 import Data.Function (fix)
+import Data.Map.Strict (Map)
 import Data.Map.Strict qualified as Map
 import Data.Text (Text)
 import Data.Text.Encoding qualified as T
@@ -35,6 +37,33 @@ data ManifestSummary = ManifestSummary
   }
   deriving (Show)
 
+data NamespaceInfo = NamespaceInfo
+  { namespaceEntries :: Word64
+  -- ^ number of entries
+  , namespaceChunks :: Word64
+  -- ^ number of chunks
+  , namespaceHash :: ByteString
+  -- ^ multihash of root entry
+  }
+  deriving (Show)
+
+instance Semigroup NamespaceInfo where
+  a <> b =
+    NamespaceInfo
+      { namespaceEntries = namespaceEntries a + namespaceEntries b
+      , namespaceChunks = namespaceChunks a + namespaceChunks b
+      , namespaceHash = namespaceHash a -- ignoring hash combination for now,
+      -- TODO: use merkle tree constructor here?
+      }
+
+instance Monoid NamespaceInfo where
+  mempty =
+    NamespaceInfo
+      { namespaceEntries = 0
+      , namespaceChunks = 0
+      , namespaceHash = BS.replicate 28 0
+      }
+
 -- | Manifest record
 data Manifest = Manifest
   { totalEntries :: Word64
@@ -43,7 +72,7 @@ data Manifest = Manifest
   -- ^ number of chunks
   , rootHash :: ByteString
   -- ^ multihash of root entry
-  , nsRoots :: Map.Map Text ByteString
+  , nsInfo :: Map Text NamespaceInfo
   -- ^ map from namespace to multihash
   , prevManifestOffset :: Word64
   -- ^ offset of previous manifest
@@ -57,16 +86,18 @@ instance IsFrameRecord 0x01 Manifest where
     putWord64be totalEntries
     putWord64be totalChunks
     encodeSummary summary
-    traverse_ putNsRoot (Map.toList nsRoots)
+    traverse_ putNsInfo (Map.toList nsInfo)
     putWord32be 0
     putWord64be prevManifestOffset
     putByteString rootHash
    where
-    putNsRoot (ns, h) = do
+    putNsInfo (ns, h) = do
       let nsBytes = T.encodeUtf8 ns
       putWord32be (fromIntegral $ BS.length nsBytes)
+      putWord64be (namespaceEntries h)
+      putWord64be (namespaceChunks h)
       putByteString nsBytes
-      putByteString h -- 28 bytes
+      putByteString (namespaceHash h) -- 28 bytes
     encodeSummary ManifestSummary{..} = do
       let createdAtBytes = T.encodeUtf8 createdAt
           toolBytes = T.encodeUtf8 tool
@@ -83,7 +114,7 @@ instance IsFrameRecord 0x01 Manifest where
     totalEntries <- getWord64be
     totalChunks <- getWord64be
     summary <- decodeSummary
-    (Map.fromList -> nsRoots) <-
+    (Map.fromList -> nsInfo) <-
       flip fix [] $ \next current -> do
         getNsRoot >>= \case
           Nothing -> pure current
@@ -98,8 +129,10 @@ instance IsFrameRecord 0x01 Manifest where
         then return Nothing
         else do
           ns <- T.decodeUtf8 <$> getByteString (fromIntegral nsLen)
-          h <- getByteString 28
-          pure (Just (ns, h))
+          namespaceEntries <- getWord64be
+          namespaceChunks <- getWord64be
+          namespaceHash <- getByteString 28
+          pure (Just (ns, NamespaceInfo{..}))
     decodeSummary = do
       createdAtLen <- getWord32be
       createdAt <- T.decodeUtf8 <$> getByteString (fromIntegral createdAtLen)
