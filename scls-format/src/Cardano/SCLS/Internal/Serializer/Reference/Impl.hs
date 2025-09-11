@@ -9,6 +9,8 @@ import Cardano.SCLS.Internal.Serializer.Reference.Dump
 import Cardano.Types.Network
 import Cardano.Types.SlotNo
 import Control.Monad.ST (runST)
+import Data.Map.Strict (Map)
+import Data.Map.Strict qualified as Map
 import Data.MemPack
 import Data.Text (Text)
 import Data.Typeable (Typeable)
@@ -31,23 +33,32 @@ serialize ::
   NetworkId ->
   -- | Slot of the current transaction
   SlotNo ->
-  -- | Namespace for the data entries
-  Text ->
   -- | Input stream of entries to serialize, can be unsorted
-  (S.Stream (S.Of a) IO ()) ->
+  (S.Stream (S.Of (Text, S.Stream (S.Of a) IO ())) IO ()) ->
   IO ()
-serialize resultFilePath network slotNo namespace stream = do
+serialize resultFilePath network slotNo stream = do
   withBinaryFile resultFilePath WriteMode \handle -> do
     let hdr = mkHdr network slotNo
-    !orderedStream <- mkVector stream
-    dumpToHandle handle namespace hdr (S.each orderedStream)
+    !orderedStream <- mkVectors stream
+    dumpToHandle handle hdr do
+      DataStream (S.each [n S.:> S.each v | (n, v) <- Map.toList orderedStream])
  where
-  mkVector :: (Ord a) => S.Stream (S.Of a) IO () -> IO (V.Vector a)
+  mkVectors :: (Ord a) => S.Stream (S.Of (Text, S.Stream (S.Of a) IO ())) IO () -> IO (Map Text (V.Vector a))
+  mkVectors = do
+    S.foldM_
+      do
+        \m (ns, vecStream) -> do
+          v <- mkVector vecStream
+          pure $! Map.insertWith (<>) ns v m
+      do pure Map.empty
+      do
+        traverse \builder -> pure $ runST do
+          mv <- Builder.build builder
+          Tim.sort mv
+          V.unsafeFreeze mv
+
+  mkVector :: (Ord a) => S.Stream (S.Of a) IO () -> IO (Builder.Builder a)
   mkVector = S.fold_
     do \x e -> x <> Builder.singleton e
     do Builder.empty
-    do
-      \builder -> runST do
-        mv <- Builder.build builder
-        Tim.sort mv
-        V.unsafeFreeze mv
+    do id

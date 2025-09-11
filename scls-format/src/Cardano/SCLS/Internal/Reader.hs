@@ -1,20 +1,29 @@
 {-# LANGUAGE BlockArguments #-}
+{-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE RecordWildCards #-}
 
 module Cardano.SCLS.Internal.Reader (
   withNamespacedData,
   extractRootHash,
+  extractNamespaceList,
+  extractNamespaceHash,
 ) where
 
 import Cardano.SCLS.Internal.Frame
-import Cardano.SCLS.Internal.Hash (Digest, digestFromByteString, hashDigestSize)
+import Cardano.SCLS.Internal.Hash (Digest)
 import Cardano.SCLS.Internal.Record.Chunk
+import Cardano.SCLS.Internal.Record.Manifest
 import Cardano.SCLS.Internal.Serializer.MemPack
+import Control.Exception (Exception, throwIO)
 import Control.Monad (when)
 import Control.Monad.Trans.Fail
+import Data.Binary.Get
 import Data.ByteString qualified as BS
+import Data.ByteString.Lazy qualified as BSL
 import Data.Foldable (for_)
 import Data.Function (fix)
+import Data.Map.Strict qualified as Map
 import Data.MemPack (MemPack, unpackLeftOver)
 import Data.Text (Text)
 import Data.Typeable
@@ -52,12 +61,31 @@ withNamespacedData filePath namespace f =
 
 This function does not provide additional checks.
 -}
-extractRootHash :: FilePath -> IO (Maybe Digest)
-extractRootHash filePath = do
+extractRootHash :: FilePath -> IO Digest
+extractRootHash = withLatestManifestFrame \Manifest{..} ->
+  pure rootHash
+
+extractNamespaceHash :: Text -> FilePath -> IO (Maybe Digest)
+extractNamespaceHash ns = withLatestManifestFrame \Manifest{..} ->
+  pure (namespaceHash <$> Map.lookup ns nsInfo)
+
+data NotSCLSFile = NotSCLSFile
+  deriving (Show, Typeable, Exception)
+
+withLatestManifestFrame :: (Manifest -> IO r) -> FilePath -> IO r
+withLatestManifestFrame f filePath = do
   IO.withBinaryFile filePath ReadMode \handle -> do
     h <- hFileSize handle
-    hSeek handle AbsoluteSeek (h - fromIntegral hashDigestSize)
-    bs <- BS.hGet handle (fromIntegral hashDigestSize)
-    case digestFromByteString bs of
-      Just d -> pure (Just d)
-      Nothing -> fail "Invalid digest"
+    hSeek handle AbsoluteSeek (h - 4)
+    bs <- BS.hGet handle 4
+    offset <- case runGetOrFail getWord32be (BSL.fromStrict bs) of
+      Right (_, _, d) -> return d
+      Left{} -> throwIO NotSCLSFile
+    frameData <- fetchOffsetFrame handle (FrameView (5 + offset) 0x01 (fromIntegral h - fromIntegral offset - 5))
+    case decodeFrame frameData of
+      Just FrameView{frameViewContent = m@Manifest{}} -> f m
+      Nothing -> throwIO NotSCLSFile
+
+extractNamespaceList :: FilePath -> IO [Text]
+extractNamespaceList = withLatestManifestFrame \Manifest{..} ->
+  pure (Map.keys nsInfo)

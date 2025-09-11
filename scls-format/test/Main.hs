@@ -35,20 +35,20 @@ import Test.HUnit
 import Test.Hspec
 import Test.Hspec.Contrib.HUnit
 
-type SerializeF = FilePath -> NetworkId -> SlotNo -> Text -> S.Stream (S.Of RawBytes) IO () -> IO ()
+import MultiNamespace qualified (tests)
+
+type SerializeF = FilePath -> NetworkId -> SlotNo -> S.Stream (S.Of (Text, S.Stream (S.Of RawBytes) IO ())) IO () -> IO ()
 
 main :: IO ()
 main = do
   hspec $ do
     fromHUnitTest tests
     chunksBuilderTests
+    MultiNamespace.tests
  where
   tests =
     TestList
       [ roundTriptests
-      -- basic tests: network encoding, slot encoding
-      -- test hash of entire content
-      -- test hash of each namespace
       ]
   roundTriptests =
     TestLabel "Roundtrip tests" $
@@ -77,9 +77,7 @@ main = do
           fileName
           Mainnet
           (SlotNo 1)
-          namespace
-          (S.each encoded_data & S.map RawBytes)
-        -- Check roundtrip
+          (S.each [(namespace, S.each encoded_data & S.map RawBytes)])
         withNamespacedData
           fileName
           namespace
@@ -98,4 +96,4 @@ main = do
         assertEqual
           "Root hash roundtrip successful"
           file_digest
-          (Just expected_digest)
+          (Digest $ MT.merkleRootHash $ MT.finalize $ MT.add (MT.empty undefined) expected_digest)

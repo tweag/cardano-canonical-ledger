@@ -26,6 +26,7 @@ main = do
         Just next_record -> do
           putStrLn $ "Has next record at #" ++ show (frameViewContent next_record) ++ " of type:" ++ show (frameRecordType next_record)
           data_record <- fetchOffsetFrame handle next_record
+          putStrLn $ show data_record
           case data_record of
             FrameView{frameRecordType = 0} -> do
               let Just decoded_frame :: Maybe (FrameView Hdr) = decodeFrame data_record
