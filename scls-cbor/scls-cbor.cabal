@@ -21,6 +21,7 @@ library
   import: warnings
   exposed-modules:
     Cardano.SCLS.CBOR.Canonical
+    Cardano.SCLS.CBOR.Canonical.Decoder
 
   -- other-modules:
   -- other-extensions:
@@ -29,7 +30,8 @@ library
     bytestring,
     cborg,
     containers,
-    scls-format
+    scls-format,
+    text
 
   hs-source-dirs: src
   default-language: GHC2021
