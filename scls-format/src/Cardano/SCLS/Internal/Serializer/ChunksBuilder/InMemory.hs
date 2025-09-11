@@ -23,7 +23,7 @@ module Cardano.SCLS.Internal.Serializer.ChunksBuilder.InMemory (
 import Cardano.SCLS.Internal.Record.Chunk
 import Cardano.SCLS.Internal.Serializer.MemPack
 import Control.Monad.Primitive
-import Crypto.Hash (Blake2b_160 (Blake2b_160))
+import Crypto.Hash (Blake2b_224 (Blake2b_224))
 import Crypto.Hash.MerkleTree.Incremental qualified as MT
 import Data.ByteString (ByteString)
 import Data.MemPack
@@ -125,7 +125,7 @@ mkMachine bufferSize format@ChunkFormatRaw = do
                           , [ChunkItem{chunkItemFormat = format, chunkItemData = frozenBuffer, chunkItemEntriesCount = entriesCount}]
                           )
           }
-  return $! machine 0 0 (MT.empty Blake2b_160)
+  return $! machine 0 0 (MT.empty Blake2b_224)
 
 {- | Freeze a bytearray to the pinned immutable bytearray by copying its contents.
 

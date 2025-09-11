@@ -15,7 +15,7 @@ module Cardano.SCLS.Internal.Record.Chunk (
   mkChunk,
 ) where
 
-import Crypto.Hash (Blake2b_160, Digest, HashAlgorithm (hashDigestSize), digestFromByteString, hash, hashDigestSize)
+import Crypto.Hash (Blake2b_224, Digest, HashAlgorithm (hashDigestSize), digestFromByteString, hash, hashDigestSize)
 import Data.Binary (Binary (..))
 import Data.Binary.Get (getByteString, getWord32be, getWord64be, getWord8)
 import Data.Binary.Put
@@ -27,7 +27,7 @@ import Data.Word (Word32, Word64)
 
 import Cardano.SCLS.Internal.Record.Internal.Class
 
-newtype ChunkDigest = ChunkDigest (Digest Blake2b_160)
+newtype ChunkDigest = ChunkDigest (Digest Blake2b_224)
   deriving (Show)
 
 data ChunkFormat
@@ -82,7 +82,7 @@ instance Show DebugChunk where
 instance Binary ChunkDigest where
   put (ChunkDigest digest) = putByteString (BA.convert digest)
   get = do
-    bytes <- getByteString (hashDigestSize (undefined :: Blake2b_160))
+    bytes <- getByteString (hashDigestSize (undefined :: Blake2b_224))
     case digestFromByteString bytes of
       Nothing -> fail "Invalid digest"
       Just d -> pure (ChunkDigest d)
