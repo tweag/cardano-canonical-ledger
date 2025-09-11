@@ -30,7 +30,7 @@ import System.IO.Temp (withSystemTempDirectory)
 import System.Random.Stateful (applyAtomicGen, globalStdGen)
 import Test.HUnit
 
-type SerializeF = FilePath -> NetworkId -> SlotNo -> Text -> S.Stream (S.Of RawBytes) IO () -> IO ()
+type SerializeF = FilePath -> NetworkId -> SlotNo -> S.Stream (S.Of (Text, S.Stream (S.Of RawBytes) IO ())) IO () -> IO ()
 
 main :: IO ()
 main = runTestTTAndExit tests
@@ -69,8 +69,7 @@ main = runTestTTAndExit tests
           fileName
           Mainnet
           (SlotNo 1)
-          namespace
-          (S.each encoded_data & S.map RawBytes)
+          (S.each [(namespace, S.each encoded_data & S.map RawBytes)])
         withNamespacedData
           fileName
           namespace
