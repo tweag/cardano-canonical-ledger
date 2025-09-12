@@ -20,6 +20,7 @@ module Cardano.SCLS.Internal.Serializer.ChunksBuilder.InMemory (
   ChunkItem (..),
 ) where
 
+import Cardano.SCLS.Internal.Hash
 import Cardano.SCLS.Internal.Record.Chunk
 import Cardano.SCLS.Internal.Serializer.MemPack
 import Control.Monad.Primitive
@@ -52,7 +53,7 @@ data Command type_ where
   --
   --     It's up to the implementation if the state machine can be used
   --     after interpreting this command.
-  Finalize :: Command ((MT.MerkleHash Blake2b_224), Maybe ChunkItem)
+  Finalize :: Command (Digest, Maybe ChunkItem)
 
 {- | State machine for building chunks in memory.
 
@@ -86,7 +87,7 @@ mkMachine bufferSize format@ChunkFormatRaw = do
         BuilderMachine
           { interpretCommand = \case
               Finalize -> do
-                let final = MT.merkleRootHash $ MT.finalize merkleTreeState
+                let final = Digest $ MT.merkleRootHash $ MT.finalize merkleTreeState
                 if offset == 0 -- no new data, nothing to emit
                   then
                     pure (final, Nothing)

@@ -11,9 +11,9 @@ module Cardano.SCLS.Internal.Record.Manifest (
   ManifestSummary (..),
 ) where
 
+import Data.Binary (get, put)
 import Data.Binary.Get (getByteString, getWord32be, getWord64be, getWord8)
 import Data.Binary.Put
-import Data.ByteArray qualified as BA
 import Data.ByteString qualified as BS
 import Data.Foldable (traverse_)
 import Data.Function (fix)
@@ -22,9 +22,8 @@ import Data.Text (Text)
 import Data.Text.Encoding qualified as T
 import Data.Word
 
+import Cardano.SCLS.Internal.Hash
 import Cardano.SCLS.Internal.Record.Internal.Class
-import Crypto.Hash (Blake2b_224, HashAlgorithm (hashDigestSize), digestFromByteString)
-import Crypto.Hash.MerkleTree.Incremental (MerkleHash)
 
 -- | Manifest summary information
 data ManifestSummary = ManifestSummary
@@ -43,9 +42,9 @@ data Manifest = Manifest
   -- ^ number of entries
   , totalChunks :: Word64
   -- ^ number of chunks
-  , rootHash :: MerkleHash Blake2b_224
+  , rootHash :: Digest
   -- ^ multihash of root entry
-  , nsRoots :: Map.Map Text (MerkleHash Blake2b_224)
+  , nsRoots :: Map.Map Text Digest
   -- ^ map from namespace to multihash
   , prevManifestOffset :: Word64
   -- ^ offset of previous manifest
@@ -62,16 +61,13 @@ instance IsFrameRecord 0x01 Manifest where
     traverse_ putNsRoot (Map.toList nsRoots)
     putWord32be 0
     putWord64be prevManifestOffset
-    putMerkleHash rootHash
+    put rootHash
    where
-    putMerkleHash h = do
-      putWord32be $ fromIntegral $ hashDigestSize (undefined :: Blake2b_224)
-      putByteString $ BA.convert $ h
     putNsRoot (ns, h) = do
       let nsBytes = T.encodeUtf8 ns
       putWord32be (fromIntegral $ BS.length nsBytes)
       putByteString nsBytes
-      putMerkleHash h
+      put h
     encodeSummary ManifestSummary{..} = do
       let createdAtBytes = T.encodeUtf8 createdAt
           toolBytes = T.encodeUtf8 tool
@@ -94,22 +90,16 @@ instance IsFrameRecord 0x01 Manifest where
           Nothing -> pure current
           Just n -> next (n : current)
     prevManifestOffset <- getWord64be
-    rootHash <- getMerkleHash
+    rootHash <- get
     pure Manifest{..}
    where
-    getMerkleHash = do
-      len <- getWord32be
-      bs <- getByteString (fromIntegral len)
-      case digestFromByteString bs of
-        Nothing -> fail $ "Failed to parse MerkleHash from ByteString"
-        Just h -> pure h
     getNsRoot = do
       nsLen <- getWord32be
       if nsLen == 0
         then return Nothing
         else do
           ns <- T.decodeUtf8 <$> getByteString (fromIntegral nsLen)
-          h <- getMerkleHash
+          h <- get
           pure (Just (ns, h))
     decodeSummary = do
       createdAtLen <- getWord32be
