@@ -27,17 +27,11 @@ import Control.Monad.Primitive
 import Crypto.Hash (Blake2b_224 (Blake2b_224))
 import Crypto.Hash.MerkleTree.Incremental qualified as MT
 import Data.MemPack
+
 import Data.Primitive.ByteArray
 import Data.Typeable
 import Foreign.Ptr
 import Unsafe.Coerce (unsafeCoerce)
-
--- merkleUpdate :: (Buffer u) => Digest -> u -> Digest
--- merkleUpdate d u =
---   Buffer.buffer
---     u
---     (\bytes -> hashUpdate d (pinnedByteArrayToByteString (ByteArray bytes)))
---     (\addr -> hashUpdate d (unsafePackLenLiteral (bufferByteCount u) addr))
 
 data ChunkItem = ChunkItem
   { chunkItemFormat :: ChunkFormat
