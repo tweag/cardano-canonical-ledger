@@ -13,6 +13,7 @@ module Cardano.SCLS.Internal.Serializer.MemPack (
 import Control.Monad.Reader
 import Control.Monad.State.Class
 import Control.Monad.Trans.Fail
+import Data.ByteArray (ByteArrayAccess, length, withByteArray)
 import Data.ByteString (ByteString)
 import Data.ByteString qualified as BS
 import Data.MemPack
@@ -122,3 +123,8 @@ instance Buffer CStringLenBuffer where
   bufferByteCount (CStringLenBuffer (_, l)) = l
   buffer (CStringLenBuffer (ptr, off)) _ withAddr =
     withAddr (case ptr `plusPtr` off of Ptr addr -> addr)
+
+instance ByteArrayAccess CStringLenBuffer where
+  length (CStringLenBuffer (_, l)) = l
+  withByteArray (CStringLenBuffer (ptr, off)) f =
+    f (ptr `plusPtr` off)
