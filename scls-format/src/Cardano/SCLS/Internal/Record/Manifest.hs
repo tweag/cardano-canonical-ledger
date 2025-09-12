@@ -43,7 +43,7 @@ data Manifest = Manifest
   , totalChunks :: Word64
   -- ^ number of chunks
   , rootHash :: Digest
-  -- ^ multihash of root entry
+  -- ^ hash of root entry
   , nsRoots :: Map.Map Text Digest
   -- ^ map from namespace to multihash
   , prevManifestOffset :: Word64
