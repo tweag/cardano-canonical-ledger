@@ -12,7 +12,8 @@ import Cardano.SCLS.Internal.Record.Chunk
 import Cardano.SCLS.Internal.Record.Hdr
 import Cardano.SCLS.Internal.Record.Manifest
 import Cardano.SCLS.Internal.Serializer.ChunksBuilder.InMemory
-import Data.ByteString (ByteString)
+import Crypto.Hash (Blake2b_224)
+import Crypto.Hash.MerkleTree.Incremental (MerkleHash)
 import Data.Function ((&))
 import Data.Map qualified as Map
 import Data.MemPack
@@ -35,7 +36,7 @@ import System.IO (Handle)
 dumpToHandle :: (MemPack a, Typeable a) => Handle -> T.Text -> Hdr -> Stream (Of a) IO () -> IO ()
 dumpToHandle handle namespace hdr orderedStream = do
   _ <- hWriteFrame handle hdr
-  manifestData :: Of Int (Of Int ByteString) <-
+  manifestData :: Of Int (Of Int (MerkleHash Blake2b_224)) <-
     orderedStream -- output our sorted stream
       & constructChunks_ -- compose entries into data for chunks records, returns digest of entries
       & S.copy
@@ -68,14 +69,14 @@ constructChunks_ ::
   forall a r.
   (MemPack a, Typeable a) =>
   Stream (Of a) IO r ->
-  Stream (Of ChunkItem) IO ByteString
+  Stream (Of ChunkItem) IO (MerkleHash Blake2b_224)
 constructChunks_ s0 = liftIO initialize >>= consume s0
  where
   initialize = mkMachine (16 * 1024 * 1024) ChunkFormatRaw -- TODO: allow configuration of buffer size and format
   consume ::
     Stream (Of a) IO r ->
     BuilderMachine ->
-    Stream (Of ChunkItem) IO ByteString
+    Stream (Of ChunkItem) IO (MerkleHash Blake2b_224)
   consume s1 machine = do
     case s1 of
       Return{} ->
@@ -89,7 +90,7 @@ constructChunks_ s0 = liftIO initialize >>= consume s0
             S.each chunks
             consume rest machine'
 
-mkManifest :: Text -> Of Int (Of Int ByteString) -> IO Manifest
+mkManifest :: Text -> Of Int (Of Int (MerkleHash Blake2b_224)) -> IO Manifest
 mkManifest namespace ((fromIntegral -> totalEntries) S.:> ((fromIntegral -> totalChunks) S.:> rootHash)) = do
   pure
     Manifest

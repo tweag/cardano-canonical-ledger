@@ -25,7 +25,6 @@ import Cardano.SCLS.Internal.Serializer.MemPack
 import Control.Monad.Primitive
 import Crypto.Hash (Blake2b_224 (Blake2b_224))
 import Crypto.Hash.MerkleTree.Incremental qualified as MT
-import Data.ByteString (ByteString)
 import Data.MemPack
 import Data.Primitive.ByteArray
 import Data.Typeable
@@ -53,7 +52,7 @@ data Command type_ where
   --
   --     It's up to the implementation if the state machine can be used
   --     after interpreting this command.
-  Finalize :: Command (ByteString, Maybe ChunkItem)
+  Finalize :: Command ((MT.MerkleHash Blake2b_224), Maybe ChunkItem)
 
 {- | State machine for building chunks in memory.
 
@@ -87,7 +86,7 @@ mkMachine bufferSize format@ChunkFormatRaw = do
         BuilderMachine
           { interpretCommand = \case
               Finalize -> do
-                let final = MT.encodeMerkleHashHex $ MT.merkleRootHash $ MT.finalize merkleTreeState
+                let final = MT.merkleRootHash $ MT.finalize merkleTreeState
                 if offset == 0 -- no new data, nothing to emit
                   then
                     pure (final, Nothing)
