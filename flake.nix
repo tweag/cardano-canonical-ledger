@@ -6,7 +6,12 @@
     url = "github:cachix/pre-commit-hooks.nix";
     inputs.nixpkgs.follows = "nixpkgs";
   };
-  outputs = { self, nixpkgs, flake-utils, haskellNix, pre-commit-hooks }:
+  inputs.treefmt-nix = {
+    url = "github:numtide/treefmt-nix";
+    inputs.nixpkgs.follows = "nixpkgs";
+  };
+  outputs =
+    { self, nixpkgs, flake-utils, haskellNix, pre-commit-hooks, treefmt-nix }:
     let
       supportedSystems =
         [ "x86_64-linux" "x86_64-darwin" "aarch64-linux" "aarch64-darwin" ];
@@ -35,6 +40,7 @@
             cabal-gild.enable = true;
           };
         };
+        treefmtEval = treefmt-nix.lib.evalModule pkgs ./nix/treefmt.nix;
       in flake // {
         legacyPackages = pkgs;
         checks = { pre-commit-check = pre-commit-check; };
@@ -45,6 +51,7 @@
               ++ pre-commit-check.enabledPackages;
           });
         };
+        formatter = treefmtEval.config.build.wrapper;
       });
 
   # --- Flake Local Nix Configuration ----------------------------
