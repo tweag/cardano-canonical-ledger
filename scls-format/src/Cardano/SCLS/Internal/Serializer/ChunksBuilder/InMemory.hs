@@ -103,7 +103,7 @@ mkMachine bufferSize format@ChunkFormatRaw = do
                     if l > bufferSize
                       then do
                         let tmpBuffer = pack entry
-                            merkleTreeState' = MT.add merkleTreeState (CStringLenBuffer (mutableByteArrayContents storage `plusPtr` offset, l))
+                            merkleTreeState' = MT.add merkleTreeState (CStringLenBuffer (byteArrayContents tmpBuffer `plusPtr` 0, l))
                         return
                           ( machine 0 0 merkleTreeState'
                           ,
