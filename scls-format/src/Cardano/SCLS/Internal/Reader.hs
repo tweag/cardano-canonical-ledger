@@ -3,9 +3,11 @@
 
 module Cardano.SCLS.Internal.Reader (
   withNamespacedData,
+  extractRootHash,
 ) where
 
 import Cardano.SCLS.Internal.Frame
+import Cardano.SCLS.Internal.Hash (Digest, digestFromByteString, hashDigestSize)
 import Cardano.SCLS.Internal.Record.Chunk
 import Cardano.SCLS.Internal.Serializer.MemPack
 import Control.Monad (when)
@@ -45,3 +47,17 @@ withNamespacedData filePath namespace f =
                     S.yield userData
                     drain rest
         go next_record
+
+{- | Extract the root hash from the file at the give offset.
+
+This function does not provide additinal checks.
+-}
+extractRootHash :: FilePath -> IO (Maybe Digest)
+extractRootHash filePath = do
+  IO.withBinaryFile filePath ReadMode \handle -> do
+    h <- hFileSize handle
+    hSeek handle AbsoluteSeek (h - fromIntegral hashDigestSize)
+    bs <- BS.hGet handle (fromIntegral hashDigestSize)
+    case digestFromByteString bs of
+      Just d -> pure (Just d)
+      Nothing -> fail "Invalid digest"
