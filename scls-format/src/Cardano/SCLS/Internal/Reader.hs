@@ -48,9 +48,9 @@ withNamespacedData filePath namespace f =
                     drain rest
         go next_record
 
-{- | Extract the root hash from the file at the give offset.
+{- | Extract the root hash from the file at the given offset.
 
-This function does not provide additinal checks.
+This function does not provide additional checks.
 -}
 extractRootHash :: FilePath -> IO (Maybe Digest)
 extractRootHash filePath = do
