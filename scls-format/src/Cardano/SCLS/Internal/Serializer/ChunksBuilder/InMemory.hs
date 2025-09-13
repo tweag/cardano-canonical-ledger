@@ -93,19 +93,16 @@ mkMachine bufferSize format@ChunkFormatRaw = do
                 let l = packedByteCount entry
                 if offset + l <= bufferSize -- if we fit the current buffer we just need to write data and continue
                   then do
-                    newOffset <- unsafeAppendToBuffer storage offset entry
-                    merkleTreeState' <- withMutableByteArrayContents storage $ \ptr -> do
-                      let csb = CStringLenBuffer (ptr `plusPtr` (offset + 4), l - 4)
-                      return $! MT.add merkleTreeState csb
+                    (merkleTreeState', newOffset) <-
+                      unsafeAppendEntryToBuffer merkleTreeState storage offset entry
                     pure (machine (entriesCount + 1) newOffset merkleTreeState', [])
                   else do
                     -- We have no space in the current buffer, so we need to emit it first
                     frozenBuffer <- freezeByteArrayPinned storage 0 offset
                     if l > bufferSize
                       then do
-                        let tmpBuffer = pack entry
-                            csb = CStringLenBuffer (byteArrayContents tmpBuffer `plusPtr` 0, l)
-                            merkleTreeState' = MT.add merkleTreeState csb
+                        let !tmpBuffer = pack entry
+                            !merkleTreeState' = MT.add merkleTreeState (uncheckedByteArrayEntryContents tmpBuffer)
                         return
                           ( machine 0 0 merkleTreeState'
                           ,
@@ -114,9 +111,8 @@ mkMachine bufferSize format@ChunkFormatRaw = do
                             ]
                           )
                       else do
-                        newOffset <- unsafeAppendToBuffer storage 0 entry
-                        let scb = CStringLenBuffer (mutableByteArrayContents storage `plusPtr` (offset + 4), l - 4)
-                            merkleTreeState' = MT.add merkleTreeState scb
+                        (merkleTreeState', newOffset) <-
+                          unsafeAppendEntryToBuffer merkleTreeState storage offset entry
                         pure
                           ( machine 1 newOffset merkleTreeState'
                           , [ChunkItem{chunkItemFormat = format, chunkItemData = frozenBuffer, chunkItemEntriesCount = entriesCount}]
@@ -133,6 +129,22 @@ freezeByteArrayPinned !src !off !len = do
   dst <- newPinnedByteArray len
   copyMutableByteArray dst 0 src off len
   unsafeFreezeByteArray dst
+
+unsafeAppendEntryToBuffer :: (MemPack u, Typeable u) => MT.MerkleTreeState Blake2b_224 -> MutableByteArray (PrimState IO) -> Int -> Entry u -> IO (MT.MerkleTreeState Blake2b_224, Int)
+unsafeAppendEntryToBuffer !merkleTreeState !storage !offset u = do
+  newOffset <- unsafeAppendToBuffer storage offset u
+  let l = newOffset - offset
+  merkleTreeState' <- withMutableByteArrayContents storage $ \ptr -> do
+    let csb = CStringLenBuffer (ptr `plusPtr` (offset + 4), l - 4)
+    return $! MT.add merkleTreeState csb
+  return (merkleTreeState', newOffset)
+
+{- | Helper to get access to the entry contents.
+This method should be used on the pinned 'ByteArray' only, but the function does
+not enforce this.
+-}
+uncheckedByteArrayEntryContents :: ByteArray -> CStringLenBuffer
+uncheckedByteArrayEntryContents !buffer = CStringLenBuffer (byteArrayContents buffer `plusPtr` 4, sizeofByteArray buffer - 4)
 
 {- | Unsafe helper that we need because MemPack interface only allows ST, and
 no other PrimMonad.
