@@ -25,7 +25,7 @@ import Streaming.Prelude qualified as S
 -- | Stream all data chunks for the given namespace.
 withNamespacedData :: (MemPack u, Typeable u) => FilePath -> Text -> (S.Stream (S.Of u) IO () -> IO a) -> IO a
 withNamespacedData filePath namespace f =
-  IO.withFile filePath ReadMode \handle -> f (stream handle)
+  IO.withBinaryFile filePath ReadMode \handle -> f (stream handle)
  where
   stream handle = do
     flip fix headerOffset \go record -> do

@@ -15,7 +15,7 @@ import Data.Typeable (Typeable)
 import Data.Vector qualified as V
 import Data.Vector.Algorithms.Tim qualified as Tim
 import Streaming.Prelude qualified as S
-import System.IO (IOMode (WriteMode), withFile)
+import System.IO (IOMode (WriteMode), withBinaryFile)
 import VectorBuilder.Builder qualified as Builder
 import VectorBuilder.MVector qualified as Builder
 
@@ -37,7 +37,7 @@ serialize ::
   (S.Stream (S.Of a) IO ()) ->
   IO ()
 serialize resultFilePath network slotNo namespace stream = do
-  withFile resultFilePath WriteMode \handle -> do
+  withBinaryFile resultFilePath WriteMode \handle -> do
     let hdr = mkHdr network slotNo
     !orderedStream <- mkVector stream
     dumpToHandle handle namespace hdr (S.each orderedStream)

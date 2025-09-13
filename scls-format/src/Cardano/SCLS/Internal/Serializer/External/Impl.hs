@@ -29,7 +29,7 @@ import Streaming.Prelude qualified as S
 import System.ByteOrder
 import System.Directory (listDirectory)
 import System.FilePath (takeDirectory, (<.>), (</>))
-import System.IO (IOMode (ReadMode, WriteMode), hClose, openFile, withFile)
+import System.IO (IOMode (ReadMode, WriteMode), hClose, openBinaryFile, withBinaryFile)
 import System.IO.Temp (withTempDirectory)
 import VectorBuilder.Builder qualified as Builder
 import VectorBuilder.MVector qualified as Builder
@@ -51,7 +51,7 @@ serialize resultFilePath network slotNo namespace stream = do
   withTempDirectory (takeDirectory resultFilePath) "tmp.XXXXXX" \tmpDir -> do
     prepareExternalSort tmpDir stream
     let !hdr = mkHdr network slotNo
-    withFile resultFilePath WriteMode \handle -> do
+    withBinaryFile resultFilePath WriteMode \handle -> do
       kMerge tmpDir do dumpToHandle handle namespace hdr
 
 {- | Simple version of the preparation step for external sorting.
@@ -67,7 +67,7 @@ prepareExternalSort tmpDir stream =
     & S.mapped mkVector
     & S.zip (S.enumFrom 1)
     & S.mapM_ \(n, vec) -> do
-      withFile (tmpDir </> "chunk" <.> show (n :: Int) <.> "bin") WriteMode \h -> do
+      withBinaryFile (tmpDir </> "chunk" <.> show (n :: Int) <.> "bin") WriteMode \h -> do
         S.each vec
           & S.map (packByteString . Entry)
           & S.mapM_ (liftIO . B.hPut h)
@@ -87,7 +87,7 @@ kMerge tmpDir f = do
     pq <- mkPQ handles
     f (loop pq)
  where
-  openAll = listDirectory tmpDir >>= mapM (\t -> openFile (tmpDir </> t) ReadMode)
+  openAll = listDirectory tmpDir >>= mapM (\t -> openBinaryFile (tmpDir </> t) ReadMode)
   closeAll = mapM hClose
   mkPQ tt = do
     pairs <- mapM (\h -> (,) <$> (readNext h) <*> pure h) tt
