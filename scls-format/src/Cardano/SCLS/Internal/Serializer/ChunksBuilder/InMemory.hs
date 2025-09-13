@@ -94,8 +94,9 @@ mkMachine bufferSize format@ChunkFormatRaw = do
                 if offset + l <= bufferSize -- if we fit the current buffer we just need to write data and continue
                   then do
                     newOffset <- unsafeAppendToBuffer storage offset entry
-                    merkleTreeState' <- withMutableByteArrayContents storage $ \ptr ->
-                      pure $! MT.add merkleTreeState (CStringLenBuffer (ptr `plusPtr` offset, l))
+                    merkleTreeState' <- withMutableByteArrayContents storage $ \ptr -> do
+                      let csb = CStringLenBuffer (ptr `plusPtr` (offset + 4), l - 4)
+                      return $! MT.add merkleTreeState csb
                     pure (machine (entriesCount + 1) newOffset merkleTreeState', [])
                   else do
                     -- We have no space in the current buffer, so we need to emit it first
@@ -103,7 +104,8 @@ mkMachine bufferSize format@ChunkFormatRaw = do
                     if l > bufferSize
                       then do
                         let tmpBuffer = pack entry
-                            merkleTreeState' = MT.add merkleTreeState (CStringLenBuffer (byteArrayContents tmpBuffer `plusPtr` 0, l))
+                            csb = CStringLenBuffer (byteArrayContents tmpBuffer `plusPtr` 0, l)
+                            merkleTreeState' = MT.add merkleTreeState csb
                         return
                           ( machine 0 0 merkleTreeState'
                           ,
@@ -113,7 +115,8 @@ mkMachine bufferSize format@ChunkFormatRaw = do
                           )
                       else do
                         newOffset <- unsafeAppendToBuffer storage 0 entry
-                        let merkleTreeState' = MT.add merkleTreeState (CStringLenBuffer (mutableByteArrayContents storage `plusPtr` offset, l))
+                        let scb = CStringLenBuffer (mutableByteArrayContents storage `plusPtr` (offset + 4), l - 4)
+                            merkleTreeState' = MT.add merkleTreeState scb
                         pure
                           ( machine 1 newOffset merkleTreeState'
                           , [ChunkItem{chunkItemFormat = format, chunkItemData = frozenBuffer, chunkItemEntriesCount = entriesCount}]
