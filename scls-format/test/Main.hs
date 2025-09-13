@@ -1,7 +1,8 @@
 module Main (main) where
 
 import Cardano.SCLS.CDDL (namespaces)
-import Cardano.SCLS.Internal.Reader (withNamespacedData)
+import Cardano.SCLS.Internal.Hash (Digest (..))
+import Cardano.SCLS.Internal.Reader (extractRootHash, withNamespacedData)
 import Cardano.SCLS.Internal.Serializer.External.Impl qualified as External (serialize)
 import Cardano.SCLS.Internal.Serializer.MemPack
 import Cardano.SCLS.Internal.Serializer.Reference.Impl qualified as Reference (serialize)
@@ -19,6 +20,7 @@ import Codec.CBOR.Cuddle.Huddle
 import Codec.CBOR.Term (encodeTerm)
 import Codec.CBOR.Write (toStrictByteString)
 import Control.Monad (replicateM)
+import Crypto.Hash.MerkleTree.Incremental qualified as MT
 import Data.Function ((&))
 import Data.List (sort)
 import Data.Map.Strict qualified as Map
@@ -71,6 +73,7 @@ main = runTestTTAndExit tests
           (SlotNo 1)
           namespace
           (S.each encoded_data & S.map RawBytes)
+        -- Check roundtrip
         withNamespacedData
           fileName
           namespace
@@ -81,3 +84,12 @@ main = runTestTTAndExit tests
                 [b | RawBytes b <- decoded_data]
                 (sort encoded_data)
           )
+        -- Check roundtrip of root hash
+        file_digest <- extractRootHash fileName
+        expected_digest <-
+          S.each (sort encoded_data)
+            & S.fold_ MT.add (MT.empty undefined) (Digest . MT.merkleRootHash . MT.finalize)
+        assertEqual
+          "Root hash roundtrip successful"
+          file_digest
+          (Just expected_digest)
