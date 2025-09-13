@@ -1,5 +1,6 @@
 module Crypto.Hash.MerkleTree.Incremental (
   MerkleTree (..),
+  MerkleTreeState,
   MerkleHash,
   merkleRootHash,
   encodeMerkleHashHex,
