@@ -22,6 +22,7 @@ library
   import: warnings
   exposed-modules:
     Cardano.SCLS.Internal.Frame
+    Cardano.SCLS.Internal.Hash
     Cardano.SCLS.Internal.Reader
     Cardano.SCLS.Internal.Record.Chunk
     Cardano.SCLS.Internal.Record.Hdr
@@ -63,6 +64,7 @@ library
     filepath,
     memory,
     mempack,
+    merkle-tree-incremental,
     mtl,
     pqueue,
     primitive,
@@ -121,6 +123,7 @@ test-suite scls-format-test
     containers,
     cuddle >=0.5,
     filepath,
+    merkle-tree-incremental,
     random >=1.2,
     scls-cddl,
     scls-format,
