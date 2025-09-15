@@ -30,7 +30,7 @@ class ToCanonicalCBOR (v :: Version) a where
   toCanonicalCBOR :: proxy v -> a -> Encoding
 
 --------------------------------------------------------------------------------
--- Encoding etc
+-- Encoding, Term etc
 --------------------------------------------------------------------------------
 
 instance ToCanonicalCBOR v Encoding where
