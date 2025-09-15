@@ -43,7 +43,10 @@
         treefmtEval = treefmt-nix.lib.evalModule pkgs ./nix/treefmt.nix;
       in flake // {
         legacyPackages = pkgs;
-        checks = { pre-commit-check = pre-commit-check; };
+        checks = {
+          pre-commit-check = pre-commit-check;
+          formatting = treefmtEval.${pkgs.system}.config.build.check self;
+        };
         devShells = {
           default = flake.devShells.default.overrideAttrs (oldAttrs: {
             inherit (pre-commit-check) shellHook;
