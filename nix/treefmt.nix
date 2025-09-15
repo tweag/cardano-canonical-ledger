@@ -1,8 +1,14 @@
 { pkgs, ... }: {
   # Used to find the project root
   projectRootFile = "flake.nix";
-  # Enable the fourmolu formatter
-  programs.fourmolu.enable = true;
+
   programs.nixfmt-classic.enable = true;
+
+  programs.fourmolu.enable = true;
+  programs.fourmolu.package =
+    pkgs.haskell-nix.tool "ghc910" "fourmolu" "latest";
+
   programs.cabal-gild.enable = true;
+  programs.cabal-gild.package =
+    pkgs.haskell-nix.tool "ghc910" "cabal-gild" "latest";
 }
