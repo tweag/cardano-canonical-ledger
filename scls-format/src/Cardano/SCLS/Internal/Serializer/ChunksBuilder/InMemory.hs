@@ -112,7 +112,7 @@ mkMachine bufferSize format@ChunkFormatRaw = do
                           )
                       else do
                         (merkleTreeState', newOffset) <-
-                          unsafeAppendEntryToBuffer merkleTreeState storage offset entry
+                          unsafeAppendEntryToBuffer merkleTreeState storage 0 entry
                         pure
                           ( machine 1 newOffset merkleTreeState'
                           , [ChunkItem{chunkItemFormat = format, chunkItemData = frozenBuffer, chunkItemEntriesCount = entriesCount}]
