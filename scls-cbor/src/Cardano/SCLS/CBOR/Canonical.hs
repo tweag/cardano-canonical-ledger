@@ -30,7 +30,7 @@ class ToCanonicalCBOR (v :: Version) a where
   toCanonicalCBOR :: proxy v -> a -> Encoding
 
 --------------------------------------------------------------------------------
--- Encoding etc
+-- Encoding, Term etc
 --------------------------------------------------------------------------------
 
 instance ToCanonicalCBOR v Encoding where
@@ -233,8 +233,9 @@ instance
   (ToCanonicalCBOR v k, ToCanonicalCBOR v val) =>
   ToCanonicalCBOR v (Map.Map k val)
   where
-  toCanonicalCBOR v m = E.encodeMapLenIndef <>
-    Map.foldrWithKey
-      (\k val b -> toCanonicalCBOR v k <> toCanonicalCBOR v val <> b)
-      E.encodeBreak
-      m
+  toCanonicalCBOR v m =
+    E.encodeMapLenIndef
+      <> Map.foldrWithKey
+        (\k val b -> toCanonicalCBOR v k <> toCanonicalCBOR v val <> b)
+        E.encodeBreak
+        m

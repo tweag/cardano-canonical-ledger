@@ -1,5 +1,4 @@
 {
-  # This is a template created by `hix init`
   inputs.haskellNix.url = "github:input-output-hk/haskell.nix";
   inputs.nixpkgs.follows = "haskellNix/nixpkgs-unstable";
   inputs.flake-utils.url = "github:numtide/flake-utils";
@@ -7,7 +6,12 @@
     url = "github:cachix/pre-commit-hooks.nix";
     inputs.nixpkgs.follows = "nixpkgs";
   };
-  outputs = { self, nixpkgs, flake-utils, haskellNix, pre-commit-hooks }:
+  inputs.treefmt-nix = {
+    url = "github:numtide/treefmt-nix";
+    inputs.nixpkgs.follows = "nixpkgs";
+  };
+  outputs =
+    { self, nixpkgs, flake-utils, haskellNix, pre-commit-hooks, treefmt-nix }:
     let
       supportedSystems =
         [ "x86_64-linux" "x86_64-darwin" "aarch64-linux" "aarch64-darwin" ];
@@ -32,13 +36,21 @@
           src = ./.;
           hooks = {
             fourmolu.enable = true;
+            fourmolu.package =
+              pkgs.haskell-nix.tool "ghc910" "fourmolu" "latest";
             nixfmt-classic.enable = true;
             cabal-gild.enable = true;
+            cabal-gild.package =
+              pkgs.haskell-nix.tool "ghc910" "cabal-gild" "latest";
           };
         };
+        treefmtEval = treefmt-nix.lib.evalModule pkgs ./nix/treefmt.nix;
       in flake // {
         legacyPackages = pkgs;
-        checks = { pre-commit-check = pre-commit-check; };
+        checks = {
+          pre-commit-check = pre-commit-check;
+          formatting = treefmtEval.${pkgs.system}.config.build.check self;
+        };
         devShells = {
           default = flake.devShells.default.overrideAttrs (oldAttrs: {
             inherit (pre-commit-check) shellHook;
@@ -46,6 +58,7 @@
               ++ pre-commit-check.enabledPackages;
           });
         };
+        formatter = treefmtEval.config.build.wrapper;
       });
 
   # --- Flake Local Nix Configuration ----------------------------
