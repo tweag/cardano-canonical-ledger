@@ -60,10 +60,11 @@ data ChunkItem = ChunkItem
 data Command type_ where
   -- | Append a new item to the buffer.
   Append :: (MemPack u, Typeable u) => u -> Command (BuilderMachine, [ChunkItem])
-  -- | Finalize building of the buffer. Calling this command does not
-  --
-  --     It's up to the implementation if the state machine can be used
-  --     after interpreting this command.
+  {- | Finalize building of the buffer. Calling this command does not
+
+    It's up to the implementation if the state machine can be used
+    after interpreting this command.
+  -}
   Finalize :: Command (ByteString, Maybe ChunkItem)
 
 {- | State machine for building chunks in memory.

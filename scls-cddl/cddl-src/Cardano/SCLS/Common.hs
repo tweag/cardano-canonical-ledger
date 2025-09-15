@@ -17,6 +17,7 @@ import Data.Int (Int64)
 import Data.Word
 import GHC.Integer (Integer)
 import GHC.Real (Integral (toInteger))
+
 -- after drop of the GHC-9.10 we can switch to Data.Bounded
 import Text.Heredoc
 import Prelude (Bounded (..))
