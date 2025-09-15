@@ -11,24 +11,19 @@ module Cardano.SCLS.Internal.Record.Chunk (
   Chunk (..),
   ChunkFormat (..),
   DebugChunk (..),
-  ChunkDigest (..),
   mkChunk,
 ) where
 
-import Crypto.Hash (Blake2b_160, Digest, HashAlgorithm (hashDigestSize), digestFromByteString, hash, hashDigestSize)
 import Data.Binary (Binary (..))
 import Data.Binary.Get (getByteString, getWord32be, getWord64be, getWord8)
 import Data.Binary.Put
-import Data.ByteArray qualified as BA
 import Data.ByteString qualified as BS
 import Data.Text (Text)
 import Data.Text.Encoding qualified as T
 import Data.Word (Word32, Word64)
 
+import Cardano.SCLS.Internal.Hash
 import Cardano.SCLS.Internal.Record.Internal.Class
-
-newtype ChunkDigest = ChunkDigest (Digest Blake2b_160)
-  deriving (Show)
 
 data ChunkFormat
   = -- | Entries are stored uncompressed
@@ -58,7 +53,7 @@ data Chunk = Chunk
   , chunkNamespace :: Text
   , chunkData :: BS.ByteString -- Use buffer instead (?) or even values generator
   , chunkEntriesCount :: Word32
-  , chunkHash :: ChunkDigest
+  , chunkHash :: Digest
   }
 
 newtype DebugChunk = DebugChunk Chunk
@@ -78,14 +73,6 @@ instance Show DebugChunk where
       ++ ", hash="
       ++ show chunkHash
       ++ "}"
-
-instance Binary ChunkDigest where
-  put (ChunkDigest digest) = putByteString (BA.convert digest)
-  get = do
-    bytes <- getByteString (hashDigestSize (undefined :: Blake2b_160))
-    case digestFromByteString bytes of
-      Nothing -> fail "Invalid digest"
-      Just d -> pure (ChunkDigest d)
 
 instance IsFrameRecord 0x10 Chunk where
   encodeRecordContents Chunk{..} = do
@@ -121,5 +108,5 @@ mkChunk seqno format namespace chunkData entriesCount =
     , chunkNamespace = namespace
     , chunkData = chunkData
     , chunkEntriesCount = entriesCount
-    , chunkHash = ChunkDigest $ hash chunkData
+    , chunkHash = digest chunkData
     }

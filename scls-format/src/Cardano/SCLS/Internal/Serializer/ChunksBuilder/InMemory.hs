@@ -20,35 +20,18 @@ module Cardano.SCLS.Internal.Serializer.ChunksBuilder.InMemory (
   ChunkItem (..),
 ) where
 
+import Cardano.SCLS.Internal.Hash
 import Cardano.SCLS.Internal.Record.Chunk
 import Cardano.SCLS.Internal.Serializer.MemPack
 import Control.Monad.Primitive
-import Crypto.Hash (Blake2b_160, Context, hashFinalize, hashInit, hashUpdate)
-import Data.ByteArray qualified as BA
-import Data.ByteString (ByteString)
-import Data.ByteString.Internal (unsafePackLenLiteral)
+import Crypto.Hash (Blake2b_224 (Blake2b_224))
+import Crypto.Hash.MerkleTree.Incremental qualified as MT
 import Data.MemPack
-import Data.MemPack.Buffer as Buffer
+
 import Data.Primitive.ByteArray
 import Data.Typeable
 import Foreign.Ptr
 import Unsafe.Coerce (unsafeCoerce)
-
-type Digest = Context Blake2b_160
-
--- Dummy implementation of the merke tree functions, this implementation
--- will be changed to the real one once merkle-tree-iterative  library will
--- be merged.
-merkleInitialize :: Digest
-merkleInitialize = hashInit
-merkleFinalize :: Digest -> ByteString
-merkleFinalize = BA.convert . hashFinalize
-merkleUpdate :: (Buffer u) => Digest -> u -> Digest
-merkleUpdate d u =
-  Buffer.buffer
-    u
-    (\bytes -> hashUpdate d (pinnedByteArrayToByteString (ByteArray bytes)))
-    (\addr -> hashUpdate d (unsafePackLenLiteral (bufferByteCount u) addr))
 
 data ChunkItem = ChunkItem
   { chunkItemFormat :: ChunkFormat
@@ -65,7 +48,7 @@ data Command type_ where
     It's up to the implementation if the state machine can be used
     after interpreting this command.
   -}
-  Finalize :: Command (ByteString, Maybe ChunkItem)
+  Finalize :: Command (Digest, Maybe ChunkItem)
 
 {- | State machine for building chunks in memory.
 
@@ -95,11 +78,11 @@ mkMachine bufferSize format@ChunkFormatRaw = do
   storage <- newPinnedByteArray bufferSize
 
   -- Use fix? We love fixed point combinators do we not?
-  let machine (!entriesCount :: Int) (!offset :: Int) !digest =
+  let machine (!entriesCount :: Int) (!offset :: Int) !merkleTreeState =
         BuilderMachine
           { interpretCommand = \case
               Finalize -> do
-                let final = merkleFinalize digest
+                let final = Digest $ MT.merkleRootHash $ MT.finalize merkleTreeState
                 if offset == 0 -- no new data, nothing to emit
                   then
                     pure (final, Nothing)
@@ -111,33 +94,32 @@ mkMachine bufferSize format@ChunkFormatRaw = do
                 let l = packedByteCount entry
                 if offset + l <= bufferSize -- if we fit the current buffer we just need to write data and continue
                   then do
-                    newOffset <- unsafeAppendToBuffer storage offset entry
-                    digest' <- withMutableByteArrayContents storage $ \ptr ->
-                      pure $! merkleUpdate digest (CStringLenBuffer (ptr `plusPtr` offset, l))
-                    pure (machine (entriesCount + 1) newOffset digest', [])
+                    (merkleTreeState', newOffset) <-
+                      unsafeAppendEntryToBuffer merkleTreeState storage offset entry
+                    pure (machine (entriesCount + 1) newOffset merkleTreeState', [])
                   else do
                     -- We have no space in the current buffer, so we need to emit it first
                     frozenBuffer <- freezeByteArrayPinned storage 0 offset
                     if l > bufferSize
                       then do
-                        let tmpBuffer = pack entry
-                            digest' = merkleUpdate digest tmpBuffer
+                        let !tmpBuffer = pack entry
+                            !merkleTreeState' = MT.add merkleTreeState (uncheckedByteArrayEntryContents tmpBuffer)
                         return
-                          ( machine 0 0 digest'
+                          ( machine 0 0 merkleTreeState'
                           ,
                             [ ChunkItem{chunkItemFormat = format, chunkItemData = frozenBuffer, chunkItemEntriesCount = entriesCount}
                             , ChunkItem{chunkItemFormat = format, chunkItemData = tmpBuffer, chunkItemEntriesCount = 1}
                             ]
                           )
                       else do
-                        newOffset <- unsafeAppendToBuffer storage 0 entry
-                        let digest' = merkleUpdate digest (CStringLenBuffer (mutableByteArrayContents storage `plusPtr` offset, l))
+                        (merkleTreeState', newOffset) <-
+                          unsafeAppendEntryToBuffer merkleTreeState storage 0 entry
                         pure
-                          ( machine 1 newOffset digest'
+                          ( machine 1 newOffset merkleTreeState'
                           , [ChunkItem{chunkItemFormat = format, chunkItemData = frozenBuffer, chunkItemEntriesCount = entriesCount}]
                           )
           }
-  return $! machine 0 0 merkleInitialize
+  return $! machine 0 0 (MT.empty Blake2b_224)
 
 {- | Freeze a bytearray to the pinned immutable bytearray by copying its contents.
 
@@ -148,6 +130,22 @@ freezeByteArrayPinned !src !off !len = do
   dst <- newPinnedByteArray len
   copyMutableByteArray dst 0 src off len
   unsafeFreezeByteArray dst
+
+unsafeAppendEntryToBuffer :: (MemPack u, Typeable u) => MT.MerkleTreeState Blake2b_224 -> MutableByteArray (PrimState IO) -> Int -> Entry u -> IO (MT.MerkleTreeState Blake2b_224, Int)
+unsafeAppendEntryToBuffer !merkleTreeState !storage !offset u = do
+  newOffset <- unsafeAppendToBuffer storage offset u
+  let l = newOffset - offset
+  merkleTreeState' <- withMutableByteArrayContents storage $ \ptr -> do
+    let csb = CStringLenBuffer (ptr `plusPtr` (offset + 4), l - 4)
+    return $! MT.add merkleTreeState csb
+  return (merkleTreeState', newOffset)
+
+{- | Helper to get access to the entry contents.
+This method should be used on the pinned 'ByteArray' only, but the function does
+not enforce this.
+-}
+uncheckedByteArrayEntryContents :: ByteArray -> CStringLenBuffer
+uncheckedByteArrayEntryContents !buffer = CStringLenBuffer (byteArrayContents buffer `plusPtr` 4, sizeofByteArray buffer - 4)
 
 {- | Unsafe helper that we need because MemPack interface only allows ST, and
 no other PrimMonad.
