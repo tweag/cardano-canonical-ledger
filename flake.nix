@@ -36,8 +36,12 @@
           src = ./.;
           hooks = {
             fourmolu.enable = true;
+            fourmolu.package =
+              pkgs.haskell-nix.tool "ghc910" "fourmolu" "latest";
             nixfmt-classic.enable = true;
             cabal-gild.enable = true;
+            cabal-gild.package =
+              pkgs.haskell-nix.tool "ghc910" "cabal-gild" "latest";
           };
         };
         treefmtEval = treefmt-nix.lib.evalModule pkgs ./nix/treefmt.nix;
