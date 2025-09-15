@@ -7,13 +7,13 @@ import Test.QuickCheck
 
 prop_merkle_root_equal :: [String] -> Bool
 prop_merkle_root_equal entries =
-    (encodeMerkleHashHex $ merkleRootHash merkleTree1) == (mtHash merkleTree2)
-  where
-    entries_bytes = map C.pack entries
-    state = foldl add (empty SHA3_256) entries_bytes
-    merkleTree1 = finalize state
-    merkleTree2 = mkMerkleTree entries_bytes
+  (encodeMerkleHashHex $ merkleRootHash merkleTree1) == (mtHash merkleTree2)
+ where
+  entries_bytes = map C.pack entries
+  state = foldl add (empty SHA3_256) entries_bytes
+  merkleTree1 = finalize state
+  merkleTree2 = mkMerkleTree entries_bytes
 
 main :: IO ()
 main = do
-    quickCheck prop_merkle_root_equal
+  quickCheck prop_merkle_root_equal

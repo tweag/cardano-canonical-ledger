@@ -233,8 +233,9 @@ instance
   (ToCanonicalCBOR v k, ToCanonicalCBOR v val) =>
   ToCanonicalCBOR v (Map.Map k val)
   where
-  toCanonicalCBOR v m = E.encodeMapLenIndef <>
-    Map.foldrWithKey
-      (\k val b -> toCanonicalCBOR v k <> toCanonicalCBOR v val <> b)
-      E.encodeBreak
-      m
+  toCanonicalCBOR v m =
+    E.encodeMapLenIndef
+      <> Map.foldrWithKey
+        (\k val b -> toCanonicalCBOR v k <> toCanonicalCBOR v val <> b)
+        E.encodeBreak
+        m
