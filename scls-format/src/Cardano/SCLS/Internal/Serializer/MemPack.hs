@@ -126,5 +126,5 @@ instance Buffer CStringLenBuffer where
 
 instance ByteArrayAccess CStringLenBuffer where
   length (CStringLenBuffer (_, l)) = l
-  withByteArray (CStringLenBuffer (ptr, off)) f =
-    f (ptr `plusPtr` off)
+  withByteArray (CStringLenBuffer (ptr, _)) f =
+    f (ptr `plusPtr` 0)
