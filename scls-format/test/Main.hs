@@ -8,6 +8,7 @@ import Cardano.SCLS.Internal.Serializer.MemPack
 import Cardano.SCLS.Internal.Serializer.Reference.Impl qualified as Reference (serialize)
 import Cardano.Types.Network (NetworkId (..))
 import Cardano.Types.SlotNo (SlotNo (..))
+import ChunksBuilderSpec (chunksBuilderTests)
 import Codec.CBOR.Cuddle.CBOR.Gen (generateCBORTerm')
 import Codec.CBOR.Cuddle.CDDL (CDDL, Name (..))
 import Codec.CBOR.Cuddle.CDDL.Resolve (
@@ -40,6 +41,7 @@ main = runTestTTAndExit tests
   tests =
     TestList
       [ roundTriptests
+      , chunksBuilderTests
       -- basic tests: network encoding, slot encoding
       -- test hash of entire content
       -- test hash of each namespace
