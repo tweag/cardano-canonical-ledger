@@ -88,18 +88,18 @@ bufferBoundaryTests =
               (sizeofByteArray $ chunkItemData chunk) `shouldBe` (sum chunkLengths + 4 * length chunkLengths)
             l -> length l `shouldBe` 1
 
-    prop "should emit one chunk when buffer is empty and data is oversized" $
-      \(Positive chunkDataLength) -> do
-        let bufferLength = chunkDataLength + 3
-        machine <- mkMachine bufferLength ChunkFormatRaw
-        let chunkData = RawBytes (BS.replicate chunkDataLength 0x46)
-        (_machine, chunks) <- interpretCommand machine (Append chunkData)
-        case chunks of
-          [oversizedChunk] -> do
-            -- Chunk should contain the oversized data
-            annotate "oversized chunk should have one entry" $ chunkItemEntriesCount oversizedChunk `shouldBe` 1
-            annotate "oversized chunk size should match input size" $ (sizeofByteArray $ chunkItemData oversizedChunk) `shouldBe` chunkDataLength + 4
-          l -> annotate "should emit one chunk" $ length l `shouldBe` 1
+    describe "oversized append when buffer empty" $ do
+      forM_ [0, 1, 4, 31, 128] $ \chunkDataLength -> do
+        it ("should emit one chunk when buffer is empty and data is oversized (dataLen =" ++ show chunkDataLength) $ do
+          let bufferLength = chunkDataLength + 3
+          machine <- mkMachine bufferLength ChunkFormatRaw
+          let chunkData = RawBytes (BS.replicate chunkDataLength 0x46)
+          (_machine, chunks) <- interpretCommand machine (Append chunkData)
+          case chunks of
+            [oversizedChunk] -> do
+              annotate "oversized chunk should have one entry" $ chunkItemEntriesCount oversizedChunk `shouldBe` 1
+              annotate "oversized chunk size should match input size" $ (sizeofByteArray $ chunkItemData oversizedChunk) `shouldBe` chunkDataLength + 4
+            l -> annotate "should emit one chunk" $ length l `shouldBe` 1
 
     prop "shoud emit oversized chunk and buffer when buffer is not empty" $
       forAll bufferFittingAndOversizedChunks $
@@ -176,17 +176,18 @@ bufferBoundaryTests =
           annotate "final chunk data size should match" $ (sizeofByteArray $ chunkItemData chunk) `shouldBe` (dataChunk2Length + 4) * 3
         Nothing -> assertFailure "Expected final chunk on finalization"
 
-    prop "zero buffer length should always emit" $
-      \(Positive dataChunkLength) -> do
-        let bufferLength = 0
-        let dataChunk = RawBytes (BS.replicate dataChunkLength 0x4B)
-        machine <- mkMachine bufferLength ChunkFormatRaw
-        (_machine', chunks) <- interpretCommand machine (Append dataChunk)
-        case chunks of
-          [chunk] -> do
-            annotate "should emit one chunk with one entry" $ chunkItemEntriesCount chunk `shouldBe` 1
-            annotate "chunk data size should match" $ (sizeofByteArray $ chunkItemData chunk) `shouldBe` dataChunkLength + 4
-          l -> annotate "should emit two chunks" $ length l `shouldBe` 1
+    describe "zero buffer length should always emit" $
+      forM_ [0, 1, 4, 64, 255] $ \dataChunkLength ->
+        it ("should emit chunk immediately when buffer length is zero (dataLen =" ++ show dataChunkLength ++ ")") $ do
+          let bufferLength = 0
+          let dataChunk = RawBytes (BS.replicate dataChunkLength 0x4B)
+          machine <- mkMachine bufferLength ChunkFormatRaw
+          (_machine', chunks) <- interpretCommand machine (Append dataChunk)
+          case chunks of
+            [chunk] -> do
+              annotate "should emit one chunk with one entry" $ chunkItemEntriesCount chunk `shouldBe` 1
+              annotate "chunk data size should match" $ (sizeofByteArray $ chunkItemData chunk) `shouldBe` dataChunkLength + 4
+            l -> annotate "should emit two chunks" $ length l `shouldBe` 1
 
 finalizationTests :: Spec
 finalizationTests =
