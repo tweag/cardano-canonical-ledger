@@ -1,19 +1,19 @@
-import Crypto.Hash.Algorithms (SHA3_256 (SHA3_256))
-import Crypto.Hash.MerkleTree (mkMerkleTree, mtHash)
-import Crypto.Hash.MerkleTree.Incremental (add, empty, encodeMerkleHashHex, finalize, merkleRootHash)
+import Crypto.Hash.Algorithms
+import Crypto.Hash.MerkleTree
+import Crypto.Hash.MerkleTree.Incremental
 import Data.ByteString.Char8 qualified as C
 
-import Test.QuickCheck
-
-prop_merkle_root_equal :: [String] -> Bool
-prop_merkle_root_equal entries =
-  (encodeMerkleHashHex $ merkleRootHash merkleTree1) == (mtHash merkleTree2)
- where
-  entries_bytes = map C.pack entries
-  state = foldl add (empty SHA3_256) entries_bytes
-  merkleTree1 = finalize state
-  merkleTree2 = mkMerkleTree entries_bytes
+import Test.Hspec
+import Test.Hspec.QuickCheck
+import Test.QuickCheck.Instances.ByteString ()
 
 main :: IO ()
 main = do
-  quickCheck prop_merkle_root_equal
+  hspec $
+    describe "Incremental Merkle Tree" $ do
+      prop "computed Merkle root hash should equal reference implementation one" $ do
+        \entries -> do
+          let state = foldl add (empty SHA3_256) entries
+              merkleTree1 = finalize state
+              merkleTree2 = mkMerkleTree entries
+          (C.pack $ show $ merkleRootHash merkleTree1) `shouldBe` (mtHash merkleTree2)

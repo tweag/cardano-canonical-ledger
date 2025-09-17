@@ -58,7 +58,9 @@ test-suite merkle-tree-incremental-test
     base >=4.7 && <5,
     bytestring >=0.12.0.0,
     crypton >=1.0.0,
+    hspec,
     merkle-tree,
     merkle-tree-incremental,
+    quickcheck-instances,
 
   default-language: GHC2021
