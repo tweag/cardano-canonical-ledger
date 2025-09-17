@@ -32,7 +32,7 @@ data ChunkFormat
     ChunkFormatZstd
   | -- | Entries are individually compressed with seekable zstd
     ChunkFormatZstdE
-  deriving (Show)
+  deriving (Show, Eq)
 
 instance Binary ChunkFormat where
   put ChunkFormatRaw = putWord8 0

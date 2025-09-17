@@ -32,16 +32,20 @@ import System.FilePath ((</>))
 import System.IO.Temp (withSystemTempDirectory)
 import System.Random.Stateful (applyAtomicGen, globalStdGen)
 import Test.HUnit
+import Test.Hspec
+import Test.Hspec.Contrib.HUnit
 
 type SerializeF = FilePath -> NetworkId -> SlotNo -> Text -> S.Stream (S.Of RawBytes) IO () -> IO ()
 
 main :: IO ()
-main = runTestTTAndExit tests
+main = do
+  hspec $ do
+    fromHUnitTest tests
+    chunksBuilderTests
  where
   tests =
     TestList
       [ roundTriptests
-      , chunksBuilderTests
       -- basic tests: network encoding, slot encoding
       -- test hash of entire content
       -- test hash of each namespace
