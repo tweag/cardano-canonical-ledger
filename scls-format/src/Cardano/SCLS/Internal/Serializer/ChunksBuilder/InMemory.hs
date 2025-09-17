@@ -106,17 +106,14 @@ mkMachine bufferSize format@ChunkFormatRaw = do
                             !merkleTreeState' = MT.add merkleTreeState (uncheckedByteArrayEntryContents tmpBuffer)
                         return
                           ( machine 0 0 merkleTreeState'
-                          ,
-                            [ ChunkItem{chunkItemFormat = format, chunkItemData = frozenBuffer, chunkItemEntriesCount = entriesCount}
-                            , ChunkItem{chunkItemFormat = format, chunkItemData = tmpBuffer, chunkItemEntriesCount = 1}
-                            ]
+                          , mkChunksToEmit [(format, frozenBuffer, entriesCount), (format, tmpBuffer, 1)]
                           )
                       else do
                         (merkleTreeState', newOffset) <-
                           unsafeAppendEntryToBuffer merkleTreeState storage 0 entry
                         pure
                           ( machine 1 newOffset merkleTreeState'
-                          , [ChunkItem{chunkItemFormat = format, chunkItemData = frozenBuffer, chunkItemEntriesCount = entriesCount}]
+                          , mkChunksToEmit [(format, frozenBuffer, entriesCount)]
                           )
           }
   return $! machine 0 0 (MT.empty Blake2b_224)
@@ -161,3 +158,16 @@ unsafeAppendToBuffer !storage !offset u = stToPrim $ do
   (_, offset') <-
     runStateT (runPack (packM u) uInST) offset
   pure offset'
+
+{- | Helper to create the list of chunks to emit from the list of
+  (format, data, count) tuples.
+
+  This function filters out the chunks with 0 entries.
+-}
+mkChunksToEmit :: [(ChunkFormat, ByteArray, Int)] -> [ChunkItem]
+mkChunksToEmit = mkChunksToEmit' []
+ where
+  mkChunksToEmit' acc [] = reverse acc
+  mkChunksToEmit' acc ((_, _, 0) : xs) = mkChunksToEmit' acc xs
+  mkChunksToEmit' acc ((format, u, count) : xs) =
+    mkChunksToEmit' (ChunkItem{chunkItemFormat = format, chunkItemData = u, chunkItemEntriesCount = count} : acc) xs
