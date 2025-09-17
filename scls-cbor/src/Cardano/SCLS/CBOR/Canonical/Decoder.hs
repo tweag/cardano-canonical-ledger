@@ -2,23 +2,24 @@
 {-# LANGUAGE TypeApplications #-}
 
 module Cardano.SCLS.CBOR.Canonical.Decoder where
-import Cardano.SCLS.Internal.Version (Version)
-import Codec.CBOR.Decoding (Decoder)
-import GHC.Generics (Generic)
-import qualified Codec.CBOR.Read as CBOR.Read
-import Control.Exception (Exception)
-import qualified Data.Text as T
-import qualified Codec.CBOR.Decoding as D
-import Data.Word
-import Data.Int
-import Data.ByteString (ByteString)
-import qualified Data.ByteString.Short as SBS
-import qualified Data.Array.Byte as Prim
-import qualified Codec.CBOR.ByteArray as BA
-import qualified Data.Map as Map
-import qualified Data.Sequence as Seq
 
-newtype Versioned (v :: Version) a = Versioned { unVer :: a}
+import Cardano.SCLS.Internal.Version (Version)
+import Codec.CBOR.ByteArray qualified as BA
+import Codec.CBOR.Decoding (Decoder)
+import Codec.CBOR.Decoding qualified as D
+import Codec.CBOR.Read qualified as CBOR.Read
+import Control.Exception (Exception)
+import Data.Array.Byte qualified as Prim
+import Data.ByteString (ByteString)
+import Data.ByteString.Short qualified as SBS
+import Data.Int
+import Data.Map qualified as Map
+import Data.Sequence qualified as Seq
+import Data.Text qualified as T
+import Data.Word
+import GHC.Generics (Generic)
+
+newtype Versioned (v :: Version) a = Versioned {unVer :: a}
   deriving (Eq, Generic, Ord, Bounded, Functor)
 
 class FromCanonicalCBOR (v :: Version) a where
@@ -47,7 +48,7 @@ instance FromCanonicalCBOR v Bool where
 --------------------------------------------------------------------------------
 -- Numeric data
 --------------------------------------------------------------------------------
- 
+
 instance FromCanonicalCBOR v Integer where
   fromCanonicalCBOR = Versioned @v <$> D.decodeInteger
 
@@ -78,7 +79,7 @@ instance FromCanonicalCBOR v Int64 where
 --------------------------------------------------------------------------------
 -- Bytes
 --------------------------------------------------------------------------------
- 
+
 instance FromCanonicalCBOR v ByteString where
   fromCanonicalCBOR = Versioned @v <$> D.decodeBytes
 
@@ -86,7 +87,7 @@ instance FromCanonicalCBOR v SBS.ShortByteString where
   fromCanonicalCBOR = do
     BA.BA (Prim.ByteArray ba) <- D.decodeByteArray
     pure $ Versioned @v $ SBS.SBS ba
-    
+
 --------------------------------------------------------------------------------
 -- Tuples
 --------------------------------------------------------------------------------
@@ -99,7 +100,7 @@ instance
     D.decodeListLenOf 2
     Versioned a <- fromCanonicalCBOR @v
     Versioned b <- fromCanonicalCBOR @v
-    pure $ Versioned @v (a,b)
+    pure $ Versioned @v (a, b)
 
 instance
   (FromCanonicalCBOR v a, FromCanonicalCBOR v b, FromCanonicalCBOR v c) =>
@@ -110,7 +111,7 @@ instance
     Versioned a <- fromCanonicalCBOR @v
     Versioned b <- fromCanonicalCBOR @v
     Versioned c <- fromCanonicalCBOR @v
-    pure $ Versioned @v (a,b,c)
+    pure $ Versioned @v (a, b, c)
 
 instance
   ( FromCanonicalCBOR v a
@@ -126,7 +127,7 @@ instance
     Versioned b <- fromCanonicalCBOR @v
     Versioned c <- fromCanonicalCBOR @v
     Versioned d <- fromCanonicalCBOR @v
-    pure $ Versioned @v (a,b,c, d)
+    pure $ Versioned @v (a, b, c, d)
 
 instance
   ( FromCanonicalCBOR v a
@@ -144,7 +145,7 @@ instance
     Versioned c <- fromCanonicalCBOR @v
     Versioned d <- fromCanonicalCBOR @v
     Versioned e <- fromCanonicalCBOR @v
-    pure $ Versioned @v (a,b,c, d, e)
+    pure $ Versioned @v (a, b, c, d, e)
 
 instance
   ( FromCanonicalCBOR v a
@@ -164,7 +165,7 @@ instance
     Versioned d <- fromCanonicalCBOR @v
     Versioned e <- fromCanonicalCBOR @v
     Versioned f <- fromCanonicalCBOR @v
-    pure $ Versioned @v (a,b,c, d, e, f)
+    pure $ Versioned @v (a, b, c, d, e, f)
 
 instance
   ( FromCanonicalCBOR v a
@@ -186,7 +187,7 @@ instance
     Versioned e <- fromCanonicalCBOR @v
     Versioned f <- fromCanonicalCBOR @v
     Versioned g <- fromCanonicalCBOR @v
-    pure $ Versioned @v (a,b,c, d, e, f, g)
+    pure $ Versioned @v (a, b, c, d, e, f, g)
 
 instance
   ( FromCanonicalCBOR v a
@@ -210,7 +211,7 @@ instance
     Versioned f <- fromCanonicalCBOR @v
     Versioned g <- fromCanonicalCBOR @v
     Versioned h <- fromCanonicalCBOR @v
-    pure $ Versioned @v (a,b,c, d, e, f, g, h)
+    pure $ Versioned @v (a, b, c, d, e, f, g, h)
 
 --------------------------------------------------------------------------------
 -- Lists
@@ -221,13 +222,13 @@ instance (FromCanonicalCBOR v a) => FromCanonicalCBOR v [a] where
   fromCanonicalCBOR = do
     D.decodeListLenIndef
     D.decodeSequenceLenIndef
-      (\acc (Versioned x)  -> x : acc)
+      (\acc (Versioned x) -> x : acc)
       []
       (Versioned @v . reverse)
       (fromCanonicalCBOR @v)
 
 instance (FromCanonicalCBOR v a) => FromCanonicalCBOR v (Seq.Seq a) where
-  fromCanonicalCBOR = fmap Seq.fromList <$> fromCanonicalCBOR 
+  fromCanonicalCBOR = fmap Seq.fromList <$> fromCanonicalCBOR
 
 --------------------------------------------------------------------------------
 -- Maps
@@ -240,16 +241,16 @@ instance
   where
   fromCanonicalCBOR = do
     D.decodeMapLenIndef
-    asList <- D.decodeSequenceLenIndef
-      (\acc x  -> x : acc)
-      []
-      id
-      decodeEntry
+    asList <-
+      D.decodeSequenceLenIndef
+        (\acc x -> x : acc)
+        []
+        id
+        decodeEntry
     -- Note that the ordering is reversed since we prepend to the list
     pure $ Versioned @v $ Map.fromDistinctDescList asList
-    where
-      decodeEntry = do
-        Versioned a <- fromCanonicalCBOR @v
-        Versioned b <- fromCanonicalCBOR @v
-        return (a, b)
-
+   where
+    decodeEntry = do
+      Versioned a <- fromCanonicalCBOR @v
+      Versioned b <- fromCanonicalCBOR @v
+      return (a, b)

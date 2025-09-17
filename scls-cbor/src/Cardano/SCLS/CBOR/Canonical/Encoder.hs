@@ -9,7 +9,7 @@ example, since there are multiple possible ways to encode 'Maybe' we do
 not provide an instance here - it is better to specify the precise encoding
 when defining the instances for specific types.
 -}
-module Cardano.SCLS.CBOR.Canonical where
+module Cardano.SCLS.CBOR.Canonical.Encoder where
 
 import Cardano.SCLS.Internal.Version (Version)
 import Codec.CBOR.ByteArray.Sliced qualified as BAS
