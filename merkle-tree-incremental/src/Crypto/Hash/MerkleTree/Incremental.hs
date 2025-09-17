@@ -3,7 +3,6 @@ module Crypto.Hash.MerkleTree.Incremental (
   MerkleTreeState,
   MerkleHash,
   merkleRootHash,
-  encodeMerkleHashHex,
   empty,
   add,
   finalize,
@@ -12,16 +11,13 @@ where
 
 import Crypto.Hash (Digest, HashAlgorithm, hash, hashFinalize, hashInit, hashUpdate, hashUpdates)
 import Data.ByteArray (ByteArrayAccess)
-import Data.ByteArray.Encoding qualified as BA
 import Data.ByteString qualified as B
+import Data.ByteString.Char8 qualified as BC
 
 -- ----------------------------------------------------------------
 -- Merkle Tree and Hashes
 
 type MerkleHash a = Digest a
-
-encodeMerkleHashHex :: (HashAlgorithm a) => MerkleHash a -> B.ByteString
-encodeMerkleHashHex = BA.convertToBase BA.Base16
 
 data MerkleTree a
   = MerkleTreeEmpty
@@ -39,7 +35,7 @@ leafHash b =
 
 nodeHash :: forall a. (HashAlgorithm a) => MerkleHash a -> MerkleHash a -> MerkleHash a
 nodeHash h1 h2 =
-  hashFinalize $ flip hashUpdates [encodeMerkleHashHex h1, encodeMerkleHashHex h2] $ hashUpdate hashInit $ B.singleton 1
+  hashFinalize $ flip hashUpdates [BC.pack (show h1), BC.pack (show h2)] $ hashUpdate hashInit $ B.singleton 1
 
 -- ----------------------------------------------------------------
 -- Incremental Merkle Tree construction
