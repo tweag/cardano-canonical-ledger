@@ -8,6 +8,7 @@ import Cardano.SCLS.Internal.Serializer.MemPack
 import Cardano.SCLS.Internal.Serializer.Reference.Impl qualified as Reference (serialize)
 import Cardano.Types.Network (NetworkId (..))
 import Cardano.Types.SlotNo (SlotNo (..))
+import ChunksBuilderSpec (chunksBuilderTests)
 import Codec.CBOR.Cuddle.CBOR.Gen (generateCBORTerm')
 import Codec.CBOR.Cuddle.CDDL (CDDL, Name (..))
 import Codec.CBOR.Cuddle.CDDL.Resolve (
@@ -31,11 +32,16 @@ import System.FilePath ((</>))
 import System.IO.Temp (withSystemTempDirectory)
 import System.Random.Stateful (applyAtomicGen, globalStdGen)
 import Test.HUnit
+import Test.Hspec
+import Test.Hspec.Contrib.HUnit
 
 type SerializeF = FilePath -> NetworkId -> SlotNo -> Text -> S.Stream (S.Of RawBytes) IO () -> IO ()
 
 main :: IO ()
-main = runTestTTAndExit tests
+main = do
+  hspec $ do
+    fromHUnitTest tests
+    chunksBuilderTests
  where
   tests =
     TestList
