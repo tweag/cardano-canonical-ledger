@@ -81,8 +81,8 @@ where there is a 1024 elements, and then update the number, if there
 is an existing file already we merge them and increase the number and
 so on, until we have placed a file.
 
-1024 elemets in not the great strategy as it does not take into the account
-size of the entries, but it can be changed without modifying the interface.
+1024 elements is not a great strategy as it does not take into account
+the size of the entries, but it can be changed without modifying the interface.
 -}
 prepareExternalSortNamespaced ::
   (Typeable a, Ord a, MemPack a) =>
