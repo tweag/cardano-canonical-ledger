@@ -17,21 +17,52 @@
         [ "x86_64-linux" "x86_64-darwin" "aarch64-linux" "aarch64-darwin" ];
     in flake-utils.lib.eachSystem supportedSystems (system:
       let
+        defaultCompiler = "ghc910";
+
         overlays = [
           haskellNix.overlay
           (final: _prev: {
-            cardanoCanonicalLedger = final.haskell-nix.hix.project {
+            cardanoCanonicalLedger = final.haskell-nix.cabalProject' {
               src = ./.;
-              # uncomment with your current system for `nix flake show` to work:
-              # evalSystem = "x86_64-linux";
+
+              name = "cardano-canonical-ledger";
+              compiler-nix-name = final.lib.mkDefault defaultCompiler;
+
+              # Tools to include in the development shell
+              shell.tools = {
+                cabal = "latest";
+                haskell-language-server = "latest";
+                hlint = "latest";
+                fourmolu = "latest";
+                weeder = "latest";
+                cabal-gild = "latest";
+              };
+
+              # Non-Haskell shell tools go here
+              shell.buildInputs = let
+                # Add this for editors which expect to use hls-wrapper
+                hls-wrapper =
+                  pkgs.writeShellScriptBin "haskell-language-server-wrapper" ''
+                    exec haskell-language-server "$@"
+                  '';
+              in with pkgs; [ nixfmt-classic hls-wrapper ];
             };
           })
         ];
+
         pkgs = import nixpkgs {
           inherit system overlays;
           inherit (haskellNix) config;
         };
-        flake = pkgs.cardanoCanonicalLedger.flake { };
+
+        inherit (pkgs) lib;
+
+        flake = pkgs.cardanoCanonicalLedger.flake
+          (lib.optionalAttrs (system == "x86_64-linux") {
+            # on linux, build/test other supported compilers
+            variants = lib.genAttrs [ "ghc984" "ghc9102" "ghc9121" ]
+              (compiler-nix-name: { inherit compiler-nix-name; });
+          });
         pre-commit-check = pre-commit-hooks.lib.${system}.run {
           src = ./.;
           hooks = {
