@@ -33,7 +33,20 @@ import Streaming.Internal (Stream (..))
 import Streaming.Prelude qualified as S
 import System.IO (Handle)
 
--- | Stream of the values from namespaces, it's not allowed to
+-- | A stream of values grouped by namespace.
+-- 
+-- Each element of the outer stream is a pair of:
+--   * a 'Text' namespace identifier
+--   * a stream of values of type @a@ belonging to that namespace.
+--
+-- Constraints:
+--   * Each namespace appears at most once in the stream (no duplicate namespaces).
+--   * The namespaces are ordered as they appear in the stream; no global ordering is enforced.
+--   * The values within each namespace stream are ordered as they appear.
+--   * Multiple segments per namespace are NOT allowed; all values for a namespace must be in a single contiguous stream.
+--   * The stream may be empty.
+--
+-- This type is used as input to chunked serialization routines, which expect the data to be grouped and ordered as described.
 newtype DataStream a = DataStream {runDataStream :: Stream (Of (Of Text (Stream (Of a) IO ()))) IO ()}
 
 -- Dumps data to the handle, while splitting it into chunks.
