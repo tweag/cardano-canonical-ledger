@@ -33,7 +33,7 @@ tests =
   describe "Multi-namespace serialization" do
     describe "reference" do
       mkTestsFor (Reference.serialize @RawBytes)
-    describe "exteral" do
+    describe "external" do
       mkTestsFor (External.serialize @RawBytes)
 
 mkTestsFor :: SerializeF -> Spec
