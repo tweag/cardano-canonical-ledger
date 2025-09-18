@@ -54,11 +54,12 @@ test-suite merkle-tree-incremental-test
     test
 
   build-depends:
-    QuickCheck >=2.16.0,
     base >=4.7 && <5,
     bytestring >=0.12.0.0,
     crypton >=1.0.0,
+    hspec,
     merkle-tree,
     merkle-tree-incremental,
+    quickcheck-instances,
 
   default-language: GHC2021
