@@ -187,7 +187,7 @@ bufferBoundaryTests =
             [chunk] -> do
               annotate "should emit one chunk with one entry" $ chunkItemEntriesCount chunk `shouldBe` 1
               annotate "chunk data size should match" $ (sizeofByteArray $ chunkItemData chunk) `shouldBe` dataChunkLength + 4
-            l -> annotate "should emit two chunks" $ length l `shouldBe` 1
+            l -> annotate "should emit one chunk" $ length l `shouldBe` 1
 
 finalizationTests :: Spec
 finalizationTests =
