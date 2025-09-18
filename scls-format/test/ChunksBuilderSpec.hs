@@ -101,7 +101,7 @@ bufferBoundaryTests =
               annotate "oversized chunk size should match input size" $ (sizeofByteArray $ chunkItemData oversizedChunk) `shouldBe` chunkDataLength + 4
             l -> annotate "should emit one chunk" $ length l `shouldBe` 1
 
-    prop "shoud emit oversized chunk and buffer when buffer is not empty" $
+    prop "should emit oversized chunk and buffer when buffer is not empty" $
       forAll bufferFittingAndOversizedChunks $
         \(bufferLength, smallDataLength, largeDataLength) -> do
           machine <- mkMachine bufferLength ChunkFormatRaw
