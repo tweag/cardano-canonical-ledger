@@ -1,6 +1,6 @@
-import Crypto.Hash.Algorithms
-import Crypto.Hash.MerkleTree
-import Crypto.Hash.MerkleTree.Incremental
+import Crypto.Hash.Algorithms (SHA3_256(..))
+import Crypto.Hash.MerkleTree (mkMerkleTree, mtHash)
+import Crypto.Hash.MerkleTree.Incremental (add, empty, finalize, merkleRootHash)
 import Data.ByteString.Char8 qualified as C
 
 import Test.Hspec
