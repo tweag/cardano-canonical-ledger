@@ -17,47 +17,48 @@
         [ "x86_64-linux" "x86_64-darwin" "aarch64-linux" "aarch64-darwin" ];
     in flake-utils.lib.eachSystem supportedSystems (system:
       let
-        defaultCompiler = "ghc910";
-
-        overlays = [
-          haskellNix.overlay
-          (final: _prev: {
-            cardanoCanonicalLedger = final.haskell-nix.cabalProject' {
-              src = ./.;
-
-              name = "cardano-canonical-ledger";
-              compiler-nix-name = final.lib.mkDefault defaultCompiler;
-
-              # Tools to include in the development shell
-              shell.tools = {
-                cabal = "latest";
-                haskell-language-server = "latest";
-                hlint = "latest";
-                fourmolu = "latest";
-                weeder = "latest";
-                cabal-gild = "latest";
-              };
-
-              # Non-Haskell shell tools go here
-              shell.buildInputs = let
-                # Add this for editors which expect to use hls-wrapper
-                hls-wrapper =
-                  pkgs.writeShellScriptBin "haskell-language-server-wrapper" ''
-                    exec haskell-language-server "$@"
-                  '';
-              in with pkgs; [ nixfmt-classic hls-wrapper ];
-            };
-          })
-        ];
-
         pkgs = import nixpkgs {
-          inherit system overlays;
+          overlays = [ haskellNix.overlay ];
+          inherit system;
           inherit (haskellNix) config;
         };
 
         inherit (pkgs) lib;
 
-        flake = pkgs.cardanoCanonicalLedger.flake
+        defaultCompiler = "ghc910";
+        fourmoluVersion = "0.19.0.0";
+        cabalGildVersion = "1.6.0.2";
+
+        cardanoCanonicalLedger = pkgs.haskell-nix.cabalProject' {
+          src = ./.;
+
+          name = "cardano-canonical-ledger";
+          compiler-nix-name = lib.mkDefault defaultCompiler;
+
+          modules =
+            [{ packages.scls-format.components.library.doCoverage = true; }];
+
+          # Tools to include in the development shell
+          shell.tools = {
+            cabal = "3.16.0.0";
+            haskell-language-server = "2.11.0.0";
+            hlint = "3.10";
+            fourmolu = fourmoluVersion;
+            weeder = "2.10.0";
+            cabal-gild = cabalGildVersion;
+          };
+
+          # Non-Haskell shell tools go here
+          shell.buildInputs = let
+            # Add this for editors which expect to use hls-wrapper
+            hls-wrapper =
+              pkgs.writeShellScriptBin "haskell-language-server-wrapper" ''
+                exec haskell-language-server "$@"
+              '';
+          in with pkgs; [ nixfmt-classic hls-wrapper ];
+        };
+
+        flake = cardanoCanonicalLedger.flake
           (lib.optionalAttrs (system == "x86_64-linux") {
             # on linux, build/test other supported compilers
             variants = lib.genAttrs [ "ghc984" "ghc9102" "ghc9121" ]
@@ -67,28 +68,35 @@
           src = ./.;
           hooks = {
             fourmolu.enable = true;
-            fourmolu.package =
-              pkgs.haskell-nix.tool "ghc910" "fourmolu" "latest";
             nixfmt-classic.enable = true;
             cabal-gild.enable = true;
-            cabal-gild.package =
-              pkgs.haskell-nix.tool "ghc910" "cabal-gild" "latest";
+          };
+          tools = {
+            fourmolu = cardanoCanonicalLedger.tool "fourmolu" fourmoluVersion;
+            cabal-gild =
+              cardanoCanonicalLedger.tool "cabal-gild" cabalGildVersion;
           };
         };
         treefmtEval = treefmt-nix.lib.evalModule pkgs ./nix/treefmt.nix;
-      in flake // {
-        legacyPackages = pkgs;
+      in lib.recursiveUpdate flake rec {
+        project = cardanoCanonicalLedger;
+        legacyPackages = rec { inherit cardanoCanonicalLedger pkgs; };
+
         checks = {
-          pre-commit-check = pre-commit-check;
           formatting = treefmtEval.${pkgs.system}.config.build.check self;
         };
-        devShells = {
-          default = flake.devShells.default.overrideAttrs (oldAttrs: {
-            inherit (pre-commit-check) shellHook;
-            buildInputs = (oldAttrs.buildInputs or [ ])
-              ++ pre-commit-check.enabledPackages;
-          });
-        };
+
+        devShells = let
+          mkDevShells = p:
+            p.shell.overrideAttrs
+            (old: { shellHook = old.shellHook + pre-commit-check.shellHook; });
+        in mkDevShells cardanoCanonicalLedger // lib.mapAttrs
+        (compiler-nix-name: _:
+          let
+            p = cardanoCanonicalLedger.appendModule {
+              inherit compiler-nix-name;
+            };
+          in p.shell // (mkDevShells p)) pkgs.haskell-nix.compiler;
         formatter = treefmtEval.config.build.wrapper;
       });
 
