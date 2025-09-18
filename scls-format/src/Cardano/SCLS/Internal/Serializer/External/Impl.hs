@@ -199,7 +199,7 @@ sourceNs handles baseDir = DataStream do
 
 {- | K-merge files from the multiple namespaces.
 
-Keeps track of handles beign opened.
+Keeps track of handles being opened.
 -}
 kMergeNs :: IORef [Handle] -> FilePath -> Stream (Of RawBytes) IO ()
 kMergeNs refs dir = do
