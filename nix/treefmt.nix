@@ -1,4 +1,5 @@
-{ pkgs, ... }: {
+project:
+{ ... }: {
   # Used to find the project root
   projectRootFile = "flake.nix";
 
@@ -6,9 +7,9 @@
 
   programs.fourmolu.enable = true;
   programs.fourmolu.package =
-    pkgs.haskell-nix.tool "ghc910" "fourmolu" "latest";
+    project.cardanoCanonicalLedger.tool "fourmolu" project.fourmoluVersion;
 
   programs.cabal-gild.enable = true;
   programs.cabal-gild.package =
-    pkgs.haskell-nix.tool "ghc910" "cabal-gild" "latest";
+    project.cardanoCanonicalLedger.tool "cabal-gild" project.cabalGildVersion;
 }

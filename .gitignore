@@ -2,3 +2,4 @@ dist-newstyle
 /cabal.project.local
 .envrc
 .pre-commit-config.yaml
+result/

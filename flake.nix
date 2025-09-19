@@ -17,55 +17,62 @@
         [ "x86_64-linux" "x86_64-darwin" "aarch64-linux" "aarch64-darwin" ];
     in flake-utils.lib.eachSystem supportedSystems (system:
       let
-        overlays = [
-          haskellNix.overlay
-          (final: _prev: {
-            cardanoCanonicalLedger = final.haskell-nix.hix.project {
-              src = ./.;
-              # uncomment with your current system for `nix flake show` to work:
-              # evalSystem = "x86_64-linux";
-            };
-          })
-        ];
         pkgs = import nixpkgs {
-          inherit system overlays;
+          overlays = [ haskellNix.overlay ];
+          inherit system;
           inherit (haskellNix) config;
         };
-        flake = pkgs.cardanoCanonicalLedger.flake { };
+
+        inherit (pkgs) lib;
+
+        project = import ./nix/project.nix pkgs;
+
+        inherit (project) cardanoCanonicalLedger;
+
+        flake = cardanoCanonicalLedger.flake {
+          variants = lib.genAttrs [ "ghc98" "ghc910" "ghc912" ]
+            (compiler-nix-name: { inherit compiler-nix-name; });
+        };
         pre-commit-check = pre-commit-hooks.lib.${system}.run {
           src = ./.;
           hooks = {
             fourmolu.enable = true;
-            fourmolu.package =
-              pkgs.haskell-nix.tool "ghc910" "fourmolu" "latest";
             nixfmt-classic.enable = true;
             cabal-gild.enable = true;
-            cabal-gild.package =
-              pkgs.haskell-nix.tool "ghc910" "cabal-gild" "latest";
+          };
+          tools = {
+            fourmolu =
+              cardanoCanonicalLedger.tool "fourmolu" project.fourmoluVersion;
+            cabal-gild =
+              cardanoCanonicalLedger.tool "cabal-gild" project.cabalGildVersion;
           };
         };
-        treefmtEval = treefmt-nix.lib.evalModule pkgs ./nix/treefmt.nix;
-      in flake // {
-        legacyPackages = pkgs;
+        treefmtEval =
+          treefmt-nix.lib.evalModule pkgs (import ./nix/treefmt.nix project);
+      in lib.recursiveUpdate flake {
+        project = cardanoCanonicalLedger;
+        legacyPackages = { inherit cardanoCanonicalLedger pkgs; };
+
         checks = {
-          pre-commit-check = pre-commit-check;
           formatting = treefmtEval.${pkgs.system}.config.build.check self;
         };
-        devShells = {
-          default = flake.devShells.default.overrideAttrs (oldAttrs: {
-            inherit (pre-commit-check) shellHook;
-            buildInputs = (oldAttrs.buildInputs or [ ])
-              ++ pre-commit-check.enabledPackages;
-          });
-        };
+
+        devShells = let
+          mkDevShells = p:
+            p.shell.overrideAttrs
+            (old: { shellHook = old.shellHook + pre-commit-check.shellHook; });
+        in mkDevShells cardanoCanonicalLedger // lib.mapAttrs
+        (compiler-nix-name: _:
+          let
+            p = cardanoCanonicalLedger.appendModule {
+              inherit compiler-nix-name;
+            };
+          in p.shell // (mkDevShells p)) pkgs.haskell-nix.compiler;
         formatter = treefmtEval.config.build.wrapper;
       });
 
   # --- Flake Local Nix Configuration ----------------------------
   nixConfig = {
-    # This sets the flake to use the IOG nix cache.
-    # Nix should ask for permission before using it,
-    # but remove it here if you do not want it to.
     extra-substituters = [ "https://cache.iog.io" ];
     extra-trusted-public-keys =
       [ "hydra.iohk.io:f/Ea+s+dFdN+3Y/G+FDgSq+a5NEWhJGzdjvKNGv0/EQ=" ];
