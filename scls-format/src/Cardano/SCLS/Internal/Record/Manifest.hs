@@ -65,7 +65,7 @@ data Manifest = Manifest
   , rootHash :: Digest
   -- ^ multihash of root entry
   , nsInfo :: Map Text NamespaceInfo
-  -- ^ map from namespace to multihash
+  -- ^ map from namespace to its entries, chunks and multihash
   , prevManifestOffset :: Word64
   -- ^ offset of previous manifest
   , summary :: ManifestSummary
@@ -82,7 +82,7 @@ instance IsFrameRecord 0x01 Manifest where
     putWord32be 0
     putWord64be prevManifestOffset
     put rootHash
-    putWord32be (fromIntegral $ 8 + 8 + summarySize + nsSize + 4 + 8 + 28)
+    putWord32be (fromIntegral $ 8 + 8 + summarySize + nsSize + 4 + 8 + hashDigestSize)
    where
     putNsInfo (ns, h) = do
       let nsBytes = T.encodeUtf8 ns
@@ -92,7 +92,7 @@ instance IsFrameRecord 0x01 Manifest where
       putWord64be (namespaceChunks h)
       putByteString nsBytes
       put (namespaceHash h) -- 28 bytes
-      return (4 + 8 + 8 + bytesLength + 28)
+      return (4 + 8 + 8 + bytesLength + hashDigestSize)
     encodeSummary ManifestSummary{..} = do
       let createdAtBytes = T.encodeUtf8 createdAt
           toolBytes = T.encodeUtf8 tool
