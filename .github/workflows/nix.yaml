@@ -14,6 +14,12 @@ jobs:
     build_and_test_nix:
         name: Test and build canonical-ledger-state using Nix
         runs-on: ubuntu-latest
+        strategy:
+          matrix:
+            include:
+              - compiler: ghc912
+              - compiler: ghc910
+              - compiler: ghc984
         steps:
         - name: git checkout
           uses: actions/checkout@v3
@@ -26,9 +32,10 @@ jobs:
             path: |
                 dist-newstyle/
             key: canonical-ledger-state-${{ hashFiles('cabal.project','flake.lock') }}
-        - uses: nicknovitski/nix-develop@v1
+        - uses: lriesebos/nix-develop-command@v1
           with:
-            arguments: "--accept-flake-config"
+            devshell: ${{ matrix.compiler }}
+            options: "--accept-flake-config"
         - name: Build
           run: cabal build all
         - name: Test
