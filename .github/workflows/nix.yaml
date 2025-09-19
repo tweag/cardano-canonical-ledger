@@ -31,7 +31,7 @@ jobs:
           with:
             path: |
                 dist-newstyle/
-            key: canonical-ledger-state-${{ hashFiles('cabal.project','flake.lock') }}
+            key: canonical-ledger-state-${{matrix.compiler}}-${{ hashFiles('cabal.project','flake.lock') }}
         - uses: nicknovitski/nix-develop@v1
           with:
             arguments: ".#${{matrix.compiler}} --accept-flake-config"
