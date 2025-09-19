@@ -29,12 +29,10 @@
 
         inherit (project) cardanoCanonicalLedger;
 
-        flake = cardanoCanonicalLedger.flake
-          (lib.optionalAttrs (system == "x86_64-linux") {
-            # on linux, build/test other supported compilers
-            variants = lib.genAttrs [ "ghc98" "ghc910" "ghc912" ]
-              (compiler-nix-name: { inherit compiler-nix-name; });
-          });
+        flake = cardanoCanonicalLedger.flake {
+          variants = lib.genAttrs [ "ghc98" "ghc910" "ghc912" ]
+            (compiler-nix-name: { inherit compiler-nix-name; });
+        };
         pre-commit-check = pre-commit-hooks.lib.${system}.run {
           src = ./.;
           hooks = {
