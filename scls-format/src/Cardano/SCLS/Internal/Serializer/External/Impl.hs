@@ -53,7 +53,7 @@ serialize ::
   -- | Slot of the current transaction
   SlotNo ->
   -- | Input stream of entries to serialize, can be unsorted
-  S.Stream (S.Of (Text, S.Stream (S.Of a) IO ())) IO () ->
+  S.Stream (S.Of (InputChunk a)) IO () ->
   IO ()
 serialize resultFilePath network slotNo inputStream = do
   let !hdr = mkHdr network slotNo
@@ -87,7 +87,7 @@ the size of the entries, but it can be changed without modifying the interface.
 prepareExternalSortNamespaced ::
   (Typeable a, Ord a, MemPack a) =>
   FilePath ->
-  S.Stream (S.Of (Text, S.Stream (S.Of a) IO ())) IO () ->
+  S.Stream (S.Of (InputChunk a)) IO () ->
   IO ()
 prepareExternalSortNamespaced tmpDir = storeChunks . mergeChunks
  where
@@ -113,12 +113,12 @@ multiple times in the stream
 -}
 mergeChunks ::
   (Ord a) =>
-  S.Stream (S.Of (Text, S.Stream (S.Of a) IO ())) IO () ->
+  S.Stream (S.Of (InputChunk a)) IO () ->
   S.Stream (S.Of (Text, V.Vector a)) IO ()
 mergeChunks = loop Map.empty
  where
   chunkSize = 1024
-  loop s (Step ((ns, vecStream) :> rest)) = do
+  loop s (Step ((ns :> vecStream) :> rest)) = do
     let i = fromMaybe Builder.empty $ Map.lookup ns s
     Effect do
       (v :> r) <-
@@ -137,7 +137,7 @@ mergeChunks = loop Map.empty
                         mv <- Builder.build i'
                         Tim.sort mv
                         V.unsafeFreeze mv
-                  return $ S.yield (ns, v') >> loop (Map.delete ns s) (Step ((ns, r) :> rest))
+                  return $ S.yield (ns, v') >> loop (Map.delete ns s) (Step ((ns :> r) :> rest))
   loop s (Effect e) = Effect (e >>= \s' -> return (loop s s'))
   loop s (Return _) = do
     S.each (Map.toList s)
@@ -185,7 +185,7 @@ merge2 f1 f2 = do
 
     -- Efficiently copy the rest of the file without parsing entries
     copyAll hin = do
-      let chunkSize = 32768  -- 32 KiB, adjust as needed
+      let chunkSize = 32768 -- 32 KiB, adjust as needed
       let loop = do
             chunk <- B.hGetSome hin chunkSize
             if B.null chunk

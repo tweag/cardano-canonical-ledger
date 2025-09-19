@@ -9,6 +9,7 @@ import Cardano.SCLS.Internal.Hash (Digest (..))
 import Cardano.SCLS.Internal.Reader (extractNamespaceHash, extractNamespaceList, extractRootHash, withNamespacedData)
 import Cardano.SCLS.Internal.Serializer.External.Impl qualified as External (serialize)
 import Cardano.SCLS.Internal.Serializer.MemPack
+import Cardano.SCLS.Internal.Serializer.Reference.Impl (InputChunk)
 import Cardano.SCLS.Internal.Serializer.Reference.Impl qualified as Reference (serialize)
 import Cardano.Types.Network (NetworkId (..))
 import Cardano.Types.SlotNo (SlotNo (..))
@@ -57,7 +58,7 @@ mkTestsFor serialize = do
       , ("ns1", [BS8.pack (show (i :: Int)) | i <- [1 .. 2048]])
       ]
 
-type SerializeF = FilePath -> NetworkId -> SlotNo -> S.Stream (S.Of (Text, S.Stream (S.Of RawBytes) IO ())) IO () -> IO ()
+type SerializeF = FilePath -> NetworkId -> SlotNo -> S.Stream (S.Of (InputChunk RawBytes)) IO () -> IO ()
 
 roundtrip :: SerializeF -> [(Text, [ByteString])] -> IO ()
 roundtrip serialize input = do
@@ -102,7 +103,7 @@ roundtrip serialize input = do
  where
   mkStream =
     S.each
-      [ (n, S.each q & S.map RawBytes)
+      [ n S.:> (S.each q & S.map RawBytes)
       | (n, q) <- input
       ]
   nsData = Map.fromListWith (<>) input

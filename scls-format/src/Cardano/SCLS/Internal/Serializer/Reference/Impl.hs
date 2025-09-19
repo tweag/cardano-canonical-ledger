@@ -2,6 +2,7 @@
 
 module Cardano.SCLS.Internal.Serializer.Reference.Impl (
   serialize,
+  InputChunk,
 ) where
 
 import Cardano.SCLS.Internal.Record.Hdr
@@ -34,7 +35,7 @@ serialize ::
   -- | Slot of the current transaction
   SlotNo ->
   -- | Input stream of entries to serialize, can be unsorted
-  (S.Stream (S.Of (Text, S.Stream (S.Of a) IO ())) IO ()) ->
+  (S.Stream (S.Of (InputChunk a)) IO ()) ->
   IO ()
 serialize resultFilePath network slotNo stream = do
   withBinaryFile resultFilePath WriteMode \handle -> do
@@ -43,11 +44,11 @@ serialize resultFilePath network slotNo stream = do
     dumpToHandle handle hdr do
       DataStream (S.each [n S.:> S.each v | (n, v) <- Map.toList orderedStream])
  where
-  mkVectors :: (Ord a) => S.Stream (S.Of (Text, S.Stream (S.Of a) IO ())) IO () -> IO (Map Text (V.Vector a))
+  mkVectors :: (Ord a) => S.Stream (S.Of (InputChunk a)) IO () -> IO (Map Text (V.Vector a))
   mkVectors = do
     S.foldM_
       do
-        \m (ns, vecStream) -> do
+        \m (ns S.:> vecStream) -> do
           v <- mkVector vecStream
           pure $! Map.insertWith (<>) ns v m
       do pure Map.empty

@@ -5,6 +5,7 @@
 
 module Cardano.SCLS.Internal.Serializer.Reference.Dump (
   DataStream (..),
+  InputChunk,
   dumpToHandle,
   constructChunks_,
 ) where
@@ -34,6 +35,8 @@ import Streaming.Internal (Stream (..))
 import Streaming.Prelude qualified as S
 import System.IO (Handle)
 
+type InputChunk a = S.Of Text (S.Stream (S.Of a) IO ())
+
 {- | A stream of values grouped by namespace.
 
 Each element of the outer stream is a pair of:
@@ -49,7 +52,7 @@ Constraints:
 
 This type is used as input to chunked serialization routines, which expect the data to be grouped and ordered as described.
 -}
-newtype DataStream a = DataStream {runDataStream :: Stream (Of (Of Text (Stream (Of a) IO ()))) IO ()}
+newtype DataStream a = DataStream {runDataStream :: Stream (Of (InputChunk a)) IO ()}
 
 -- Dumps data to the handle, while splitting it into chunks.
 --

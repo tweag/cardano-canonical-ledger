@@ -5,6 +5,7 @@ import Cardano.SCLS.Internal.Hash (Digest (..))
 import Cardano.SCLS.Internal.Reader (extractRootHash, withNamespacedData)
 import Cardano.SCLS.Internal.Serializer.External.Impl qualified as External (serialize)
 import Cardano.SCLS.Internal.Serializer.MemPack
+import Cardano.SCLS.Internal.Serializer.Reference.Impl (InputChunk)
 import Cardano.SCLS.Internal.Serializer.Reference.Impl qualified as Reference (serialize)
 import Cardano.Types.Network (NetworkId (..))
 import Cardano.Types.SlotNo (SlotNo (..))
@@ -37,7 +38,7 @@ import Test.Hspec.Contrib.HUnit
 
 import MultiNamespace qualified (tests)
 
-type SerializeF = FilePath -> NetworkId -> SlotNo -> S.Stream (S.Of (Text, S.Stream (S.Of RawBytes) IO ())) IO () -> IO ()
+type SerializeF = FilePath -> NetworkId -> SlotNo -> S.Stream (S.Of (InputChunk RawBytes)) IO () -> IO ()
 
 main :: IO ()
 main = do
@@ -77,7 +78,7 @@ main = do
           fileName
           Mainnet
           (SlotNo 1)
-          (S.each [(namespace, S.each encoded_data & S.map RawBytes)])
+          (S.each [(namespace S.:> (S.each encoded_data & S.map RawBytes))])
         withNamespacedData
           fileName
           namespace
