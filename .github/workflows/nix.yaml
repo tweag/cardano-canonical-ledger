@@ -32,10 +32,9 @@ jobs:
             path: |
                 dist-newstyle/
             key: canonical-ledger-state-${{ hashFiles('cabal.project','flake.lock') }}
-        - uses: lriesebos/nix-develop-command@v1
+        - uses: nicknovitski/nix-develop@v1
           with:
-            devshell: ${{ matrix.compiler }}
-            options: "--accept-flake-config"
+            arguments: ".#${{matrix.compiler}} --accept-flake-config"
         - name: Build
           run: cabal build all
         - name: Test
