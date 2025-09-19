@@ -22,6 +22,10 @@ digestFromByteString = fmap Digest . CH.digestFromByteString
 newtype Digest = Digest (CH.Digest HashAlgorithm)
   deriving (Eq, Ord, Show, Read)
 
+instance BA.ByteArrayAccess Digest where
+  length (Digest h) = BA.length h
+  withByteArray (Digest h) f = BA.withByteArray h f
+
 instance Binary Digest where
   put (Digest h) = putByteString $ BA.convert h
 

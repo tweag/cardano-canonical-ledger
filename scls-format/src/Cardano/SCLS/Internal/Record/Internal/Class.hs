@@ -4,6 +4,7 @@
 module Cardano.SCLS.Internal.Record.Internal.Class (
   IsFrameRecord (..),
   SomeRecord (..),
+  mkRecordType,
 ) where
 
 import Data.Binary -- TODO: I'd like to switch to the `mempack` library
@@ -27,3 +28,7 @@ class (KnownNat t) => IsFrameRecord t a | a -> t where
 knowing their exact type.
 -}
 data SomeRecord = forall t a. (Typeable a, IsFrameRecord t a) => SomeRecord a
+
+-- | Create a record type code from the record type.
+mkRecordType :: forall a t. (IsFrameRecord t a) => Word8
+mkRecordType = fromIntegral $ natVal (Proxy @t)

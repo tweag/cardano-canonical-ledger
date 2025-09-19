@@ -86,18 +86,6 @@ executable example-read-file
     base,
     scls-format,
 
-executable example-write-file
-  import: warnings
-  default-language: GHC2021
-  hs-source-dirs: examples/write-file
-  main-is: Main.hs
-  build-depends:
-    base,
-    bytestring,
-    scls-format,
-    streaming,
-    text,
-
 executable example-extract-by-ns
   import: warnings
   hs-source-dirs: examples/extract-by-ns
@@ -113,6 +101,7 @@ test-suite scls-format-test
   default-language: GHC2021
   other-modules:
     ChunksBuilderSpec
+    MultiNamespace
 
   -- other-extensions:
   type: exitcode-stdio-1.0
