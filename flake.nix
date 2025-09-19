@@ -25,43 +25,14 @@
 
         inherit (pkgs) lib;
 
-        defaultCompiler = "ghc910";
-        fourmoluVersion = "0.19.0.0";
-        cabalGildVersion = "1.6.0.2";
+        project = import ./nix/project.nix pkgs;
 
-        cardanoCanonicalLedger = pkgs.haskell-nix.cabalProject' {
-          src = ./.;
-
-          name = "cardano-canonical-ledger";
-          compiler-nix-name = lib.mkDefault defaultCompiler;
-
-          modules =
-            [{ packages.scls-format.components.library.doCoverage = true; }];
-
-          # Tools to include in the development shell
-          shell.tools = {
-            cabal = "3.16.0.0";
-            haskell-language-server = "2.11.0.0";
-            hlint = "3.10";
-            fourmolu = fourmoluVersion;
-            weeder = "2.10.0";
-            cabal-gild = cabalGildVersion;
-          };
-
-          # Non-Haskell shell tools go here
-          shell.buildInputs = let
-            # Add this for editors which expect to use hls-wrapper
-            hls-wrapper =
-              pkgs.writeShellScriptBin "haskell-language-server-wrapper" ''
-                exec haskell-language-server "$@"
-              '';
-          in with pkgs; [ nixfmt-classic hls-wrapper ];
-        };
+        inherit (project) cardanoCanonicalLedger;
 
         flake = cardanoCanonicalLedger.flake
           (lib.optionalAttrs (system == "x86_64-linux") {
             # on linux, build/test other supported compilers
-            variants = lib.genAttrs [ "ghc984" "ghc9102" "ghc9121" ]
+            variants = lib.genAttrs [ "ghc98" "ghc910" "ghc912" ]
               (compiler-nix-name: { inherit compiler-nix-name; });
           });
         pre-commit-check = pre-commit-hooks.lib.${system}.run {
@@ -72,15 +43,17 @@
             cabal-gild.enable = true;
           };
           tools = {
-            fourmolu = cardanoCanonicalLedger.tool "fourmolu" fourmoluVersion;
+            fourmolu =
+              cardanoCanonicalLedger.tool "fourmolu" project.fourmoluVersion;
             cabal-gild =
-              cardanoCanonicalLedger.tool "cabal-gild" cabalGildVersion;
+              cardanoCanonicalLedger.tool "cabal-gild" project.cabalGildVersion;
           };
         };
-        treefmtEval = treefmt-nix.lib.evalModule pkgs ./nix/treefmt.nix;
-      in lib.recursiveUpdate flake rec {
+        treefmtEval =
+          treefmt-nix.lib.evalModule pkgs (import ./nix/treefmt.nix project);
+      in lib.recursiveUpdate flake {
         project = cardanoCanonicalLedger;
-        legacyPackages = rec { inherit cardanoCanonicalLedger pkgs; };
+        legacyPackages = { inherit cardanoCanonicalLedger pkgs; };
 
         checks = {
           formatting = treefmtEval.${pkgs.system}.config.build.check self;
@@ -102,9 +75,6 @@
 
   # --- Flake Local Nix Configuration ----------------------------
   nixConfig = {
-    # This sets the flake to use the IOG nix cache.
-    # Nix should ask for permission before using it,
-    # but remove it here if you do not want it to.
     extra-substituters = [ "https://cache.iog.io" ];
     extra-trusted-public-keys =
       [ "hydra.iohk.io:f/Ea+s+dFdN+3Y/G+FDgSq+a5NEWhJGzdjvKNGv0/EQ=" ];
