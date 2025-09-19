@@ -47,15 +47,6 @@ data NamespaceInfo = NamespaceInfo
   }
   deriving (Show)
 
-instance Semigroup NamespaceInfo where
-  a <> b =
-    NamespaceInfo
-      { namespaceEntries = namespaceEntries a + namespaceEntries b
-      , namespaceChunks = namespaceChunks a + namespaceChunks b
-      , namespaceHash = namespaceHash a -- ignoring hash combination for now,
-      -- TODO: use merkle tree constructor here?
-      }
-
 -- | Manifest record
 data Manifest = Manifest
   { totalEntries :: Word64
