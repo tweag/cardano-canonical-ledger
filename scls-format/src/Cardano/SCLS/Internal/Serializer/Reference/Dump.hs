@@ -17,6 +17,7 @@ import Cardano.SCLS.Internal.Record.Manifest
 import Cardano.SCLS.Internal.Serializer.ChunksBuilder.InMemory
 import Crypto.Hash.MerkleTree.Incremental qualified as MT
 
+import Data.Foldable (foldl')
 import Data.Function ((&))
 import Data.Map (Map)
 import Data.Map qualified as Map
