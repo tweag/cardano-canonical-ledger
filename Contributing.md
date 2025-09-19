@@ -95,6 +95,24 @@ To build the project in the project directory run command:
 cabal build all
 ```
 
+### Building with Nix
+
+You can also build specific package components using Nix:
+
+``` sh
+nix build .#scls-format:lib:scls-format
+```
+
+This example builds the `scls-format` library component. You can replace the component specification with other available packages and components in the project.
+
+You can also build these components for each of the project's supported GHC versions:
+
+``` sh
+nix build .#ghc98:scls-format:lib:scls-format
+```
+
+Replace `ghc98` with the desired GHC version to build components with that specific compiler version.
+
 ## Testing
 
 To run tests in the project directory run command:
