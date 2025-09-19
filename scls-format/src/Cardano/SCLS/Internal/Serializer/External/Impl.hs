@@ -183,13 +183,15 @@ merge2 f1 f2 = do
             bs2' <- readNext h2
             go a bs2'
 
-    -- TODO: just copy the rest of the file, no need to parse entries
-    copyAll hin =
-      readNext hin >>= \case
-        Nothing -> pure ()
-        Just bs -> do
-          B.hPut hout (packByteString $ Entry $ RawBytes bs)
-          copyAll hin
+    -- Efficiently copy the rest of the file without parsing entries
+    copyAll hin = do
+      let chunkSize = 32768  -- 32 KiB, adjust as needed
+      let loop = do
+            chunk <- B.hGetSome hin chunkSize
+            if B.null chunk
+              then pure ()
+              else B.hPut hout chunk >> loop
+      loop
 
 -- | Create a stream from the list of namespaces.
 sourceNs :: IORef [Handle] -> FilePath -> DataStream RawBytes
