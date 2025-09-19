@@ -2,6 +2,7 @@
 
 module Cardano.SCLS.Internal.Frame (
   FrameView (..),
+  mkRecordType,
   fetchOffsetFrame,
   fetchNextFrame,
 

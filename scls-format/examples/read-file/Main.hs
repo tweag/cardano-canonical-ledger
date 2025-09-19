@@ -1,7 +1,9 @@
+{-# LANGUAGE NamedFieldPuns #-}
 -- Example of reading scls file without interpretation.
 --
 -- TODO: use some streaming library instead of the current approach?
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeApplications #-}
 -- this is a tempororary file
 {-# OPTIONS_GHC -fno-warn-incomplete-uni-patterns #-}
 
@@ -28,16 +30,17 @@ main = do
           data_record <- fetchOffsetFrame handle next_record
           putStrLn $ show data_record
           case data_record of
-            FrameView{frameRecordType = 0} -> do
-              let Just decoded_frame :: Maybe (FrameView Hdr) = decodeFrame data_record
-              putStrLn $ show (frameViewContent decoded_frame)
-            FrameView{frameRecordType = 0x10} -> do
-              putStrLn $ "Decoding frame: " <> show (fmap Debug data_record)
-              let Just decoded_frame :: Maybe (FrameView Chunk) = decodeFrame data_record
-              putStrLn $ show (DebugChunk $ frameViewContent decoded_frame)
-            FrameView{frameRecordType = 0x01} -> do
-              let Just decoded_frame :: Maybe (FrameView Manifest) = decodeFrame data_record
-              putStrLn $ show (frameViewContent decoded_frame)
+            FrameView{frameRecordType}
+              | frameRecordType == mkRecordType @Hdr -> do
+                  let Just decoded_frame :: Maybe (FrameView Hdr) = decodeFrame data_record
+                  putStrLn $ show (frameViewContent decoded_frame)
+              | frameRecordType == mkRecordType @Chunk -> do
+                  putStrLn $ "Decoding frame: " <> show (fmap Debug data_record)
+                  let Just decoded_frame :: Maybe (FrameView Chunk) = decodeFrame data_record
+                  putStrLn $ show (DebugChunk $ frameViewContent decoded_frame)
+              | frameRecordType == mkRecordType @Manifest -> do
+                  let Just decoded_frame :: Maybe (FrameView Manifest) = decodeFrame data_record
+                  putStrLn $ show (frameViewContent decoded_frame)
             _ ->
               putStrLn $ "Unsupported frame: " <> show (fmap Debug data_record)
           go next_record
