@@ -23,6 +23,7 @@ import Data.Text (Text)
 import Data.Text.Encoding qualified as T
 import Data.Word
 
+import Cardano.SCLS.Internal.Frame (frameHeaderSize)
 import Cardano.SCLS.Internal.Hash
 import Cardano.SCLS.Internal.Record.Internal.Class
 
@@ -73,7 +74,7 @@ instance IsFrameRecord 0x01 Manifest where
     putWord32be 0
     putWord64be prevManifestOffset
     put rootHash
-    putWord32be (fromIntegral $ 8 + 8 + summarySize + nsSize + 4 + 8 + hashDigestSize)
+    putWord32be (fromIntegral $ 8 + 8 + summarySize + nsSize + 4 + 8 + hashDigestSize + frameHeaderSize)
    where
     putNsInfo (ns, h) = do
       let nsBytes = T.encodeUtf8 ns
@@ -82,7 +83,7 @@ instance IsFrameRecord 0x01 Manifest where
       putWord64be (namespaceEntries h)
       putWord64be (namespaceChunks h)
       putByteString nsBytes
-      put (namespaceHash h) -- 28 bytes
+      put (namespaceHash h)
       return (4 + 8 + 8 + bytesLength + hashDigestSize)
     encodeSummary ManifestSummary{..} = do
       let createdAtBytes = T.encodeUtf8 createdAt

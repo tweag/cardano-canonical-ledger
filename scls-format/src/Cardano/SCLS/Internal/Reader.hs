@@ -81,7 +81,7 @@ withLatestManifestFrame f filePath = do
     offset <- case runGetOrFail getWord32be (BSL.fromStrict bs) of
       Right (_, _, d) -> return d
       Left{} -> throwIO NotSCLSFile
-    frameData <- fetchOffsetFrame handle (FrameView (5 + offset) (mkRecordType @Manifest) (fromIntegral h - fromIntegral offset - 5))
+    frameData <- fetchOffsetFrame handle (FrameView (offset) (mkRecordType @Manifest) (fromIntegral h - fromIntegral offset))
     case decodeFrame frameData of
       Just FrameView{frameViewContent = m@Manifest{}} -> f m
       Nothing -> throwIO NotSCLSFile
