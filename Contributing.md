@@ -20,6 +20,16 @@ nix develop
 
 This will set up the environment with the required GHC version and all necessary libraries and tools.
 
+#### Multiple GHC versions
+
+The Nix setup provides dev shells for various GHC versions. You can enter a shell with a specific GHC version by using:
+
+``` sh
+nix develop .#ghc984
+```
+
+Replace `ghc984` with the desired GHC version. Available versions can be found in the flake configuration.
+
 #### Nix cache (optional, but recommended)
 
 To speed up the build process (avoid building GHC), you should use the IOHK Nix cache.
@@ -84,6 +94,24 @@ To build the project in the project directory run command:
 ``` sh
 cabal build all
 ```
+
+### Building with Nix
+
+You can also build specific package components using Nix:
+
+``` sh
+nix build .#scls-format:lib:scls-format
+```
+
+This example builds the `scls-format` library component. You can replace the component specification with other available packages and components in the project.
+
+You can also build these components for each of the project's supported GHC versions:
+
+``` sh
+nix build .#ghc98:scls-format:lib:scls-format
+```
+
+Replace `ghc98` with the desired GHC version to build components with that specific compiler version.
 
 ## Testing
 
