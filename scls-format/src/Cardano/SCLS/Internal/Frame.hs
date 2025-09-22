@@ -2,8 +2,10 @@
 
 module Cardano.SCLS.Internal.Frame (
   FrameView (..),
+  mkRecordType,
   fetchOffsetFrame,
   fetchNextFrame,
+  frameHeaderSize,
 
   -- * IO
   headerOffset,
@@ -148,3 +150,8 @@ hWriteFrameBuffer handle record_type u = do
 -- | Zero frame that is useful to initialize process of file consumption
 headerOffset :: OffsetFrame
 headerOffset = FrameView 0 0 0
+
+-- | Size of the frame, offset from the start to the first byte of the payload.
+frameHeaderSize :: (Num a) => a
+{-# SPECIALIZE frameHeaderSize :: Word32 #-}
+frameHeaderSize = 5

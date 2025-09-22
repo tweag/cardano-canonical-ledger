@@ -5,6 +5,7 @@ import Cardano.SCLS.Internal.Hash (Digest (..))
 import Cardano.SCLS.Internal.Reader (extractRootHash, withNamespacedData)
 import Cardano.SCLS.Internal.Serializer.External.Impl qualified as External (serialize)
 import Cardano.SCLS.Internal.Serializer.MemPack
+import Cardano.SCLS.Internal.Serializer.Reference.Impl (InputChunk)
 import Cardano.SCLS.Internal.Serializer.Reference.Impl qualified as Reference (serialize)
 import Cardano.Types.Network (NetworkId (..))
 import Cardano.Types.SlotNo (SlotNo (..))
@@ -35,20 +36,20 @@ import Test.HUnit
 import Test.Hspec
 import Test.Hspec.Contrib.HUnit
 
-type SerializeF = FilePath -> NetworkId -> SlotNo -> Text -> S.Stream (S.Of RawBytes) IO () -> IO ()
+import MultiNamespace qualified (tests)
+
+type SerializeF = FilePath -> NetworkId -> SlotNo -> S.Stream (S.Of (InputChunk RawBytes)) IO () -> IO ()
 
 main :: IO ()
 main = do
   hspec $ do
     fromHUnitTest tests
     chunksBuilderTests
+    MultiNamespace.tests
  where
   tests =
     TestList
       [ roundTriptests
-      -- basic tests: network encoding, slot encoding
-      -- test hash of entire content
-      -- test hash of each namespace
       ]
   roundTriptests =
     TestLabel "Roundtrip tests" $
@@ -77,9 +78,7 @@ main = do
           fileName
           Mainnet
           (SlotNo 1)
-          namespace
-          (S.each encoded_data & S.map RawBytes)
-        -- Check roundtrip
+          (S.each [(namespace S.:> (S.each encoded_data & S.map RawBytes))])
         withNamespacedData
           fileName
           namespace
@@ -98,4 +97,4 @@ main = do
         assertEqual
           "Root hash roundtrip successful"
           file_digest
-          (Just expected_digest)
+          (Digest $ MT.merkleRootHash $ MT.finalize $ MT.add (MT.empty undefined) expected_digest)

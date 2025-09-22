@@ -1,20 +1,28 @@
+{-# LANGUAGE BlockArguments #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ViewPatterns #-}
 
 module Cardano.SCLS.Internal.Serializer.Reference.Dump (
+  DataStream (..),
+  InputChunk,
   dumpToHandle,
   constructChunks_,
 ) where
 
 import Cardano.SCLS.Internal.Frame
-import Cardano.SCLS.Internal.Hash (Digest)
+import Cardano.SCLS.Internal.Hash (Digest (..))
 import Cardano.SCLS.Internal.Record.Chunk
 import Cardano.SCLS.Internal.Record.Hdr
 import Cardano.SCLS.Internal.Record.Manifest
 import Cardano.SCLS.Internal.Serializer.ChunksBuilder.InMemory
+import Crypto.Hash.MerkleTree.Incremental qualified as MT
+
+import Data.Foldable qualified as F
 import Data.Function ((&))
-import Data.Map qualified as Map
+import Data.Map (Map)
+import Data.Map.Strict qualified as Map
+
 import Data.MemPack
 import Data.MemPack.Buffer (pinnedByteArrayToByteString)
 import Data.Text (Text)
@@ -27,36 +35,72 @@ import Streaming.Internal (Stream (..))
 import Streaming.Prelude qualified as S
 import System.IO (Handle)
 
+type InputChunk a = S.Of Text (S.Stream (S.Of a) IO ())
+
+{- | A stream of values grouped by namespace.
+
+Each element of the outer stream is a pair of:
+  * a 'Text' namespace identifier
+  * a stream of values of type @a@ belonging to that namespace.
+
+Constraints:
+  * Each namespace appears at most once in the stream (no duplicate namespaces).
+  * The namespaces are ordered as they appear in the stream; no global ordering is enforced.
+  * The values within each namespace stream are ordered as they appear.
+  * Multiple segments per namespace are NOT allowed; all values for a namespace must be in a single contiguous stream.
+  * The stream may be empty.
+
+This type is used as input to chunked serialization routines, which expect the data to be grouped and ordered as described.
+-}
+newtype DataStream a = DataStream {runDataStream :: Stream (Of (InputChunk a)) IO ()}
+
 -- Dumps data to the handle, while splitting it into chunks.
 --
 -- This is reference implementation and it does not yet care about
 -- proper working with the hardware, i.e. flushing and calling fsync
 -- at the right moments.
-dumpToHandle :: (MemPack a, Typeable a) => Handle -> T.Text -> Hdr -> Stream (Of a) IO () -> IO ()
-dumpToHandle handle namespace hdr orderedStream = do
+dumpToHandle :: (MemPack a, Typeable a) => Handle -> Hdr -> DataStream a -> IO ()
+dumpToHandle handle hdr orderedStream = do
   _ <- hWriteFrame handle hdr
-  manifestData :: Of Int (Of Int (Digest)) <-
-    orderedStream -- output our sorted stream
-      & constructChunks_ -- compose entries into data for chunks records, returns digest of entries
-      & S.copy
-      & storeToHandle -- stores data to handle,passes digest of entries
-      & S.map chunkItemEntriesCount -- keep only number of entries (other things are not needed)
-      & S.copy
-      & S.length -- returns number of chunks
-      & S.sum -- returns number of entries
-  manifest <- mkManifest namespace manifestData
+  manifestData :: ManifestInfo <-
+    runDataStream orderedStream -- output our sorted stream
+      & S.mapM
+        ( \(namespace :> inner) -> do
+            inner
+              & constructChunks_ -- compose entries into data for chunks records, returns digest of entries
+              & S.copy
+              & storeToHandle namespace -- stores data to handle,passes digest of entries
+              & S.map chunkItemEntriesCount -- keep only number of entries (other things are not needed)
+              & S.copy
+              & S.length -- returns number of chunks
+              & S.sum -- returns number of entries
+              & fmap (namespace,)
+        )
+      & S.fold_
+        do
+          \rest (namespace, (entries :> (chunks :> rootHash))) ->
+            let ni =
+                  NamespaceInfo
+                    { namespaceEntries = fromIntegral entries
+                    , namespaceChunks = fromIntegral chunks
+                    , namespaceHash = rootHash
+                    }
+             in Map.insert namespace ni rest
+        mempty
+        do \x -> ManifestInfo x
+  manifest <- mkManifest manifestData
   _ <- hWriteFrame handle manifest
   pure ()
  where
-  storeToHandle :: (S.MonadIO io) => Stream (Of ChunkItem) io r -> io r
-  storeToHandle s =
+  storeToHandle :: (S.MonadIO io) => Text -> Stream (Of ChunkItem) io r -> io r
+  storeToHandle namespace s =
     s
       & S.zip (S.enumFrom 1)
-      & S.map chunkToRecord
+      & S.map (chunkToRecord namespace)
       & S.mapM_ (liftIO . hWriteFrame handle)
 
-  chunkToRecord :: (Word64, ChunkItem) -> Chunk
-  chunkToRecord (seqno, ChunkItem{..}) =
+  chunkToRecord :: Text -> (Word64, ChunkItem) -> Chunk
+  chunkToRecord namespace (seqno, ChunkItem{..}) =
     mkChunk
       seqno
       chunkItemFormat
@@ -89,14 +133,32 @@ constructChunks_ s0 = liftIO initialize >>= consume s0
             S.each chunks
             consume rest machine'
 
-mkManifest :: Text -> Of Int (Of Int Digest) -> IO Manifest
-mkManifest namespace ((fromIntegral -> totalEntries) S.:> ((fromIntegral -> totalChunks) S.:> rootHash)) = do
+data ManifestInfo = ManifestInfo
+  { _namespaceInfo :: Map Text NamespaceInfo
+  }
+
+instance Semigroup ManifestInfo where
+  (ManifestInfo a) <> (ManifestInfo b) = ManifestInfo (Map.union a b)
+
+instance Monoid ManifestInfo where
+  mempty = ManifestInfo Map.empty
+
+mkManifest :: ManifestInfo -> IO Manifest
+mkManifest (ManifestInfo namespaceInfo) = do
+  let ns = Map.toList namespaceInfo
+      totalEntries = sum (namespaceEntries . snd <$> ns)
+      totalChunks = sum (namespaceChunks . snd <$> ns)
+      rootHash =
+        Digest $
+          MT.merkleRootHash $
+            MT.finalize $
+              F.foldl' MT.add (MT.empty undefined) (namespaceHash . snd <$> ns)
   pure
     Manifest
       { totalEntries
       , totalChunks
       , rootHash = rootHash
-      , nsRoots = Map.fromList [(namespace, rootHash)]
+      , nsInfo = namespaceInfo
       , prevManifestOffset = 0 -- TODO: support chaining of manifests
       , summary =
           ManifestSummary

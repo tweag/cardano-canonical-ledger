@@ -9,19 +9,21 @@ Manifest record for file integrity and summary information.
 module Cardano.SCLS.Internal.Record.Manifest (
   Manifest (..),
   ManifestSummary (..),
+  NamespaceInfo (..),
 ) where
 
 import Data.Binary (get, put)
 import Data.Binary.Get (getByteString, getWord32be, getWord64be, getWord8)
 import Data.Binary.Put
 import Data.ByteString qualified as BS
-import Data.Foldable (traverse_)
 import Data.Function (fix)
+import Data.Map.Strict (Map)
 import Data.Map.Strict qualified as Map
 import Data.Text (Text)
 import Data.Text.Encoding qualified as T
 import Data.Word
 
+import Cardano.SCLS.Internal.Frame (frameHeaderSize)
 import Cardano.SCLS.Internal.Hash
 import Cardano.SCLS.Internal.Record.Internal.Class
 
@@ -36,6 +38,16 @@ data ManifestSummary = ManifestSummary
   }
   deriving (Show)
 
+data NamespaceInfo = NamespaceInfo
+  { namespaceEntries :: Word64
+  -- ^ number of entries
+  , namespaceChunks :: Word64
+  -- ^ number of chunks
+  , namespaceHash :: Digest
+  -- ^ multihash of root entry
+  }
+  deriving (Show)
+
 -- | Manifest record
 data Manifest = Manifest
   { totalEntries :: Word64
@@ -43,9 +55,9 @@ data Manifest = Manifest
   , totalChunks :: Word64
   -- ^ number of chunks
   , rootHash :: Digest
-  -- ^ hash of root entry
-  , nsRoots :: Map.Map Text Digest
-  -- ^ map from namespace to multihash
+  -- ^ multihash of root entry
+  , nsInfo :: Map Text NamespaceInfo
+  -- ^ map from namespace to its entries, chunks and multihash
   , prevManifestOffset :: Word64
   -- ^ offset of previous manifest
   , summary :: ManifestSummary
@@ -57,34 +69,43 @@ instance IsFrameRecord 0x01 Manifest where
   encodeRecordContents Manifest{..} = do
     putWord64be totalEntries
     putWord64be totalChunks
-    encodeSummary summary
-    traverse_ putNsRoot (Map.toList nsRoots)
+    summarySize <- encodeSummary summary
+    (sum -> nsSize) <- traverse putNsInfo (Map.toList nsInfo)
     putWord32be 0
     putWord64be prevManifestOffset
     put rootHash
+    putWord32be (fromIntegral $ 8 + 8 + summarySize + nsSize + 4 + 8 + hashDigestSize + frameHeaderSize)
    where
-    putNsRoot (ns, h) = do
+    putNsInfo (ns, h) = do
       let nsBytes = T.encodeUtf8 ns
-      putWord32be (fromIntegral $ BS.length nsBytes)
+          bytesLength = BS.length nsBytes
+      putWord32be (fromIntegral bytesLength)
+      putWord64be (namespaceEntries h)
+      putWord64be (namespaceChunks h)
       putByteString nsBytes
-      put h
+      put (namespaceHash h)
+      return (4 + 8 + 8 + bytesLength + hashDigestSize)
     encodeSummary ManifestSummary{..} = do
       let createdAtBytes = T.encodeUtf8 createdAt
           toolBytes = T.encodeUtf8 tool
-      putWord32be (fromIntegral $ BS.length createdAtBytes)
+          createdAtLength = BS.length createdAtBytes
+          toolBytesLength = BS.length toolBytes
+      putWord32be (fromIntegral createdAtLength)
       putByteString createdAtBytes
-      putWord32be (fromIntegral $ BS.length toolBytes)
+      putWord32be (fromIntegral toolBytesLength)
       putByteString toolBytes
       let cBytes = maybe BS.empty T.encodeUtf8 comment
-      putWord32be (fromIntegral $ BS.length cBytes)
+          cBytesLength = BS.length cBytes
+      putWord32be (fromIntegral cBytesLength)
       putByteString cBytes
+      return (4 + createdAtLength + 4 + toolBytesLength + 4 + cBytesLength)
 
   decodeRecordContents = do
     _ <- getWord8
     totalEntries <- getWord64be
     totalChunks <- getWord64be
     summary <- decodeSummary
-    (Map.fromList -> nsRoots) <-
+    (Map.fromList -> nsInfo) <-
       flip fix [] $ \next current -> do
         getNsRoot >>= \case
           Nothing -> pure current
@@ -98,9 +119,11 @@ instance IsFrameRecord 0x01 Manifest where
       if nsLen == 0
         then return Nothing
         else do
+          namespaceEntries <- getWord64be
+          namespaceChunks <- getWord64be
           ns <- T.decodeUtf8 <$> getByteString (fromIntegral nsLen)
-          h <- get
-          pure (Just (ns, h))
+          namespaceHash <- get
+          pure (Just (ns, NamespaceInfo{..}))
     decodeSummary = do
       createdAtLen <- getWord32be
       createdAt <- T.decodeUtf8 <$> getByteString (fromIntegral createdAtLen)
