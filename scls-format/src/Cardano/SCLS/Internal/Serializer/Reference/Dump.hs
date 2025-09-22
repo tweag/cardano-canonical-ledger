@@ -21,7 +21,7 @@ import Crypto.Hash.MerkleTree.Incremental qualified as MT
 import Data.Foldable qualified as F
 import Data.Function ((&))
 import Data.Map (Map)
-import Data.Map qualified as Map
+import Data.Map.Strict qualified as Map
 
 import Data.MemPack
 import Data.MemPack.Buffer (pinnedByteArrayToByteString)
@@ -76,15 +76,18 @@ dumpToHandle handle hdr orderedStream = do
               & S.sum -- returns number of entries
               & fmap (namespace,)
         )
-      & S.foldMap_ \(namespace, (entries :> (chunks :> rootHash))) ->
-        ManifestInfo $!
-          Map.singleton
-            namespace
-            NamespaceInfo
-              { namespaceEntries = fromIntegral entries
-              , namespaceChunks = fromIntegral chunks
-              , namespaceHash = rootHash
-              }
+      & S.fold_
+        do
+          \rest (namespace, (entries :> (chunks :> rootHash))) ->
+            let ni =
+                  NamespaceInfo
+                    { namespaceEntries = fromIntegral entries
+                    , namespaceChunks = fromIntegral chunks
+                    , namespaceHash = rootHash
+                    }
+             in Map.insert namespace ni rest
+        mempty
+        do \x -> ManifestInfo x
   manifest <- mkManifest manifestData
   _ <- hWriteFrame handle manifest
   pure ()
