@@ -149,7 +149,7 @@ mkManifest (ManifestInfo namespaceInfo) = do
         Digest $
           MT.merkleRootHash $
             MT.finalize $
-              foldl' MT.add (MT.empty undefined) (namespaceHash . snd <$> ns)
+              F.foldl' MT.add (MT.empty undefined) (namespaceHash . snd <$> ns)
   pure
     Manifest
       { totalEntries
