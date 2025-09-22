@@ -20,8 +20,8 @@ common warnings
 library
   import: warnings
   exposed-modules:
-    Cardano.SCLS.CBOR.Canonical
     Cardano.SCLS.CBOR.Canonical.Decoder
+    Cardano.SCLS.CBOR.Canonical.Encoder
 
   -- other-modules:
   -- other-extensions:
