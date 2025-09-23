@@ -25,7 +25,6 @@ import Data.Traversable (for)
 import Streaming.Prelude qualified as S
 import System.FilePath ((</>))
 import System.IO.Temp (withSystemTempDirectory)
-import Test.HUnit
 import Test.Hspec
 import Test.Hspec.Expectations.Contrib
 
