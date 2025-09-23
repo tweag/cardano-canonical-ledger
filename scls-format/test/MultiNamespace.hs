@@ -80,10 +80,10 @@ roundtrip serialize input = do
           n
           ( \stream -> do
               decoded_data <- S.toList_ stream
-              assertEqual
+              annotate
                 (T.unpack n <> ": stream roundtrip successful")
-                (sort q)
-                [b | RawBytes b <- decoded_data]
+                $ [b | RawBytes b <- decoded_data]
+                  `shouldBe` (sort q)
           )
         fileDigest <- extractNamespaceHash n fileName
         expectedDigest <-
