@@ -56,6 +56,17 @@ mkTestsFor serialize = do
       [ ("ns0", [BS8.pack (show (i :: Int)) | i <- [1 .. 2048]])
       , ("ns1", [BS8.pack (show (i :: Int)) | i <- [1 .. 2048]])
       ]
+  it "works for unordered streams" do
+    roundtrip
+      serialize
+      [ ("ns0", ["d", "a", "c", "b"])
+      , ("ns1", ["3", "1", "4", "2"])
+      , ("ns2", ["z", "x", "y"])
+      ]
+
+  it "handles empty namespaces correctly" do
+    let input = [("ns0", []), ("ns1", ["data"]), ("ns2", [])]
+    roundtrip serialize input
 
 type SerializeF = FilePath -> NetworkId -> SlotNo -> S.Stream (S.Of (InputChunk RawBytes)) IO () -> IO ()
 
