@@ -15,6 +15,7 @@ import Cardano.SCLS.Internal.Hash (Digest (..))
 import Cardano.SCLS.Internal.Record.Chunk
 import Cardano.SCLS.Internal.Record.Hdr
 import Cardano.SCLS.Internal.Record.Manifest
+import Cardano.SCLS.Internal.Record.Metadata
 import Cardano.SCLS.Internal.Serializer.ChunksBuilder.InMemory
 import Crypto.Hash.MerkleTree.Incremental qualified as MT
 
@@ -59,8 +60,8 @@ newtype DataStream a = DataStream {runDataStream :: Stream (Of (InputChunk a)) I
 -- This is reference implementation and it does not yet care about
 -- proper working with the hardware, i.e. flushing and calling fsync
 -- at the right moments.
-dumpToHandle :: (MemPack a, Typeable a) => Handle -> Hdr -> DataStream a -> IO ()
-dumpToHandle handle hdr orderedStream = do
+dumpToHandle :: (MemPack a, Typeable a) => Handle -> Hdr -> Stream (Of Metadata) IO () -> DataStream a -> IO ()
+dumpToHandle handle hdr metadataStream orderedStream = do
   _ <- hWriteFrame handle hdr
   manifestData :: ManifestInfo <-
     runDataStream orderedStream -- output our sorted stream
@@ -88,6 +89,9 @@ dumpToHandle handle hdr orderedStream = do
              in Map.insert namespace ni rest
         mempty
         do \x -> ManifestInfo x
+
+  S.mapM_ (hWriteFrame handle) metadataStream
+
   manifest <- mkManifest manifestData
   _ <- hWriteFrame handle manifest
   pure ()

@@ -6,10 +6,13 @@ module Roundtrip (
 
 import Cardano.SCLS.CDDL (namespaces)
 import Cardano.SCLS.Internal.Hash (Digest (..))
-import Cardano.SCLS.Internal.Reader (extractRootHash, withNamespacedData)
+import Cardano.SCLS.Internal.Reader (extractRootHash, withNamespacedData, withRecordData)
+import Cardano.SCLS.Internal.Record.Metadata (Metadata, mkMetadata)
 import Cardano.SCLS.Internal.Serializer.External.Impl qualified as External (serialize)
 import Cardano.SCLS.Internal.Serializer.MemPack
-import Cardano.SCLS.Internal.Serializer.Reference.Impl (InputChunk)
+import Cardano.SCLS.Internal.Serializer.Reference.Dump (
+  InputChunk,
+ )
 import Cardano.SCLS.Internal.Serializer.Reference.Impl qualified as Reference (serialize)
 import Cardano.Types.Network (NetworkId (..))
 import Cardano.Types.SlotNo (SlotNo (..))
@@ -59,6 +62,7 @@ mkRoundtripTestsFor groupName serialize =
           replicateM 1024 $
             applyAtomicGen (generateCBORTerm' mt (Name (T.pack "record_entry") mempty)) globalStdGen
         let encoded_data = [toStrictByteString (encodeTerm term) | term <- data_]
+            sorted_encoded_data = sort encoded_data
         let fileName = (fn </> "data.scls")
         _ <-
           serialize
@@ -66,6 +70,9 @@ mkRoundtripTestsFor groupName serialize =
             Mainnet
             (SlotNo 1)
             (S.each [(namespace S.:> (S.each encoded_data & S.map RawBytes))])
+            -- TODO: metadata entry supposedly is { subject: URI, entries: CBOR-encoded bytes}
+            -- reuse encoded_data for metadata for now
+            (S.each encoded_data & S.map (\bytes -> mkMetadata bytes 1024))
         withNamespacedData
           fileName
           namespace
@@ -74,16 +81,26 @@ mkRoundtripTestsFor groupName serialize =
               annotate
                 "Stream roundtrip successful"
                 $ [b | RawBytes b <- decoded_data]
-                  `shouldBe` (sort encoded_data)
+                  `shouldBe` sorted_encoded_data
           )
         -- Check roundtrip of root hash
         file_digest <- extractRootHash fileName
         expected_digest <-
-          S.each (sort encoded_data)
+          S.each sorted_encoded_data
             & S.fold_ MT.add (MT.empty undefined) (Digest . MT.merkleRootHash . MT.finalize)
         annotate
           "Root hash roundtrip successful"
           $ file_digest
             `shouldBe` (Digest $ MT.merkleRootHash $ MT.finalize $ MT.add (MT.empty undefined) expected_digest)
 
-type SerializeF = FilePath -> NetworkId -> SlotNo -> S.Stream (S.Of (InputChunk RawBytes)) IO () -> IO ()
+        withRecordData
+          fileName
+          ( \stream -> do
+              decoded_metadata <- S.toList_ stream
+              annotate
+                "Metadata stream roundtrip successful"
+                $ (decoded_metadata)
+                  `shouldBe` ([mkMetadata bytes 1024 | bytes <- encoded_data]) -- TODO: should be sorted
+          )
+
+type SerializeF = FilePath -> NetworkId -> SlotNo -> S.Stream (S.Of (InputChunk RawBytes)) IO () -> S.Stream (S.Of Metadata) IO () -> IO ()
