@@ -59,6 +59,7 @@ mkRoundtripTestsFor groupName serialize =
           replicateM 1024 $
             applyAtomicGen (generateCBORTerm' mt (Name (T.pack "record_entry") mempty)) globalStdGen
         let encoded_data = [toStrictByteString (encodeTerm term) | term <- data_]
+            sorted_encoded_data = sort encoded_data
         let fileName = (fn </> "data.scls")
         _ <-
           serialize
@@ -74,12 +75,12 @@ mkRoundtripTestsFor groupName serialize =
               annotate
                 "Stream roundtrip successful"
                 $ [b | RawBytes b <- decoded_data]
-                  `shouldBe` (sort encoded_data)
+                  `shouldBe` sorted_encoded_data
           )
         -- Check roundtrip of root hash
         file_digest <- extractRootHash fileName
         expected_digest <-
-          S.each (sort encoded_data)
+          S.each sorted_encoded_data
             & S.fold_ MT.add (MT.empty undefined) (Digest . MT.merkleRootHash . MT.finalize)
         annotate
           "Root hash roundtrip successful"
