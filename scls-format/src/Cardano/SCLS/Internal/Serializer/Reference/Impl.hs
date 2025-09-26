@@ -7,6 +7,7 @@ module Cardano.SCLS.Internal.Serializer.Reference.Impl (
 ) where
 
 import Cardano.SCLS.Internal.Record.Hdr
+import Cardano.SCLS.Internal.Record.Metadata
 import Cardano.SCLS.Internal.Serializer.Reference.Dump
 import Cardano.Types.Network
 import Cardano.Types.SlotNo
@@ -36,12 +37,16 @@ serialize ::
   -- | Slot of the current transaction
   SlotNo ->
   DumpConfig a ->
+  {- | Input stream of metadata to serialize
+  TODO: this currently assumes data is sorted
+  -}
+  (S.Stream (S.Of Metadata) IO ()) ->
   IO ()
-serialize resultFilePath network slotNo (DumpConfig{..}) = do
+serialize resultFilePath network slotNo (DumpConfig{..}) metadataStream = do
   withBinaryFile resultFilePath WriteMode \handle -> do
     let hdr = mkHdr network slotNo
     !orderedStream <- mkVectors configChunkStream
-    dumpToHandle handle hdr $
+    dumpToHandle handle hdr metadataStream $
       DumpConfigSorted $
         DumpConfig
           ((S.each [n S.:> S.each v | (n, v) <- Map.toList orderedStream]))

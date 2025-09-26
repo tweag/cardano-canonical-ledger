@@ -19,6 +19,7 @@ import Cardano.SCLS.Internal.Hash (Digest (..))
 import Cardano.SCLS.Internal.Record.Chunk
 import Cardano.SCLS.Internal.Record.Hdr
 import Cardano.SCLS.Internal.Record.Manifest
+import Cardano.SCLS.Internal.Record.Metadata
 import Cardano.SCLS.Internal.Serializer.ChunksBuilder.InMemory
 import Crypto.Hash.MerkleTree.Incremental qualified as MT
 
@@ -84,8 +85,8 @@ withChunks stream DumpConfig{..} =
 -- This is reference implementation and it does not yet care about
 -- proper working with the hardware, i.e. flushing and calling fsync
 -- at the right moments.
-dumpToHandle :: (MemPack a, Typeable a) => Handle -> Hdr -> DumpConfigSorted a -> IO ()
-dumpToHandle handle hdr config = do
+dumpToHandle :: (MemPack a, Typeable a) => Handle -> Hdr -> Stream (Of Metadata) IO () -> DumpConfigSorted a -> IO ()
+dumpToHandle handle hdr metadataStream config = do
   let DumpConfig{..} = getDumpConfigSorted config
   _ <- hWriteFrame handle hdr
   manifestData <-
@@ -114,6 +115,9 @@ dumpToHandle handle hdr config = do
              in Map.insert namespace ni rest
         mempty
         ManifestInfo
+
+
+  S.mapM_ (hWriteFrame handle) metadataStream
 
   manifest <- mkManifest manifestData
   _ <- hWriteFrame handle manifest
