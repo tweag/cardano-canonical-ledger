@@ -7,11 +7,12 @@ module Roundtrip (
 import Cardano.SCLS.CDDL (namespaces)
 import Cardano.SCLS.Internal.Entry
 import Cardano.SCLS.Internal.Hash (Digest (..))
-import Cardano.SCLS.Internal.Reader (extractRootHash, withHeader, withNamespacedData)
+import Cardano.SCLS.Internal.Reader (extractRootHash, withHeader, withNamespacedData, withRecordData)
+import Cardano.SCLS.Internal.Record.Metadata (Metadata, mkMetadata)
 import Cardano.SCLS.Internal.Record.Hdr (mkHdr)
 import Cardano.SCLS.Internal.Serializer.External.Impl qualified as External (serialize)
 import Cardano.SCLS.Internal.Serializer.MemPack
-import Cardano.SCLS.Internal.Serializer.Reference.Dump (DumpConfig, newDumpConfig, withChunks)
+import Cardano.SCLS.Internal.Serializer.Reference.Dump (DumpConfig, InputChunk, newDumpConfig, withChunks)
 import Cardano.SCLS.Internal.Serializer.Reference.Impl qualified as Reference (serialize)
 import Cardano.Types.ByteOrdered
 import Cardano.Types.Network (NetworkId (..))
@@ -93,6 +94,9 @@ mkRoundtripTestsFor groupName serialize =
             Mainnet
             (SlotNo 1)
             (newDumpConfig & withChunks (S.each [namespace S.:> S.each entries]))
+            -- TODO: metadata entry supposedly is { subject: URI, entries: CBOR-encoded bytes}
+            -- reuse encoded_data for metadata for now
+            (S.each encoded_data & S.map (\bytes -> mkMetadata bytes 1024))
         withHeader
           fileName
           ( \hdr ->
@@ -121,4 +125,14 @@ mkRoundtripTestsFor groupName serialize =
           $ file_digest
             `shouldBe` (Digest $ MT.merkleRootHash $ MT.finalize $ MT.add (MT.empty undefined) expected_digest)
 
-type SerializeF = FilePath -> NetworkId -> SlotNo -> DumpConfig (ChunkEntry UtxoIn RawBytes) -> IO ()
+        withRecordData
+          fileName
+          ( \stream -> do
+              decoded_metadata <- S.toList_ stream
+              annotate
+                "Metadata stream roundtrip successful"
+                $ (decoded_metadata)
+                  `shouldBe` ([mkMetadata bytes 1024 | bytes <- encoded_data]) -- TODO: should be sorted
+          )
+
+type SerializeF = FilePath -> NetworkId -> SlotNo -> S.Stream (S.Of (InputChunk RawBytes)) IO () -> S.Stream (S.Of Metadata) IO () -> IO ()
