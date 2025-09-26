@@ -102,6 +102,7 @@ test-suite scls-format-test
   other-modules:
     ChunksBuilderSpec
     MultiNamespace
+    Roundtrip
 
   -- other-extensions:
   type: exitcode-stdio-1.0
@@ -117,7 +118,6 @@ test-suite scls-format-test
     cuddle >=0.5,
     filepath,
     hspec,
-    hspec-contrib,
     hspec-expectations,
     merkle-tree-incremental,
     primitive,
