@@ -82,7 +82,7 @@ roundtrip serialize input = do
         mkStream
     nsps <- extractNamespaceList fileName
     annotate "Namespaces are as expected" do
-      (Map.keys nsData) `shouldBe` (sort nsps)
+      (sort nsps) `shouldBe` (Map.keys nsData)
 
     ns_digests <-
       for (Map.toList nsData) \(n, q) -> do
