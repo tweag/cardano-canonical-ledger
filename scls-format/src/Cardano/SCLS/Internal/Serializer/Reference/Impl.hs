@@ -6,6 +6,7 @@ module Cardano.SCLS.Internal.Serializer.Reference.Impl (
 ) where
 
 import Cardano.SCLS.Internal.Record.Hdr
+import Cardano.SCLS.Internal.Record.Metadata
 import Cardano.SCLS.Internal.Serializer.Reference.Dump
 import Cardano.Types.Network
 import Cardano.Types.SlotNo
@@ -36,12 +37,16 @@ serialize ::
   SlotNo ->
   -- | Input stream of entries to serialize, can be unsorted
   (S.Stream (S.Of (InputChunk a)) IO ()) ->
+  {- | Input stream of metadata to serialize
+  TODO: this currently assumes data is sorted
+  -}
+  (S.Stream (S.Of Metadata) IO ()) ->
   IO ()
-serialize resultFilePath network slotNo stream = do
+serialize resultFilePath network slotNo stream metadataStream = do
   withBinaryFile resultFilePath WriteMode \handle -> do
     let hdr = mkHdr network slotNo
     !orderedStream <- mkVectors stream
-    dumpToHandle handle hdr do
+    dumpToHandle handle hdr metadataStream do
       DataStream (S.each [n S.:> S.each v | (n, v) <- Map.toList orderedStream])
  where
   mkVectors :: (Ord a) => S.Stream (S.Of (InputChunk a)) IO () -> IO (Map Text (V.Vector a))
