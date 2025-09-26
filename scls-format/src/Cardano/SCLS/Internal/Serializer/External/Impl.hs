@@ -20,7 +20,6 @@ import Data.IORef (IORef, modifyIORef', newIORef, readIORef)
 
 -- import Data.Map.Strict (Map)
 import Data.Map.Strict qualified as Map
-import Data.Maybe (fromMaybe)
 import Data.MemPack
 
 import Data.PQueue.Prio.Min qualified as Q
@@ -119,7 +118,9 @@ mergeChunks = loop Map.empty
  where
   chunkSize = 1024
   loop s (Step ((ns :> vecStream) :> rest)) = do
-    let i = fromMaybe Builder.empty $ Map.lookup ns s
+    let (i, s') = case Map.lookup ns s of
+          Nothing -> (Builder.empty, Map.insert ns Builder.empty s)
+          Just b -> (b, s)
     Effect do
       (v :> r) <-
         vecStream
@@ -127,17 +128,17 @@ mergeChunks = loop Map.empty
           & S.toList
       case v of
         -- Nothing in the current chunk, just continue
-        [] -> return $ loop s rest
+        [] -> return $ loop s' rest
         _ ->
           let i' = i <> Builder.foldable v
            in if Builder.size i' < chunkSize -- we were no able to fill the chunk, so r is empty
-                then return $ loop (Map.insert ns i' s) (rest)
+                then return $ loop (Map.insert ns i' s') (rest)
                 else do
                   let v' = runST do
                         mv <- Builder.build i'
                         Tim.sort mv
                         V.unsafeFreeze mv
-                  return $ S.yield (ns, v') >> loop (Map.delete ns s) (Step ((ns :> r) :> rest))
+                  return $ S.yield (ns, v') >> loop (Map.delete ns s') (Step ((ns :> r) :> rest))
   loop s (Effect e) = Effect (e >>= \s' -> return (loop s s'))
   loop s (Return _) = do
     S.each (Map.toList s)
