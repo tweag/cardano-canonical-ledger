@@ -40,11 +40,11 @@ import Test.Hspec.Expectations.Contrib
 tests :: Spec
 tests =
   describe "Roundtrip test" do
-    mkRountripTestsFor "Reference" (Reference.serialize @RawBytes)
-    mkRountripTestsFor "External" (External.serialize @RawBytes)
+    mkRoundtripTestsFor "Reference" (Reference.serialize @RawBytes)
+    mkRoundtripTestsFor "External" (External.serialize @RawBytes)
 
-mkRountripTestsFor :: String -> SerializeF -> Spec
-mkRountripTestsFor groupName serialize =
+mkRoundtripTestsFor :: String -> SerializeF -> Spec
+mkRoundtripTestsFor groupName serialize =
   describe groupName $ do
     sequence_
       [ context n $ it "should succeed with stream roundtrip" $ roundtrip (T.pack n) (toCDDL huddle)
