@@ -42,26 +42,26 @@ instance IsFrameRecord 0 Hdr where
 
 -- | Storable instance for a Header record
 instance Storable Hdr where
-  sizeOf _ = 24
+  sizeOf _ = 20
   alignment _ = 8
   peek ptr = do
     magic_pre <- peekByteOff ptr 0
-    let magic = magic_pre .&. 0xfffff000
-    version <- peekByteOff ptr 8
-    networkId <- peekByteOff ptr 12
-    slotNo <- peekByteOff ptr 16
+    let magic = magic_pre .&. 0xffff0000
+    version <- peekByteOff ptr 4
+    networkId <- peekByteOff ptr 8
+    slotNo <- peekByteOff ptr 12
     return $! Hdr magic version networkId slotNo
   poke ptr (Hdr magic version networkId slotNo) = do
     pokeByteOff ptr 0 magic
-    pokeByteOff ptr 8 version
-    pokeByteOff ptr 12 networkId
-    pokeByteOff ptr 16 slotNo
+    pokeByteOff ptr 4 version
+    pokeByteOff ptr 8 networkId
+    pokeByteOff ptr 12 slotNo
 
 -- | Creates header record for the current version.
 mkHdr :: NetworkId -> SlotNo -> Hdr
 mkHdr networkId slotNo =
   Hdr
-    { magic = 1397506899 -- "SCLS\0"
+    { magic = 1397506899 -- "SCLS"
     , version = packVersion V1
     , networkId = networkId
     , slotNo = slotNo
