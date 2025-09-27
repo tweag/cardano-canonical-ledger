@@ -8,7 +8,7 @@ module Cardano.SCLS.Internal.Record.Hdr (
 import Foreign
 
 import Cardano.SCLS.Internal.Record.Internal.Class
-import Cardano.SCLS.Internal.Version (Version (..), packVersion)
+import Cardano.SCLS.Internal.Version (Version (..), packVersion, unpackVersion)
 import Cardano.Types.Network
 import Cardano.Types.SlotNo
 
@@ -23,7 +23,7 @@ import System.IO.Unsafe (unsafePerformIO)
 -- | Header record.
 data Hdr = Hdr
   { magic :: Word64
-  , version :: Word32
+  , version :: Version
   , networkId :: NetworkId
   , slotNo :: SlotNo
   }
@@ -42,27 +42,32 @@ instance IsFrameRecord 0 Hdr where
 
 -- | Storable instance for a Header record
 instance Storable Hdr where
-  sizeOf _ = 24
+  sizeOf _ =
+    (sizeOf (undefined :: Word64))
+      + 4
+      + (sizeOf (undefined :: Word32))
+      + (sizeOf (undefined :: NetworkId))
+      + (sizeOf (undefined :: SlotNo))
   alignment _ = 8
   peek ptr = do
     magic_pre <- peekByteOff ptr 0
-    let magic = magic_pre .&. 0xfffff000
-    version <- peekByteOff ptr 8
-    networkId <- peekByteOff ptr 12
-    slotNo <- peekByteOff ptr 16
+    let magic = magic_pre .&. 0xffff0000 -- We are interested only in the first 4 bytes
+    version <- unpackVersion <$> peekByteOff ptr 4
+    networkId <- peekByteOff ptr 8
+    slotNo <- peekByteOff ptr 9
     return $! Hdr magic version networkId slotNo
   poke ptr (Hdr magic version networkId slotNo) = do
     pokeByteOff ptr 0 magic
-    pokeByteOff ptr 8 version
-    pokeByteOff ptr 12 networkId
-    pokeByteOff ptr 16 slotNo
+    pokeByteOff ptr 4 (packVersion version)
+    pokeByteOff ptr 8 networkId
+    pokeByteOff ptr 9 slotNo
 
 -- | Creates header record for the current version.
 mkHdr :: NetworkId -> SlotNo -> Hdr
 mkHdr networkId slotNo =
   Hdr
-    { magic = 1397506899 -- "SCLS\0"
-    , version = packVersion V1
+    { magic = 1397506899 -- "SCLS"
+    , version = V1
     , networkId = networkId
     , slotNo = slotNo
     }
