@@ -8,7 +8,7 @@ module Cardano.SCLS.Internal.Record.Hdr (
 import Foreign
 
 import Cardano.SCLS.Internal.Record.Internal.Class
-import Cardano.SCLS.Internal.Version (Version (..), packVersion)
+import Cardano.SCLS.Internal.Version (Version (..), packVersion, unpackVersion)
 import Cardano.Types.Network
 import Cardano.Types.SlotNo
 
@@ -23,7 +23,7 @@ import System.IO.Unsafe (unsafePerformIO)
 -- | Header record.
 data Hdr = Hdr
   { magic :: Word64
-  , version :: Word32
+  , version :: Version
   , networkId :: NetworkId
   , slotNo :: SlotNo
   }
@@ -47,13 +47,13 @@ instance Storable Hdr where
   peek ptr = do
     magic_pre <- peekByteOff ptr 0
     let magic = magic_pre .&. 0xffff0000
-    version <- peekByteOff ptr 4
+    version <- unpackVersion <$> peekByteOff ptr 4
     networkId <- peekByteOff ptr 8
     slotNo <- peekByteOff ptr 9
     return $! Hdr magic version networkId slotNo
   poke ptr (Hdr magic version networkId slotNo) = do
     pokeByteOff ptr 0 magic
-    pokeByteOff ptr 4 version
+    pokeByteOff ptr 4 (packVersion version)
     pokeByteOff ptr 8 networkId
     pokeByteOff ptr 9 slotNo
 
@@ -62,7 +62,7 @@ mkHdr :: NetworkId -> SlotNo -> Hdr
 mkHdr networkId slotNo =
   Hdr
     { magic = 1397506899 -- "SCLS"
-    , version = packVersion V1
+    , version = V1
     , networkId = networkId
     , slotNo = slotNo
     }
