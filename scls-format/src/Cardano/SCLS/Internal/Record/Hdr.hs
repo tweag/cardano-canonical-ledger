@@ -42,11 +42,16 @@ instance IsFrameRecord 0 Hdr where
 
 -- | Storable instance for a Header record
 instance Storable Hdr where
-  sizeOf _ = 17
+  sizeOf _ =
+    (sizeOf (undefined :: Word64))
+      + 4
+      + (sizeOf (undefined :: Word32))
+      + (sizeOf (undefined :: NetworkId))
+      + (sizeOf (undefined :: SlotNo))
   alignment _ = 8
   peek ptr = do
     magic_pre <- peekByteOff ptr 0
-    let magic = magic_pre .&. 0xffff0000
+    let magic = magic_pre .&. 0xffff0000 -- We are interested only in the first 4 bytes
     version <- unpackVersion <$> peekByteOff ptr 4
     networkId <- peekByteOff ptr 8
     slotNo <- peekByteOff ptr 9
