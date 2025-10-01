@@ -7,7 +7,7 @@ module Cardano.Types.Network (
   NetworkId (..),
 ) where
 
-import Data.Word (Word32)
+import Data.Word (Word8)
 import Foreign (castPtr)
 import Foreign.Storable
 
@@ -22,13 +22,13 @@ data NetworkId
 -- TODO: define mempack or another class type for data serialisation
 
 instance Storable NetworkId where
-  sizeOf _ = 4
-  alignment _ = 4
+  sizeOf _ = 1
+  alignment _ = 1
   peek ptr = do
-    n :: Word32 <- peek (castPtr ptr)
+    n :: Word8 <- peek (castPtr ptr)
     return $! case n of
       0 -> Mainnet
       1 -> Testnet
       _ -> error "Unknown NetworkId"
-  poke ptr Mainnet = poke (castPtr ptr) (0 :: Word32)
-  poke ptr Testnet = poke (castPtr ptr) (1 :: Word32)
+  poke ptr Mainnet = poke (castPtr ptr) (0 :: Word8)
+  poke ptr Testnet = poke (castPtr ptr) (1 :: Word8)
