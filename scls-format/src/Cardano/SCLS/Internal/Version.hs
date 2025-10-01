@@ -1,5 +1,3 @@
-{-# LANGUAGE DerivingVia #-}
-
 module Cardano.SCLS.Internal.Version (
   Version (..),
   packVersion,
