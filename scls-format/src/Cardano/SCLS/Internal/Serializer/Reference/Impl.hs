@@ -1,4 +1,5 @@
 {-# LANGUAGE BlockArguments #-}
+{-# LANGUAGE RecordWildCards #-}
 
 module Cardano.SCLS.Internal.Serializer.Reference.Impl (
   serialize,
@@ -6,12 +7,10 @@ module Cardano.SCLS.Internal.Serializer.Reference.Impl (
 ) where
 
 import Cardano.SCLS.Internal.Record.Hdr
-import Cardano.SCLS.Internal.Record.Metadata
 import Cardano.SCLS.Internal.Serializer.Reference.Dump
 import Cardano.Types.Network
 import Cardano.Types.SlotNo
 import Control.Monad.ST (runST)
-import Data.Function ((&))
 import Data.Map.Strict (Map)
 import Data.Map.Strict qualified as Map
 import Data.MemPack
@@ -36,21 +35,17 @@ serialize ::
   NetworkId ->
   -- | Slot of the current transaction
   SlotNo ->
-  -- | Input stream of entries to serialize, can be unsorted
-  (S.Stream (S.Of (InputChunk a)) IO ()) ->
-  {- | Input stream of metadata to serialize
-  TODO: this currently assumes data is sorted
-  -}
-  (S.Stream (S.Of Metadata) IO ()) ->
+  DumpConfig a ->
   IO ()
-serialize resultFilePath network slotNo stream metadataStream = do
+serialize resultFilePath network slotNo (DumpConfig{..}) = do
   withBinaryFile resultFilePath WriteMode \handle -> do
     let hdr = mkHdr network slotNo
-    !orderedStream <- mkVectors stream
+    !orderedStream <- mkVectors configChunkStream
     dumpToHandle handle hdr $
-      newDumpConfig
-        & withChunks (DataStream (S.each [n S.:> S.each v | (n, v) <- Map.toList orderedStream]))
-        & withMetadata metadataStream
+      DumpConfigSorted $
+        DumpConfig
+          ((S.each [n S.:> S.each v | (n, v) <- Map.toList orderedStream]))
+          configMetadataStream
  where
   mkVectors :: (Ord a) => S.Stream (S.Of (InputChunk a)) IO () -> IO (Map Text (V.Vector a))
   mkVectors = do

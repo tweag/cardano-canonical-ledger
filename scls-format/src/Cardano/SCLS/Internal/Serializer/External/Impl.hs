@@ -1,5 +1,6 @@
 {-# LANGUAGE BlockArguments #-}
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ViewPatterns #-}
 
 module Cardano.SCLS.Internal.Serializer.External.Impl (
@@ -7,7 +8,6 @@ module Cardano.SCLS.Internal.Serializer.External.Impl (
 ) where
 
 import Cardano.SCLS.Internal.Record.Hdr
-import Cardano.SCLS.Internal.Record.Metadata
 import Cardano.SCLS.Internal.Serializer.MemPack (Entry (..), RawBytes (..))
 import Cardano.SCLS.Internal.Serializer.Reference.Dump
 import Cardano.Types.Network
@@ -54,24 +54,21 @@ serialize ::
   -- | Slot of the current transaction
   SlotNo ->
   -- | Input stream of entries to serialize, can be unsorted
-  S.Stream (S.Of (InputChunk a)) IO () ->
-  {- | Input stream of metadata to serialize
-  TODO: this currently assumes data is sorted
-  -}
-  S.Stream (S.Of Metadata) IO () ->
+  DumpConfig a ->
   IO ()
-serialize resultFilePath network slotNo inputStream metadataStream = do
+serialize resultFilePath network slotNo (DumpConfig{..}) = do
   let !hdr = mkHdr network slotNo
   withTempDirectory (takeDirectory resultFilePath) "tmp.XXXXXX" \tmpDir -> do
-    prepareExternalSortNamespaced tmpDir inputStream
+    prepareExternalSortNamespaced tmpDir configChunkStream
     handles <- newIORef []
     onException
       do
         withBinaryFile resultFilePath WriteMode \handle -> do
           dumpToHandle handle hdr $
-            newDumpConfig
-              & withChunks (sourceNs handles tmpDir)
-              & withMetadata metadataStream
+            DumpConfigSorted $
+              DumpConfig
+                (sourceNs handles tmpDir)
+                configMetadataStream
       do traverse hClose =<< readIORef handles
 
 {- | Accepts an unordered stream of entries, and prepares a structure of
@@ -201,8 +198,8 @@ merge2 f1 f2 = do
       loop
 
 -- | Create a stream from the list of namespaces.
-sourceNs :: IORef [Handle] -> FilePath -> DataStream RawBytes
-sourceNs handles baseDir = DataStream do
+sourceNs :: IORef [Handle] -> FilePath -> Stream (Of (InputChunk RawBytes)) IO ()
+sourceNs handles baseDir = do
   ns <- liftIO $ listDirectory baseDir
   S.each ns & S.map (\n -> (T.pack n :> kMergeNs handles (baseDir </> n)))
 

@@ -7,12 +7,10 @@ module Roundtrip (
 import Cardano.SCLS.CDDL (namespaces)
 import Cardano.SCLS.Internal.Hash (Digest (..))
 import Cardano.SCLS.Internal.Reader (extractRootHash, withNamespacedData, withRecordData)
-import Cardano.SCLS.Internal.Record.Metadata (Metadata, mkMetadata)
+import Cardano.SCLS.Internal.Record.Metadata (mkMetadata)
 import Cardano.SCLS.Internal.Serializer.External.Impl qualified as External (serialize)
 import Cardano.SCLS.Internal.Serializer.MemPack
-import Cardano.SCLS.Internal.Serializer.Reference.Dump (
-  InputChunk,
- )
+import Cardano.SCLS.Internal.Serializer.Reference.Dump (DumpConfig, newDumpConfig, withChunks, withMetadata)
 import Cardano.SCLS.Internal.Serializer.Reference.Impl qualified as Reference (serialize)
 import Cardano.Types.Network (NetworkId (..))
 import Cardano.Types.SlotNo (SlotNo (..))
@@ -69,10 +67,13 @@ mkRoundtripTestsFor groupName serialize =
             fileName
             Mainnet
             (SlotNo 1)
-            (S.each [(namespace S.:> (S.each encoded_data & S.map RawBytes))])
-            -- TODO: metadata entry supposedly is { subject: URI, entries: CBOR-encoded bytes}
-            -- reuse encoded_data for metadata for now
-            (S.each encoded_data & S.map (\bytes -> mkMetadata bytes 1024))
+            $ ( newDumpConfig
+                  & withChunks
+                    (S.each [(namespace S.:> (S.each encoded_data & S.map RawBytes))])
+                  -- TODO: metadata entry supposedly is { subject: URI, entries: CBOR-encoded bytes}
+                  -- reuse encoded_data for metadata for now
+                  & withMetadata (S.each encoded_data & S.map (\bytes -> mkMetadata bytes 1024))
+              )
         withNamespacedData
           fileName
           namespace
@@ -103,4 +104,4 @@ mkRoundtripTestsFor groupName serialize =
                   `shouldBe` ([mkMetadata bytes 1024 | bytes <- encoded_data]) -- TODO: should be sorted
           )
 
-type SerializeF = FilePath -> NetworkId -> SlotNo -> S.Stream (S.Of (InputChunk RawBytes)) IO () -> S.Stream (S.Of Metadata) IO () -> IO ()
+type SerializeF = FilePath -> NetworkId -> SlotNo -> DumpConfig RawBytes -> IO ()

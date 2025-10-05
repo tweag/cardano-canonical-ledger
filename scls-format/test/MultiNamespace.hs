@@ -7,10 +7,9 @@ module MultiNamespace (
 
 import Cardano.SCLS.Internal.Hash (Digest (..))
 import Cardano.SCLS.Internal.Reader (extractNamespaceHash, extractNamespaceList, extractRootHash, withNamespacedData)
-import Cardano.SCLS.Internal.Record.Metadata (Metadata)
 import Cardano.SCLS.Internal.Serializer.External.Impl qualified as External (serialize)
 import Cardano.SCLS.Internal.Serializer.MemPack
-import Cardano.SCLS.Internal.Serializer.Reference.Impl (InputChunk)
+import Cardano.SCLS.Internal.Serializer.Reference.Dump (DumpConfig, newDumpConfig, withChunks)
 import Cardano.SCLS.Internal.Serializer.Reference.Impl qualified as Reference (serialize)
 import Cardano.Types.Network (NetworkId (..))
 import Cardano.Types.SlotNo (SlotNo (..))
@@ -59,7 +58,7 @@ mkTestsFor serialize = do
       , ("ns1", [BS8.pack (show (i :: Int)) | i <- [1 .. 2048]])
       ]
 
-type SerializeF = FilePath -> NetworkId -> SlotNo -> S.Stream (S.Of (InputChunk RawBytes)) IO () -> S.Stream (S.Of Metadata) IO () -> IO ()
+type SerializeF = FilePath -> NetworkId -> SlotNo -> DumpConfig RawBytes -> IO ()
 
 roundtrip :: SerializeF -> [(Text, [ByteString])] -> IO ()
 roundtrip serialize input = do
@@ -70,8 +69,7 @@ roundtrip serialize input = do
         fileName
         Mainnet
         (SlotNo 1)
-        mkStream
-        (S.each [])
+        mkConfig
     nsps <- extractNamespaceList fileName
     annotate "Namespaces are as expected" do
       (Map.keys nsData) `shouldBe` (sort nsps)
@@ -103,9 +101,12 @@ roundtrip serialize input = do
     annotate "File hash matches expected" do
       fileDigest `shouldBe` expectedDigest
  where
-  mkStream =
-    S.each
-      [ n S.:> (S.each q & S.map RawBytes)
-      | (n, q) <- input
-      ]
+  mkConfig =
+    newDumpConfig
+      & ( withChunks $
+            S.each
+              [ n S.:> (S.each q & S.map RawBytes)
+              | (n, q) <- input
+              ]
+        )
   nsData = Map.fromListWith (<>) input
