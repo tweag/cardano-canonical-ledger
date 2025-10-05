@@ -70,8 +70,9 @@ serialize resultFilePath network slotNo (DumpConfig{..}) metadataStream = do
         withBinaryFile resultFilePath WriteMode \handle -> do
           dumpToHandle handle hdr metadataStream $
             DumpConfigSorted $
-              DumpConfig
-                (sourceNs handles tmpDir)
+              newDumpConfig
+                & withChunks (sourceNs handles tmpDir)
+                & withMetadata metadataStream
       do traverse hClose =<< readIORef handles
 
 {- | Accepts an unordered stream of entries, and prepares a structure of

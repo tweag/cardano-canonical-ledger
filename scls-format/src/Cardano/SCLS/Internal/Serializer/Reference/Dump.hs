@@ -10,6 +10,10 @@ module Cardano.SCLS.Internal.Serializer.Reference.Dump (
   DumpConfigSorted (..),
   newDumpConfig,
   withChunks,
+  DumpConfig,
+  newDumpConfig,
+  withChunks,
+  withMetadata,
   dumpToHandle,
   constructChunks_,
 ) where
@@ -65,19 +69,30 @@ data DumpConfig a = (MemPack a, Typeable a) => DumpConfig
   -- e.g. configIsToBuildIndex, configDeltaStream, etc.
   { configChunkStream :: Stream (Of (InputChunk a)) IO ()
   -- ^ Input stream of entries to serialize, can be unsorted
+  , configMetadataStream :: Maybe (Stream (Of Metadata) IO ())
+  -- ^ Optional stream of metadata records to include in the dump
   }
 
 newtype DumpConfigSorted a = DumpConfigSorted {getDumpConfigSorted :: DumpConfig a}
 
 -- | Create a new empty dump configuration.
 newDumpConfig :: forall a. (MemPack a, Typeable a) => DumpConfig a
-newDumpConfig = DumpConfig{configChunkStream = mempty}
+newDumpConfig = DumpConfig{configChunkStream = mempty, configMetadataStream = Nothing}
 
 -- | Add a chunked data stream to the dump configuration.
 withChunks :: (MemPack a, Typeable a) => Stream (Of (InputChunk a)) IO () -> DumpConfig a -> DumpConfig a
 withChunks stream DumpConfig{..} =
   DumpConfig
     { configChunkStream = configChunkStream <> stream
+    , configMetadataStream = configMetadataStream
+    }
+
+-- | Add a metadata stream to the dump configuration.
+withMetadata :: Stream (Of Metadata) IO () -> DumpConfig -> DumpConfig
+withMetadata stream (DumpConfig{..}) =
+  DumpConfig
+    { configChunkStream = configChunkStream
+    , configMetadataStream = Just stream
     }
 
 -- Dumps data to the handle, while splitting it into chunks.
@@ -117,7 +132,9 @@ dumpToHandle handle hdr metadataStream config = do
         ManifestInfo
 
 
-  S.mapM_ (hWriteFrame handle) metadataStream
+  case configMetadataStream of
+    Nothing -> pure ()
+    Just metadataStream -> S.mapM_ (hWriteFrame handle) metadataStream
 
   manifest <- mkManifest manifestData
   _ <- hWriteFrame handle manifest
