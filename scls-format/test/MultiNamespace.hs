@@ -7,7 +7,6 @@ module MultiNamespace (
 
 import Cardano.SCLS.Internal.Hash (Digest (..))
 import Cardano.SCLS.Internal.Reader (extractNamespaceHash, extractNamespaceList, extractRootHash, withNamespacedData)
-import Cardano.SCLS.Internal.Record.Metadata (Metadata)
 import Cardano.SCLS.Internal.Serializer.External.Impl qualified as External (serialize)
 import Cardano.SCLS.Internal.Serializer.MemPack
 import Cardano.SCLS.Internal.Serializer.Reference.Dump (DumpConfig, newDumpConfig, withChunks)
@@ -81,7 +80,6 @@ roundtrip serialize input = do
         Mainnet
         (SlotNo 1)
         mkConfig
-        (S.each [])
     nsps <- extractNamespaceList fileName
     annotate "Namespaces are as expected" do
       (sort nsps) `shouldBe` (Map.keys nsData)

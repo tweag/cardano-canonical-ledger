@@ -10,7 +10,8 @@ module Cardano.SCLS.Internal.Serializer.Reference.Dump (
   DumpConfigSorted (..),
   newDumpConfig,
   withChunks,
-  DumpConfig,
+  DumpConfig (..),
+  DumpConfigSorted (..),
   newDumpConfig,
   withChunks,
   withMetadata,
@@ -65,6 +66,8 @@ newtype DataStream a = DataStream {runDataStream :: Stream (Of (InputChunk a)) I
 
 -- | Configuration for dumping data to a handle.
 data DumpConfig a = (MemPack a, Typeable a) => DumpConfig
+  { configChunkStream :: Stream (Of (InputChunk a)) IO ()
+  , configMetadataStream :: Maybe (Stream (Of Metadata) IO ())
   -- Future fields for more dump configurations can be added here
   -- e.g. configIsToBuildIndex, configDeltaStream, etc.
   { configChunkStream :: Stream (Of (InputChunk a)) IO ()
@@ -88,7 +91,7 @@ withChunks stream DumpConfig{..} =
     }
 
 -- | Add a metadata stream to the dump configuration.
-withMetadata :: Stream (Of Metadata) IO () -> DumpConfig -> DumpConfig
+withMetadata :: Stream (Of Metadata) IO () -> DumpConfig a -> DumpConfig a
 withMetadata stream (DumpConfig{..}) =
   DumpConfig
     { configChunkStream = configChunkStream
@@ -100,8 +103,8 @@ withMetadata stream (DumpConfig{..}) =
 -- This is reference implementation and it does not yet care about
 -- proper working with the hardware, i.e. flushing and calling fsync
 -- at the right moments.
-dumpToHandle :: (MemPack a, Typeable a) => Handle -> Hdr -> Stream (Of Metadata) IO () -> DumpConfigSorted a -> IO ()
-dumpToHandle handle hdr metadataStream config = do
+dumpToHandle :: (MemPack a, Typeable a) => Handle -> Hdr -> DumpConfigSorted a -> IO ()
+dumpToHandle handle hdr config = do
   let DumpConfig{..} = getDumpConfigSorted config
   _ <- hWriteFrame handle hdr
   manifestData <-

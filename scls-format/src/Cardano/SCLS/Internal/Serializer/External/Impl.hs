@@ -8,7 +8,6 @@ module Cardano.SCLS.Internal.Serializer.External.Impl (
 ) where
 
 import Cardano.SCLS.Internal.Record.Hdr
-import Cardano.SCLS.Internal.Record.Metadata
 import Cardano.SCLS.Internal.Serializer.MemPack (Entry (..), RawBytes (..))
 import Cardano.SCLS.Internal.Serializer.Reference.Dump
 import Cardano.Types.Network
@@ -55,12 +54,8 @@ serialize ::
   SlotNo ->
   -- | Input stream of entries to serialize, can be unsorted
   DumpConfig a ->
-  {- | Input stream of metadata to serialize
-  TODO: this currently assumes data is sorted
-  -}
-  S.Stream (S.Of Metadata) IO () ->
   IO ()
-serialize resultFilePath network slotNo (DumpConfig{..}) metadataStream = do
+serialize resultFilePath network slotNo (DumpConfig{..}) = do
   let !hdr = mkHdr network slotNo
   withTempDirectory (takeDirectory resultFilePath) "tmp.XXXXXX" \tmpDir -> do
     prepareExternalSortNamespaced tmpDir configChunkStream
@@ -68,11 +63,11 @@ serialize resultFilePath network slotNo (DumpConfig{..}) metadataStream = do
     onException
       do
         withBinaryFile resultFilePath WriteMode \handle -> do
-          dumpToHandle handle hdr metadataStream $
+          dumpToHandle handle hdr $
             DumpConfigSorted $
               newDumpConfig
                 & withChunks (sourceNs handles tmpDir)
-                & withMetadata metadataStream
+                & withMetadata configMetadataStream
       do traverse hClose =<< readIORef handles
 
 {- | Accepts an unordered stream of entries, and prepares a structure of
