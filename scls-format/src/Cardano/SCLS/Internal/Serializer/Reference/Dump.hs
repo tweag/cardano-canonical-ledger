@@ -6,6 +6,10 @@
 module Cardano.SCLS.Internal.Serializer.Reference.Dump (
   DataStream (..),
   InputChunk,
+  DumpConfig,
+  newDumpConfig,
+  withChunks,
+  withMetadata,
   dumpToHandle,
   constructChunks_,
 ) where
@@ -55,42 +59,74 @@ This type is used as input to chunked serialization routines, which expect the d
 -}
 newtype DataStream a = DataStream {runDataStream :: Stream (Of (InputChunk a)) IO ()}
 
+-- | Configuration for dumping data to a handle.
+data DumpConfig = forall a. (MemPack a, Typeable a) => DumpConfig
+  { configChunkStream :: Maybe (DataStream a)
+  , configMetadataStream :: Maybe (Stream (Of Metadata) IO ())
+  -- Future fields for more dump configurations can be added here
+  -- e.g. configIsToBuildIndex, configDeltaStream, etc.
+  }
+
+-- | Create a new empty dump configuration.
+newDumpConfig :: DumpConfig
+newDumpConfig = DumpConfig (Nothing :: Maybe (DataStream ())) Nothing
+
+-- | Add a chunked data stream to the dump configuration.
+withChunks :: (MemPack a, Typeable a) => DataStream a -> DumpConfig -> DumpConfig
+withChunks stream DumpConfig{..} =
+  DumpConfig
+    { configChunkStream = Just stream
+    , configMetadataStream = configMetadataStream
+    }
+
+-- | Add a metadata stream to the dump configuration.
+withMetadata :: Stream (Of Metadata) IO () -> DumpConfig -> DumpConfig
+withMetadata stream (DumpConfig{..}) =
+  DumpConfig
+    { configChunkStream = configChunkStream
+    , configMetadataStream = Just stream
+    }
+
 -- Dumps data to the handle, while splitting it into chunks.
 --
 -- This is reference implementation and it does not yet care about
 -- proper working with the hardware, i.e. flushing and calling fsync
 -- at the right moments.
-dumpToHandle :: (MemPack a, Typeable a) => Handle -> Hdr -> Stream (Of Metadata) IO () -> DataStream a -> IO ()
-dumpToHandle handle hdr metadataStream orderedStream = do
+dumpToHandle :: Handle -> Hdr -> DumpConfig -> IO ()
+dumpToHandle handle hdr (DumpConfig{..}) = do
   _ <- hWriteFrame handle hdr
-  manifestData :: ManifestInfo <-
-    runDataStream orderedStream -- output our sorted stream
-      & S.mapM
-        ( \(namespace :> inner) -> do
-            inner
-              & constructChunks_ -- compose entries into data for chunks records, returns digest of entries
-              & S.copy
-              & storeToHandle namespace -- stores data to handle,passes digest of entries
-              & S.map chunkItemEntriesCount -- keep only number of entries (other things are not needed)
-              & S.copy
-              & S.length -- returns number of chunks
-              & S.sum -- returns number of entries
-              & fmap (namespace,)
-        )
-      & S.fold_
-        do
-          \rest (namespace, (entries :> (chunks :> rootHash))) ->
-            let ni =
-                  NamespaceInfo
-                    { namespaceEntries = fromIntegral entries
-                    , namespaceChunks = fromIntegral chunks
-                    , namespaceHash = rootHash
-                    }
-             in Map.insert namespace ni rest
-        mempty
-        do \x -> ManifestInfo x
+  manifestData <- case configChunkStream of
+    Nothing -> mempty
+    Just orderedStream ->
+      runDataStream orderedStream -- output our sorted stream
+        & S.mapM
+          ( \(namespace :> inner) -> do
+              inner
+                & constructChunks_ -- compose entries into data for chunks records, returns digest of entries
+                & S.copy
+                & storeToHandle namespace -- stores data to handle,passes digest of entries
+                & S.map chunkItemEntriesCount -- keep only number of entries (other things are not needed)
+                & S.copy
+                & S.length -- returns number of chunks
+                & S.sum -- returns number of entries
+                & fmap (namespace,)
+          )
+        & S.fold_
+          do
+            \rest (namespace, (entries :> (chunks :> rootHash))) ->
+              let ni =
+                    NamespaceInfo
+                      { namespaceEntries = fromIntegral entries
+                      , namespaceChunks = fromIntegral chunks
+                      , namespaceHash = rootHash
+                      }
+               in Map.insert namespace ni rest
+          mempty
+          ManifestInfo
 
-  S.mapM_ (hWriteFrame handle) metadataStream
+  case configMetadataStream of
+    Nothing -> pure ()
+    Just metadataStream -> S.mapM_ (hWriteFrame handle) metadataStream
 
   manifest <- mkManifest manifestData
   _ <- hWriteFrame handle manifest

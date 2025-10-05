@@ -11,6 +11,7 @@ import Cardano.SCLS.Internal.Serializer.Reference.Dump
 import Cardano.Types.Network
 import Cardano.Types.SlotNo
 import Control.Monad.ST (runST)
+import Data.Function ((&))
 import Data.Map.Strict (Map)
 import Data.Map.Strict qualified as Map
 import Data.MemPack
@@ -46,8 +47,10 @@ serialize resultFilePath network slotNo stream metadataStream = do
   withBinaryFile resultFilePath WriteMode \handle -> do
     let hdr = mkHdr network slotNo
     !orderedStream <- mkVectors stream
-    dumpToHandle handle hdr metadataStream do
-      DataStream (S.each [n S.:> S.each v | (n, v) <- Map.toList orderedStream])
+    dumpToHandle handle hdr $
+      newDumpConfig
+        & withChunks (DataStream (S.each [n S.:> S.each v | (n, v) <- Map.toList orderedStream]))
+        & withMetadata metadataStream
  where
   mkVectors :: (Ord a) => S.Stream (S.Of (InputChunk a)) IO () -> IO (Map Text (V.Vector a))
   mkVectors = do
