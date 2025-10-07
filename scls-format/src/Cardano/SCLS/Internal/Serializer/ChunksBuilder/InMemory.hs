@@ -30,6 +30,7 @@ import Data.MemPack
 
 import Data.Primitive.ByteArray
 import Data.Typeable
+import Debug.Trace (traceM)
 import Foreign.Ptr
 import Unsafe.Coerce (unsafeCoerce)
 
