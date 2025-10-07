@@ -128,9 +128,11 @@ constructChunks_ s0 = liftIO initialize >>= consume s0
     case s1 of
       Return{} -> do
         traceM $ "Finalizing chunks"
-        liftIO (interpretCommand machine Finalize) >>= \case
-          (digest, Nothing) -> return digest
-          (digest, Just e) -> S.yield e >> return digest
+        liftIO (interpretCommand machine Finalize) >>= \x -> do
+          traceM "Finalized!!"
+          case x of
+            (digest, Nothing) -> return digest
+            (digest, Just e) -> S.yield e >> return digest
       Effect e -> do
         traceM $ "Processing effect"
         Effect (e >>= \s -> return (consume s machine))
