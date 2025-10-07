@@ -101,7 +101,7 @@ dumpToHandle handle hdr orderedStream = do
     s
       & S.zip (S.enumFrom 1)
       & S.map (chunkToRecord namespace)
-      & S.mapM_ (liftIO . hWriteFrame handle)
+      & S.mapM_ (\x -> traceM (show (DebugChunk x)) >> liftIO (hWriteFrame handle x))
 
   chunkToRecord :: Text -> (Word64, ChunkItem) -> Chunk
   chunkToRecord namespace (seqno, ChunkItem{..}) =
