@@ -73,6 +73,7 @@ dumpToHandle handle hdr orderedStream = do
               & S.copy
               & storeToHandle namespace -- stores data to handle,passes digest of entries
               & S.map chunkItemEntriesCount -- keep only number of entries (other things are not needed)
+              & S.map (\x -> trace (show namespace <> ": entries in chunks: " <> show x) x)
               & S.copy
               & S.length -- returns number of chunks
               & S.sum -- returns number of entries
@@ -101,7 +102,7 @@ dumpToHandle handle hdr orderedStream = do
     s
       & S.zip (S.enumFrom 1)
       & S.map (chunkToRecord namespace)
-      & S.mapM_ (\x -> traceM (show (DebugChunk x)) >> liftIO (hWriteFrame handle x))
+      & S.mapM_ (\x -> liftIO (print (DebugChunk x)) >> liftIO (hWriteFrame handle x))
 
   chunkToRecord :: Text -> (Word64, ChunkItem) -> Chunk
   chunkToRecord namespace (seqno, ChunkItem{..}) =
