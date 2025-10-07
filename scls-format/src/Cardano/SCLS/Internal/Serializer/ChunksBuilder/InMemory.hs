@@ -34,9 +34,9 @@ import Foreign.Ptr
 import Unsafe.Coerce (unsafeCoerce)
 
 data ChunkItem = ChunkItem
-  { chunkItemFormat :: ChunkFormat
-  , chunkItemData :: ByteArray
-  , chunkItemEntriesCount :: Int
+  { chunkItemFormat :: !ChunkFormat
+  , chunkItemData :: !ByteArray
+  , chunkItemEntriesCount :: !Int
   }
 
 -- | Command for the state machine
@@ -82,6 +82,7 @@ mkMachine bufferSize format@ChunkFormatRaw = do
         BuilderMachine
           { interpretCommand = \case
               Finalize -> do
+                traceM $ "Finalize machine"
                 let final = Digest $ MT.merkleRootHash $ MT.finalize merkleTreeState
                 if offset == 0 -- no new data, nothing to emit
                   then
@@ -90,6 +91,7 @@ mkMachine bufferSize format@ChunkFormatRaw = do
                     frozenData <- freezeByteArrayPinned storage 0 offset
                     pure (final, Just ChunkItem{chunkItemEntriesCount = entriesCount, chunkItemFormat = format, chunkItemData = frozenData})
               Append input -> do
+                traceM $ "Append entry"
                 let entry = Entry input
                 let l = packedByteCount entry
                 if offset + l <= bufferSize -- if we fit the current buffer we just need to write data and continue

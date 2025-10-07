@@ -124,14 +124,18 @@ constructChunks_ s0 = liftIO initialize >>= consume s0
     Stream (Of a) IO r ->
     BuilderMachine ->
     Stream (Of ChunkItem) IO (Digest)
-  consume s1 machine = do
+  consume s1 !machine = do
     case s1 of
-      Return{} ->
+      Return{} -> do
+        traceM $ "Finalizing chunks"
         liftIO (interpretCommand machine Finalize) >>= \case
           (digest, Nothing) -> return digest
           (digest, Just e) -> S.yield e >> return digest
-      Effect e -> Effect (e >>= \s -> return (consume s machine))
+      Effect e -> do
+        traceM $ "Processing effect"
+        Effect (e >>= \s -> return (consume s machine))
       Step (u :> rest) -> do
+        traceM $ "Adding entry"
         liftIO (interpretCommand machine (Append u)) >>= \case
           (machine', chunks) -> do
             S.each chunks
