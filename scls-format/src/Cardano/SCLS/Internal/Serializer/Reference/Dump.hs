@@ -35,7 +35,7 @@ import Streaming.Internal (Stream (..))
 import Streaming.Prelude qualified as S
 import System.IO (Handle)
 
-import Debug.Trace (traceM)
+import Debug.Trace (trace, traceM)
 
 type InputChunk a = S.Of Text (S.Stream (S.Of a) IO ())
 
@@ -87,7 +87,7 @@ dumpToHandle handle hdr orderedStream = do
                     , namespaceChunks = fromIntegral chunks
                     , namespaceHash = rootHash
                     }
-             in Map.insert namespace ni rest
+             in trace (show namespace <> ": " <> show ni) $ Map.insert namespace ni rest
         mempty
         do \x -> ManifestInfo x
   traceM $ "Finalizing manifest"
