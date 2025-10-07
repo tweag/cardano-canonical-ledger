@@ -150,8 +150,8 @@ instance Monoid ManifestInfo where
 mkManifest :: ManifestInfo -> IO Manifest
 mkManifest (ManifestInfo namespaceInfo) = do
   let ns = Map.toList namespaceInfo
-      totalEntries = foldl' (+) 0 (namespaceEntries . snd <$> ns)
-      totalChunks = foldl' (+) 0 (namespaceChunks . snd <$> ns)
+      totalEntries = F.foldl' (+) 0 (namespaceEntries . snd <$> ns)
+      totalChunks = F.foldl' (+) 0 (namespaceChunks . snd <$> ns)
       rootHash =
         Digest $
           MT.merkleRootHash $
