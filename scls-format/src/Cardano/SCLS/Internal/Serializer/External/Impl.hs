@@ -43,6 +43,8 @@ import System.IO.Temp (withTempDirectory)
 import VectorBuilder.Builder qualified as Builder
 import VectorBuilder.MVector qualified as Builder
 
+import Debug.Trace (traceM)
+
 serialize ::
   (MemPack a, Ord a, Typeable a) =>
   -- | path to resulting file
@@ -57,11 +59,14 @@ serialize ::
 serialize resultFilePath network slotNo inputStream = do
   let !hdr = mkHdr network slotNo
   withTempDirectory (takeDirectory resultFilePath) "tmp.XXXXXX" \tmpDir -> do
+    traceM $ "Phase1: preparing external directories"
     prepareExternalSortNamespaced tmpDir inputStream
     handles <- newIORef []
     onException
       do
+        traceM $ "Phase2: merging and dumping to " ++ resultFilePath
         withBinaryFile resultFilePath WriteMode \handle -> do
+          traceM $ "Sourcing namespaces from " ++ tmpDir
           dumpToHandle handle hdr $
             sourceNs handles tmpDir
       do traverse hClose =<< readIORef handles

@@ -35,6 +35,8 @@ import Streaming.Internal (Stream (..))
 import Streaming.Prelude qualified as S
 import System.IO (Handle)
 
+import Debug.Trace (traceM)
+
 type InputChunk a = S.Of Text (S.Stream (S.Of a) IO ())
 
 {- | A stream of values grouped by namespace.
@@ -88,7 +90,9 @@ dumpToHandle handle hdr orderedStream = do
              in Map.insert namespace ni rest
         mempty
         do \x -> ManifestInfo x
+  traceM $ "Finalizing manifest"
   manifest <- mkManifest manifestData
+  traceM $ "Storing manifest"
   _ <- hWriteFrame handle manifest
   pure ()
  where
@@ -146,8 +150,8 @@ instance Monoid ManifestInfo where
 mkManifest :: ManifestInfo -> IO Manifest
 mkManifest (ManifestInfo namespaceInfo) = do
   let ns = Map.toList namespaceInfo
-      totalEntries = sum (namespaceEntries . snd <$> ns)
-      totalChunks = sum (namespaceChunks . snd <$> ns)
+      totalEntries = foldl' (+) 0 (namespaceEntries . snd <$> ns)
+      totalChunks = foldl' (+) 0 (namespaceChunks . snd <$> ns)
       rootHash =
         Digest $
           MT.merkleRootHash $
