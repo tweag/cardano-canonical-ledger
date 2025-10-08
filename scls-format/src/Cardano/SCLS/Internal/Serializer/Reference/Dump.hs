@@ -120,7 +120,7 @@ constructChunks_ s0 = liftIO initialize >>= consume s0
     Stream (Of a) IO r ->
     BuilderMachine ->
     Stream (Of ChunkItem) IO (Digest)
-  consume s1 machine = do
+  consume s1 !machine = do
     case s1 of
       Return{} ->
         liftIO (interpretCommand machine Finalize) >>= \case
@@ -146,8 +146,8 @@ instance Monoid ManifestInfo where
 mkManifest :: ManifestInfo -> IO Manifest
 mkManifest (ManifestInfo namespaceInfo) = do
   let ns = Map.toList namespaceInfo
-      totalEntries = sum (namespaceEntries . snd <$> ns)
-      totalChunks = sum (namespaceChunks . snd <$> ns)
+      totalEntries = F.foldl' (+) 0 (namespaceEntries . snd <$> ns)
+      totalChunks = F.foldl' (+) 0 (namespaceChunks . snd <$> ns)
       rootHash =
         Digest $
           MT.merkleRootHash $
