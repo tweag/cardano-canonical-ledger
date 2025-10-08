@@ -91,7 +91,8 @@ mkMetadata entries totalEntries =
     footer = MetadataFooter{..}
    in
     Metadata{..}
- where
+
+-- where
 
 -- digestEntries entries =
 --   digest $ mconcat $ map entryDigestInput entries
