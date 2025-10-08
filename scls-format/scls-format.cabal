@@ -127,4 +127,4 @@ test-suite scls-format-test
     scls-format,
     streaming >=0.2.4.0,
     temporary,
-    text >=2.1,
+    text >=2.0,
