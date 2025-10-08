@@ -34,9 +34,9 @@ import Foreign.Ptr
 import Unsafe.Coerce (unsafeCoerce)
 
 data ChunkItem = ChunkItem
-  { chunkItemFormat :: ChunkFormat
-  , chunkItemData :: ByteArray
-  , chunkItemEntriesCount :: Int
+  { chunkItemFormat :: !ChunkFormat
+  , chunkItemData :: !ByteArray
+  , chunkItemEntriesCount :: !Int
   }
 
 -- | Command for the state machine
