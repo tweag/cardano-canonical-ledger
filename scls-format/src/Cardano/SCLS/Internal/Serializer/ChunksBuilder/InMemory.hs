@@ -85,6 +85,7 @@ mkMachine bufferSize format@ChunkFormatRaw = do
               Finalize -> do
                 traceM $ "Finalize machine"
                 let final = Digest $ MT.merkleRootHash $ MT.finalize merkleTreeState
+                print final
                 if offset == 0 -- no new data, nothing to emit
                   then
                     pure (final, Nothing)
