@@ -84,7 +84,7 @@ data MerkleTree a
   = -- | An empty tree with no elements
     MerkleTreeEmpty
   | -- | A tree with the given root hash
-    MerkleTreeRoot (MerkleHash a)
+    MerkleTreeRoot !(MerkleHash a)
   deriving (Show, Eq)
 
 {- | Extract the root hash from a completed Merkle tree.
@@ -172,9 +172,9 @@ The incremental algorithm maintains at most one subtree per level,
 ensuring logarithmic space complexity.
 -}
 data MerkleTreeStateNode a = MerkleTreeStateNode
-  { cLevel :: Int
+  { cLevel :: !Int
   -- ^ The level of this subtree (0 for leaves)
-  , cHash :: MerkleHash a
+  , cHash :: !(MerkleHash a)
   -- ^ The root hash of this subtree
   }
   deriving (Show)
@@ -268,7 +268,7 @@ finalize ::
   -- | The completed Merkle tree
   MerkleTree a
 finalize (MerkleTreeState []) = MerkleTreeEmpty
-finalize (MerkleTreeState [MerkleTreeStateNode _ merkleHash]) =
+finalize (MerkleTreeState [MerkleTreeStateNode !_ !merkleHash]) =
   MerkleTreeRoot merkleHash
 finalize (MerkleTreeState (MerkleTreeStateNode level1 hash1 : node2@(MerkleTreeStateNode level2 hash2) : xs))
   | level1 == level2 = finalize (MerkleTreeState (MerkleTreeStateNode (level1 + 1) (nodeHash hash2 hash1) : xs))
