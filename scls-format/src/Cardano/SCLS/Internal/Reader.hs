@@ -5,6 +5,7 @@
 
 module Cardano.SCLS.Internal.Reader (
   withNamespacedData,
+  withLatestManifestFrame,
   extractRootHash,
   extractNamespaceList,
   extractNamespaceHash,

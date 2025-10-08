@@ -1,0 +1,53 @@
+cabal-version: 3.4
+name: scls-util
+version: 0.1.0.0
+synopsis: Utilities for interacting with SCLS files
+description:
+  A collection of command-line utilities for working with SCLS files.
+
+license: Apache-2.0
+license-file: LICENSE
+author: Tweag IO Team <cardano-cls@tweag.io>
+copyright: 2025 (c) Modus Create, Inc.
+category: Codec
+build-type: Simple
+
+common warnings
+  ghc-options: -Wall
+
+executable scls-util
+  import: warnings
+  hs-source-dirs: app
+  main-is: Main.hs
+  build-depends:
+    base >=4.18 && <5,
+    bytestring,
+    containers,
+    crypton,
+    merkle-tree-incremental,
+    optparse-applicative,
+    scls-format,
+    streaming,
+    text,
+
+  default-language: GHC2021
+
+test-suite scls-util-test
+  import: warnings
+  default-language: GHC2021
+  type: exitcode-stdio-1.0
+  hs-source-dirs: test
+  main-is: Main.hs
+  build-depends:
+    base >=4.18 && <5,
+    bytestring,
+    containers,
+    crypton,
+    filepath,
+    hspec,
+    merkle-tree-incremental,
+    process,
+    scls-format,
+    streaming,
+    temporary,
+    text,
