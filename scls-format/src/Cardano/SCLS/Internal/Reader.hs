@@ -5,6 +5,7 @@
 
 module Cardano.SCLS.Internal.Reader (
   withNamespacedData,
+  withRecordData,
   extractRootHash,
   extractNamespaceList,
   extractNamespaceHash,
@@ -30,6 +31,7 @@ import Data.Typeable
 import System.IO
 import System.IO qualified as IO
 
+import Cardano.SCLS.Internal.Record.Internal.Class (IsFrameRecord)
 import Streaming qualified as S
 import Streaming.Prelude qualified as S
 
@@ -55,6 +57,24 @@ withNamespacedData filePath namespace f =
                         rest = BS.drop off bs
                     S.yield userData
                     drain rest
+        go next_record
+
+{- | Stream all records for a particular record type in the file.
+No optimized access, just a full scan of the file.
+-}
+withRecordData :: forall t b r. (IsFrameRecord t b) => FilePath -> (S.Stream (S.Of b) IO () -> IO r) -> IO r
+withRecordData filePath f =
+  IO.withBinaryFile filePath ReadMode \handle -> f (stream handle)
+ where
+  stream handle = do
+    flip fix headerOffset \go record -> do
+      next <- S.liftIO do
+        fetchNextFrame handle record
+      for_ next \next_record -> do
+        dataRecord <- S.liftIO do
+          fetchOffsetFrame handle next_record
+        for_ (decodeFrame dataRecord) \metadataRecord -> do
+          S.yield (frameViewContent metadataRecord)
         go next_record
 
 {- | Extract the root hash from the file at the given offset.

@@ -6,6 +6,11 @@
 module Cardano.SCLS.Internal.Serializer.Reference.Dump (
   DataStream (..),
   InputChunk,
+  DumpConfig (..),
+  DumpConfigSorted (..),
+  newDumpConfig,
+  withChunks,
+  withMetadata,
   dumpToHandle,
   constructChunks_,
 ) where
@@ -15,6 +20,7 @@ import Cardano.SCLS.Internal.Hash (Digest (..))
 import Cardano.SCLS.Internal.Record.Chunk
 import Cardano.SCLS.Internal.Record.Hdr
 import Cardano.SCLS.Internal.Record.Manifest
+import Cardano.SCLS.Internal.Record.Metadata
 import Cardano.SCLS.Internal.Serializer.ChunksBuilder.InMemory
 import Crypto.Hash.MerkleTree.Incremental qualified as MT
 
@@ -54,16 +60,47 @@ This type is used as input to chunked serialization routines, which expect the d
 -}
 newtype DataStream a = DataStream {runDataStream :: Stream (Of (InputChunk a)) IO ()}
 
+-- | Configuration for dumping data to a handle.
+data DumpConfig a = (MemPack a, Typeable a) => DumpConfig
+  { configChunkStream :: Stream (Of (InputChunk a)) IO ()
+  , configMetadataStream :: Maybe (Stream (Of Metadata) IO ())
+  -- Future fields for more dump configurations can be added here
+  -- e.g. configIsToBuildIndex, configDeltaStream, etc.
+  }
+
+newtype DumpConfigSorted a = DumpConfigSorted {getDumpConfigSorted :: DumpConfig a}
+
+-- | Create a new empty dump configuration.
+newDumpConfig :: forall a. (MemPack a, Typeable a) => DumpConfig a
+newDumpConfig = DumpConfig{configChunkStream = mempty, configMetadataStream = Nothing}
+
+-- | Add a chunked data stream to the dump configuration.
+withChunks :: (MemPack a, Typeable a) => Stream (Of (InputChunk a)) IO () -> DumpConfig a -> DumpConfig a
+withChunks stream DumpConfig{..} =
+  DumpConfig
+    { configChunkStream = configChunkStream <> stream
+    , configMetadataStream = configMetadataStream
+    }
+
+-- | Add a metadata stream to the dump configuration.
+withMetadata :: Stream (Of Metadata) IO () -> DumpConfig a -> DumpConfig a
+withMetadata stream (DumpConfig{..}) =
+  DumpConfig
+    { configChunkStream = configChunkStream
+    , configMetadataStream = Just stream
+    }
+
 -- Dumps data to the handle, while splitting it into chunks.
 --
 -- This is reference implementation and it does not yet care about
 -- proper working with the hardware, i.e. flushing and calling fsync
 -- at the right moments.
-dumpToHandle :: (MemPack a, Typeable a) => Handle -> Hdr -> DataStream a -> IO ()
-dumpToHandle handle hdr orderedStream = do
+dumpToHandle :: (MemPack a, Typeable a) => Handle -> Hdr -> DumpConfigSorted a -> IO ()
+dumpToHandle handle hdr config = do
+  let DumpConfig{..} = getDumpConfigSorted config
   _ <- hWriteFrame handle hdr
-  manifestData :: ManifestInfo <-
-    runDataStream orderedStream -- output our sorted stream
+  manifestData <-
+    configChunkStream -- output our sorted stream
       & S.mapM
         ( \(namespace :> inner) -> do
             inner
@@ -87,7 +124,12 @@ dumpToHandle handle hdr orderedStream = do
                     }
              in Map.insert namespace ni rest
         mempty
-        do \x -> ManifestInfo x
+        ManifestInfo
+
+  case configMetadataStream of
+    Nothing -> pure ()
+    Just metadataStream -> S.mapM_ (hWriteFrame handle) metadataStream
+
   manifest <- mkManifest manifestData
   _ <- hWriteFrame handle manifest
   pure ()
