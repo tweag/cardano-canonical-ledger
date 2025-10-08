@@ -25,7 +25,6 @@ import Data.Traversable (for)
 import Streaming.Prelude qualified as S
 import System.FilePath ((</>))
 import System.IO.Temp (withSystemTempDirectory)
-import Test.HUnit
 import Test.Hspec
 import Test.Hspec.Expectations.Contrib
 
@@ -57,6 +56,17 @@ mkTestsFor serialize = do
       [ ("ns0", [BS8.pack (show (i :: Int)) | i <- [1 .. 2048]])
       , ("ns1", [BS8.pack (show (i :: Int)) | i <- [1 .. 2048]])
       ]
+  it "works for unordered streams" do
+    roundtrip
+      serialize
+      [ ("ns0", ["d", "a", "c", "b"])
+      , ("ns1", ["3", "1", "4", "2"])
+      , ("ns2", ["z", "x", "y"])
+      ]
+
+  it "handles empty namespaces correctly" do
+    let input = [("ns0", []), ("ns1", ["data"]), ("ns2", [])]
+    roundtrip serialize input
 
 type SerializeF = FilePath -> NetworkId -> SlotNo -> DumpConfig RawBytes -> IO ()
 
@@ -72,7 +82,7 @@ roundtrip serialize input = do
         mkConfig
     nsps <- extractNamespaceList fileName
     annotate "Namespaces are as expected" do
-      (Map.keys nsData) `shouldBe` (sort nsps)
+      (sort nsps) `shouldBe` (Map.keys nsData)
 
     ns_digests <-
       for (Map.toList nsData) \(n, q) -> do
@@ -81,10 +91,10 @@ roundtrip serialize input = do
           n
           ( \stream -> do
               decoded_data <- S.toList_ stream
-              assertEqual
+              annotate
                 (T.unpack n <> ": stream roundtrip successful")
-                (sort q)
-                [b | RawBytes b <- decoded_data]
+                $ [b | RawBytes b <- decoded_data]
+                  `shouldBe` (sort q)
           )
         fileDigest <- extractNamespaceHash n fileName
         expectedDigest <-
