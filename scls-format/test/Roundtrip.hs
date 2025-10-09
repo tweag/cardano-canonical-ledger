@@ -6,7 +6,8 @@ module Roundtrip (
 
 import Cardano.SCLS.CDDL (namespaces)
 import Cardano.SCLS.Internal.Hash (Digest (..))
-import Cardano.SCLS.Internal.Reader (extractRootHash, withNamespacedData)
+import Cardano.SCLS.Internal.Reader (extractRootHash, withHeader, withNamespacedData)
+import Cardano.SCLS.Internal.Record.Hdr (mkHdr)
 import Cardano.SCLS.Internal.Serializer.External.Impl qualified as External (serialize)
 import Cardano.SCLS.Internal.Serializer.MemPack
 import Cardano.SCLS.Internal.Serializer.Reference.Impl (InputChunk)
@@ -66,6 +67,14 @@ mkRoundtripTestsFor groupName serialize =
             Mainnet
             (SlotNo 1)
             (S.each [(namespace S.:> (S.each encoded_data & S.map RawBytes))])
+        withHeader
+          fileName
+          ( \hdr ->
+              annotate
+                "header roundtrip successful"
+                $ hdr
+                  `shouldBe` mkHdr Mainnet (SlotNo 1)
+          )
         withNamespacedData
           fileName
           namespace

@@ -28,7 +28,7 @@ data Hdr = Hdr
   , networkId :: NetworkId
   , slotNo :: SlotNo
   }
-  deriving (Show)
+  deriving (Show, Eq)
 
 -- deriving MemPack via (AsStorable Hdr)
 
