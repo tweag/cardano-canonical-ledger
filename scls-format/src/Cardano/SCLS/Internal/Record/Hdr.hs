@@ -14,6 +14,7 @@ import Cardano.Types.SlotNo
 
 -- TODO: switch to non-pure interface instead
 
+import Data.Binary (getWord8)
 import Data.Binary.Get.Internal (readN)
 import Data.Binary.Put (putBuilder)
 import Data.ByteString.Builder.Internal hiding (putBuilder)
@@ -27,7 +28,7 @@ data Hdr = Hdr
   , networkId :: NetworkId
   , slotNo :: SlotNo
   }
-  deriving (Show)
+  deriving (Show, Eq)
 
 -- deriving MemPack via (AsStorable Hdr)
 
@@ -37,8 +38,10 @@ instance IsFrameRecord 0 Hdr where
     step k (BufferRange op ope) = do
       poke (castPtr op) a
       k (BufferRange (op `advancePtr` sizeOf (undefined :: Hdr)) ope)
-  decodeRecordContents = readN (sizeOf (undefined :: Hdr)) $ \b ->
-    unsafePerformIO $ unsafeUseAsCString b (peek . castPtr)
+  decodeRecordContents = do
+    _ <- getWord8 -- type offset: TODO: it does not look sane to me!
+    readN (sizeOf (undefined :: Hdr)) $ \b ->
+      unsafePerformIO $ unsafeUseAsCString b (peek . castPtr)
 
 -- | Storable instance for a Header record
 instance Storable Hdr where
@@ -51,7 +54,7 @@ instance Storable Hdr where
   alignment _ = 8
   peek ptr = do
     magic_pre <- peekByteOff ptr 0
-    let magic = magic_pre .&. 0xffff0000 -- We are interested only in the first 4 bytes
+    let magic = magic_pre .&. 0xffffffff -- We are interested only in the first 4 bytes
     version <- unpackVersion <$> peekByteOff ptr 4
     networkId <- peekByteOff ptr 8
     slotNo <- peekByteOff ptr 9
