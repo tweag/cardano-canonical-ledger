@@ -2,4 +2,5 @@ packages:
   scls-format
   scls-cbor
   scls-cddl
+  scls-util
   merkle-tree-incremental
