@@ -4,6 +4,7 @@
 {-# LANGUAGE RecordWildCards #-}
 
 module Cardano.SCLS.Internal.Reader (
+  withHeader,
   withNamespacedData,
   extractRootHash,
   extractNamespaceList,
@@ -13,6 +14,7 @@ module Cardano.SCLS.Internal.Reader (
 import Cardano.SCLS.Internal.Frame
 import Cardano.SCLS.Internal.Hash (Digest)
 import Cardano.SCLS.Internal.Record.Chunk
+import Cardano.SCLS.Internal.Record.Hdr
 import Cardano.SCLS.Internal.Record.Manifest
 import Cardano.SCLS.Internal.Serializer.MemPack
 import Control.Exception (Exception, throwIO)
@@ -89,3 +91,16 @@ withLatestManifestFrame f filePath = do
 extractNamespaceList :: FilePath -> IO [Text]
 extractNamespaceList = withLatestManifestFrame \Manifest{..} ->
   pure (Map.keys nsInfo)
+
+withHeader :: FilePath -> (Hdr -> IO r) -> IO r
+withHeader filePath f = do
+  IO.withBinaryFile filePath ReadMode \handle -> do
+    hSeek handle AbsoluteSeek 0
+    bs <- BS.hGet handle 4
+    offset <- case runGetOrFail getWord32be (BSL.fromStrict bs) of
+      Right (_, _, d) -> return d
+      Left{} -> throwIO NotSCLSFile
+    frameData <- fetchOffsetFrame handle (FrameView offset (mkRecordType @Hdr) 4)
+    case decodeFrame frameData of
+      Just FrameView{frameViewContent = hdr@Hdr{}} -> f hdr
+      Nothing -> error "Failed to decode header"
