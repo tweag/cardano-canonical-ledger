@@ -54,7 +54,7 @@ instance Storable Hdr where
   alignment _ = 8
   peek ptr = do
     magic_pre <- peekByteOff ptr 0
-    let magic = magic_pre .&. 0xffff0000 -- We are interested only in the first 4 bytes
+    let magic = magic_pre .&. 0xffffffff -- We are interested only in the first 4 bytes
     version <- unpackVersion <$> peekByteOff ptr 4
     networkId <- peekByteOff ptr 8
     slotNo <- peekByteOff ptr 9
