@@ -14,6 +14,7 @@ import Cardano.Types.SlotNo
 
 -- TODO: switch to non-pure interface instead
 
+import Data.Binary (getWord8)
 import Data.Binary.Get.Internal (readN)
 import Data.Binary.Put (putBuilder)
 import Data.ByteString.Builder.Internal hiding (putBuilder)
@@ -37,8 +38,10 @@ instance IsFrameRecord 0 Hdr where
     step k (BufferRange op ope) = do
       poke (castPtr op) a
       k (BufferRange (op `advancePtr` sizeOf (undefined :: Hdr)) ope)
-  decodeRecordContents = readN (sizeOf (undefined :: Hdr)) $ \b ->
-    unsafePerformIO $ unsafeUseAsCString b (peek . castPtr)
+  decodeRecordContents = do
+    _ <- getWord8 -- type offset: TODO: it does not look sane to me!
+    readN (sizeOf (undefined :: Hdr)) $ \b ->
+      unsafePerformIO $ unsafeUseAsCString b (peek . castPtr)
 
 -- | Storable instance for a Header record
 instance Storable Hdr where
