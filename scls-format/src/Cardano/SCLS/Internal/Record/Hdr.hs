@@ -46,8 +46,8 @@ instance IsFrameRecord 0 Hdr where
 -- | Storable instance for a Header record
 instance Storable Hdr where
   sizeOf _ =
-    (sizeOf (undefined :: Word64))
-      + 4
+    -- (sizeOf (undefined :: Word64))
+    4
       + (sizeOf (undefined :: Word32))
       + (sizeOf (undefined :: NetworkId))
       + (sizeOf (undefined :: SlotNo))
