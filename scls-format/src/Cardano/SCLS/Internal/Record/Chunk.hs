@@ -80,22 +80,19 @@ instance IsFrameRecord 0x10 Chunk where
     put chunkFormat
     putWord32be (fromIntegral (BS.length namespace_bytes) :: Word32)
     putByteString namespace_bytes
-    -- TODO: encode data depending on its format
-    putWord32be (fromIntegral (BS.length chunkData) :: Word32)
     putByteString chunkData
     putWord32be chunkEntriesCount
     put chunkHash
    where
     namespace_bytes = T.encodeUtf8 chunkNamespace
-  decodeRecordContents = do
+  decodeRecordContents size = do
     _ <- getWord8 -- type offset: TODO: it does not look sane to me!
     chunkSeq <- getWord64be
     chunkFormat <- get
     namespace_size <- getWord32be
     chunkNamespace <- T.decodeUtf8 <$> getByteString (fromIntegral namespace_size)
-    -- TODO: decode data depending on its format
-    data_size <- getWord32be
-    chunkData <- getByteString (fromIntegral data_size)
+    let chunkDataSize = fromIntegral size - 1 - 8 - 1 - 4 - fromIntegral namespace_size - 4 - hashDigestSize
+    chunkData <- getByteString chunkDataSize
     chunkEntriesCount <- getWord32be
     chunkHash <- get
     pure Chunk{..}

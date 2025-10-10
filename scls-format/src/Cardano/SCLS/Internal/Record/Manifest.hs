@@ -100,7 +100,7 @@ instance IsFrameRecord 0x01 Manifest where
       putByteString cBytes
       return (4 + createdAtLength + 4 + toolBytesLength + 4 + cBytesLength)
 
-  decodeRecordContents = do
+  decodeRecordContents _size = do
     _ <- getWord8
     totalEntries <- getWord64be
     totalChunks <- getWord64be

@@ -20,7 +20,7 @@ around as required by CIP.
 `t` should correspond to the record type code as defined in CIP-???
 -}
 class (KnownNat t) => IsFrameRecord t a | a -> t where
-  decodeRecordContents :: Get a
+  decodeRecordContents :: Word32 -> Get a
   encodeRecordContents :: a -> Put
 
 {- | Existential wrapper for any record that has an instance of
