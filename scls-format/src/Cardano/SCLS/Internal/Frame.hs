@@ -95,7 +95,7 @@ decodeFrame (FrameView size record_type contents) = do
   if natVal (Proxy :: Proxy t) == fromIntegral record_type
     -- TODO this thing may fail, we need to be more careful here
     then
-      let decoded_record = runGet decodeRecordContents (BS.fromStrict contents)
+      let decoded_record = runGet (decodeRecordContents size) (BS.fromStrict contents)
        in Just (FrameView size record_type decoded_record)
     else Nothing
 

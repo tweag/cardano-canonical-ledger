@@ -38,7 +38,7 @@ instance IsFrameRecord 0 Hdr where
     step k (BufferRange op ope) = do
       poke (castPtr op) a
       k (BufferRange (op `advancePtr` sizeOf (undefined :: Hdr)) ope)
-  decodeRecordContents = do
+  decodeRecordContents _size = do
     _ <- getWord8 -- type offset: TODO: it does not look sane to me!
     readN (sizeOf (undefined :: Hdr)) $ \b ->
       unsafePerformIO $ unsafeUseAsCString b (peek . castPtr)
