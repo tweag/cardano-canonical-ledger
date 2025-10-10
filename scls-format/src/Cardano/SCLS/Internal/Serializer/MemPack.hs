@@ -33,7 +33,7 @@ It's likely that this type will be removed in the future as
 it does not provide a way to decode the data back.
 -}
 newtype RawBytes = RawBytes ByteString
-  deriving (Eq, Ord)
+  deriving (Eq, Ord, Show)
 
 -- Instance that reads all remaining bytes as a ByteString, relies
 -- on running in 'isolated' context.
