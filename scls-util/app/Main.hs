@@ -23,6 +23,7 @@ data Command
   | Info FilePath
   | ListNamespaces FilePath
   | Split FilePath FilePath
+  | Merge FilePath [FilePath]
 
 parseOptions :: Parser Options
 parseOptions =
@@ -58,6 +59,12 @@ parseOptions =
                 (Split <$> fileArg <*> dirArg)
                 (progDesc "Split SCLS file into separate files by namespace")
             )
+          <> command
+            "merge"
+            ( info
+                (Merge <$> fileArg <*> some (argument str (metavar "FILES")))
+                (progDesc "Merge multiple SCLS files into one (last file is output)")
+            )
       )
  where
   fileArg =
@@ -88,3 +95,8 @@ runCommand = \case
   Info file -> displayInfo file
   ListNamespaces file -> listNamespaces file
   Split file outputDir -> splitFile file outputDir
+  Merge _ [] -> do
+    putStrLn "Error: No files provided"
+    pure OtherError
+  Merge outputFile allFiles ->
+    mergeFiles outputFile allFiles
