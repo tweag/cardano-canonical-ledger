@@ -65,6 +65,7 @@ test-suite scls-util-test
   other-modules:
     Common
     InfoSpec
+    MergeSpec
     SplitSpec
     VerifySpec
 
