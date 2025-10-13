@@ -3,6 +3,7 @@
 module Main (main) where
 
 import InfoSpec
+import SplitSpec
 import Test.Hspec
 import VerifySpec
 
@@ -13,3 +14,4 @@ main = hspec $ do
     verifyNsCommandTests
     infoCommandTests
     listNsCommandTests
+    splitCommandTests

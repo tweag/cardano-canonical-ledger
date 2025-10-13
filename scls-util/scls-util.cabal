@@ -65,6 +65,7 @@ test-suite scls-util-test
   other-modules:
     Common
     InfoSpec
+    SplitSpec
     VerifySpec
 
   build-depends:
