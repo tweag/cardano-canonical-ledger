@@ -6,6 +6,7 @@ module Main where
 
 import Cardano.SCLS.Util.Info
 import Cardano.SCLS.Util.Result
+import Cardano.SCLS.Util.Tool
 import Cardano.SCLS.Util.Verify
 import Data.Text (Text)
 import Options.Applicative
@@ -21,6 +22,7 @@ data Command
   | VerifyNamespace FilePath Text
   | Info FilePath
   | ListNamespaces FilePath
+  | Split FilePath FilePath
 
 parseOptions :: Parser Options
 parseOptions =
@@ -50,12 +52,22 @@ parseOptions =
                 (ListNamespaces <$> fileArg)
                 (progDesc "List all namespaces in the file")
             )
+          <> command
+            "split"
+            ( info
+                (Split <$> fileArg <*> dirArg)
+                (progDesc "Split SCLS file into separate files by namespace")
+            )
       )
  where
   fileArg =
     argument
       str
       (metavar "FILE" <> help "Path to SCLS file")
+  dirArg =
+    argument
+      str
+      (metavar "OUTPUT_DIR" <> help "Output directory for split files")
   namespaceArg =
     argument
       str
@@ -75,3 +87,4 @@ runCommand = \case
   VerifyNamespace file ns -> verifyNamespace file ns
   Info file -> displayInfo file
   ListNamespaces file -> listNamespaces file
+  Split file outputDir -> splitFile file outputDir
