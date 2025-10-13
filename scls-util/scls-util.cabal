@@ -15,6 +15,28 @@ build-type: Simple
 common warnings
   ghc-options: -Wall
 
+library
+  import: warnings
+  hs-source-dirs: src
+  exposed-modules:
+    Cardano.SCLS.Util.Info
+    Cardano.SCLS.Util.Result
+    Cardano.SCLS.Util.Verify
+
+  build-depends:
+    base >=4.18 && <5,
+    bytestring,
+    containers,
+    crypton,
+    directory,
+    filepath,
+    merkle-tree-incremental,
+    scls-format,
+    streaming,
+    text,
+
+  default-language: GHC2021
+
 executable scls-util
   import: warnings
   hs-source-dirs: app
@@ -27,6 +49,7 @@ executable scls-util
     merkle-tree-incremental,
     optparse-applicative,
     scls-format,
+    scls-util,
     streaming,
     text,
 
