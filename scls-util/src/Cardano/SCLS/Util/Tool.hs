@@ -71,7 +71,8 @@ mergeFiles outputFile sourceFiles = do
                     ( \file -> do
                         s <- withNamespacedData @RawBytes file ns $ \s ->
                           -- eagerly load each stream to avoid issues with file handles
-                          -- TODO: use a different data structure?
+                          -- FIXME: use a different data structure like Vector
+                          -- FIXME: concerns about loading entire namespace data into memory
                           S.toList_ s
                         pure (ns S.:> S.each s)
                     )
