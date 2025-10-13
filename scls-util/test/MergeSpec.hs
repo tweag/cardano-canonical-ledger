@@ -3,11 +3,15 @@
 
 module MergeSpec (mergeCommandTests) where
 
+import Cardano.SCLS.Internal.Reader (
+  extractNamespaceList,
+  extractRootHash,
+ )
 import Cardano.SCLS.Internal.Serializer.MemPack (RawBytes (..))
 import Cardano.SCLS.Internal.Serializer.Reference.Impl qualified as Reference
 import Cardano.Types.Network (NetworkId (Mainnet))
 import Cardano.Types.SlotNo (SlotNo (SlotNo))
-import Common (runSclsUtil)
+import Common (generateTestFile, runSclsUtil)
 import Control.Monad (forM)
 import Data.ByteString.Char8 qualified as BS8
 import Data.Function ((&))
@@ -19,6 +23,7 @@ import System.Exit (ExitCode (..))
 import System.FilePath ((</>))
 import System.IO.Temp (withSystemTempDirectory)
 import Test.Hspec
+import Test.Hspec.Expectations.Contrib (annotate)
 
 generateSplitTestFiles :: FilePath -> IO ([(FilePath, Text)])
 generateSplitTestFiles dir = do
@@ -108,3 +113,24 @@ mergeCommandTests = describe "merge command" do
       (exitCode, _, _) <- runSclsUtil ["merge", mergedFile, "/nonexistent/file.scls"]
 
       exitCode `shouldBe` ExitFailure 1
+
+  it "roundtrips" do
+    withSystemTempDirectory "scls-util-test-XXXXXX" \dir -> do
+      (originalFile, namespaces) <- generateTestFile dir
+
+      let splitDir = dir </> "split"
+      (splitExitCode, _, _) <- runSclsUtil ["split", originalFile, splitDir]
+      annotate "splits successfully" $ splitExitCode `shouldBe` ExitSuccess
+
+      let mergedFile = dir </> "merged.scls"
+      let splitFiles = [splitDir </> T.unpack ns ++ ".scls" | ns <- namespaces]
+      (mergeExitCode, _, _) <- runSclsUtil $ ["merge", mergedFile] ++ splitFiles
+      annotate "merges successfully" $ mergeExitCode `shouldBe` ExitSuccess
+
+      originalNamespaces <- extractNamespaceList originalFile
+      mergedNamespaces <- extractNamespaceList mergedFile
+      annotate "namespace lists match" $ mergedNamespaces `shouldBe` originalNamespaces
+
+      originalHash <- extractRootHash originalFile
+      mergedHash <- extractRootHash mergedFile
+      annotate "root hashes match" $ mergedHash `shouldBe` originalHash
