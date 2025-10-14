@@ -40,7 +40,7 @@ verifyRoot filePath = do
 
 computeRootHash :: FilePath -> [Text] -> IO Digest
 computeRootHash filePath namespaces = do
-  finalState <- foldl (combineNamespaceHash filePath) (pure $ MT.empty (undefined :: Blake2b_224)) namespaces
+  finalState <- foldl' (combineNamespaceHash filePath) (pure $ MT.empty (undefined :: Blake2b_224)) namespaces
   pure $ Digest $ MT.merkleRootHash $ MT.finalize finalState
  where
   combineNamespaceHash :: FilePath -> IO (MT.MerkleTreeState Blake2b_224) -> Text -> IO (MT.MerkleTreeState Blake2b_224)
