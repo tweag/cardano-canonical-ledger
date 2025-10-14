@@ -46,7 +46,7 @@ data NamespaceInfo = NamespaceInfo
   , namespaceHash :: Digest
   -- ^ multihash of root entry
   }
-  deriving (Show)
+  deriving (Show, Eq)
 
 -- | Manifest record
 data Manifest = Manifest

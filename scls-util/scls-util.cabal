@@ -21,6 +21,7 @@ library
   exposed-modules:
     Cardano.SCLS.Util.Info
     Cardano.SCLS.Util.Result
+    Cardano.SCLS.Util.Tool
     Cardano.SCLS.Util.Verify
 
   build-depends:
@@ -64,6 +65,8 @@ test-suite scls-util-test
   other-modules:
     Common
     InfoSpec
+    MergeSpec
+    SplitSpec
     VerifySpec
 
   build-depends:
