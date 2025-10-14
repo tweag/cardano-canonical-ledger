@@ -93,7 +93,7 @@ mergeFiles outputFile sourceFiles = do
   collectNamespaceFiles files = do
     foldM
       ( \acc f -> do
-          foldl
+          foldl'
             ( \m ns -> do
                 let l = maybe [f] ((:) f) (Map.lookup ns m)
                 Map.insert ns l m
