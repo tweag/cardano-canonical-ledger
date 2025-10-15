@@ -7,11 +7,13 @@
 module InfoSpec (infoCommandTests, listNsCommandTests) where
 
 import Cardano.SCLS.Internal.Serializer.MemPack (RawBytes (..))
+import Cardano.SCLS.Internal.Serializer.Reference.Dump (newDumpConfig, withChunks)
 import Cardano.SCLS.Internal.Serializer.Reference.Impl qualified as Reference
 import Cardano.Types.Network (NetworkId (Mainnet))
 import Cardano.Types.SlotNo (SlotNo (SlotNo))
 import Common
 import Control.Monad (forM_)
+import Data.Function ((&))
 import Data.Text qualified as T
 import Streaming.Prelude qualified as S
 import System.Exit (ExitCode (..))
@@ -74,7 +76,7 @@ listNsCommandTests = describe "list-ns command" do
           fileName
           Mainnet
           (SlotNo 1)
-          (S.each [])
+          (newDumpConfig & withChunks (S.each []))
 
       (exitCode, stdout, _) <- runSclsUtil ["list-ns", fileName]
 
