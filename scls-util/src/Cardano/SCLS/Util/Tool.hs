@@ -1,8 +1,10 @@
 {-# LANGUAGE BlockArguments #-}
+{-# LANGUAGE RecordWildCards #-}
 
-module Cardano.SCLS.Util.Tool (splitFile, mergeFiles) where
+module Cardano.SCLS.Util.Tool (splitFile, mergeFiles, extract, ExtractOptions (..)) where
 
 import Cardano.SCLS.Internal.Reader
+import Cardano.SCLS.Internal.Record.Hdr (Hdr (..))
 import Cardano.SCLS.Internal.Serializer.External.Impl (serialize)
 import Cardano.SCLS.Internal.Serializer.MemPack
 import Cardano.SCLS.Internal.Serializer.Reference.Dump
@@ -103,3 +105,41 @@ mergeFiles outputFile sourceFiles = do
       )
       mempty
       files
+
+data ExtractOptions = ExtractOptions
+  { extractNamespaces :: Maybe [Text]
+  }
+
+extract :: FilePath -> FilePath -> ExtractOptions -> IO Result
+extract sourceFile outputFile ExtractOptions{..} = do
+  putStrLn $ "Extracting from file: " ++ sourceFile
+  putStrLn $ "Output file: " ++ outputFile
+  catch
+    do
+      Hdr{..} <- withHeader sourceFile pure
+
+      let chunks =
+            case extractNamespaces of
+              Nothing -> S.each []
+              Just nsList ->
+                S.each nsList
+                  & S.mapM
+                    ( \ns -> do
+                        s <- withNamespacedData @RawBytes sourceFile ns $ \s ->
+                          -- eagerly load each stream to avoid issues with file handles
+                          -- FIXME: use a different data structure like Vector
+                          -- FIXME: concerns about loading entire namespace data into memory
+                          S.toList_ s
+                        pure (ns S.:> S.each s)
+                    )
+
+      serialize
+        outputFile
+        networkId
+        slotNo
+        chunks
+
+      pure Ok
+    \(e :: SomeException) -> do
+      putStrLn $ "Error: " ++ show e
+      pure OtherError

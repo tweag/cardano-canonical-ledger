@@ -1,4 +1,5 @@
 {-# LANGUAGE BlockArguments #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 
 module SplitSpec where
@@ -68,3 +69,26 @@ splitCommandTests = describe "split command" do
       (exitCode, _, _) <- runSclsUtil ["split", "/nonexistent/file.scls", outputDir]
 
       exitCode `shouldBe` ExitFailure 1
+
+  it "extracts namespaces correctly" do
+    withSystemTempDirectory "scls-util-test-XXXXXX" \dir -> do
+      (sourceFile, namespaces) <- generateTestFile dir
+      let outputFile = dir </> "extracted.scls"
+
+      let namespacesToExtract = [namespaces !! 0, namespaces !! 2]
+
+      (exitCode, _, _) <- runSclsUtil ["extract", sourceFile, outputFile, "--namespaces", T.unpack $ T.intercalate "," namespacesToExtract]
+
+      exitCode `shouldBe` ExitSuccess
+
+      withLatestManifestFrame
+        ( \Manifest{nsInfo = originalNsInfo} -> do
+            withLatestManifestFrame
+              ( \Manifest{nsInfo = extractedNsInfo} -> do
+                  annotate "extracted namespaces should match" $ Map.keys extractedNsInfo `shouldMatchList` namespacesToExtract
+                  forM_ namespacesToExtract \ns -> do
+                    annotate "namespace info should match" $ Map.lookup ns extractedNsInfo `shouldBe` Map.lookup ns originalNsInfo
+              )
+              outputFile
+        )
+        sourceFile

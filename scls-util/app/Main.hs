@@ -9,6 +9,7 @@ import Cardano.SCLS.Util.Result
 import Cardano.SCLS.Util.Tool
 import Cardano.SCLS.Util.Verify
 import Data.Text (Text)
+import Data.Text qualified as T
 import Options.Applicative
 import System.Exit (exitWith)
 
@@ -24,6 +25,7 @@ data Command
   | ListNamespaces FilePath
   | Split FilePath FilePath
   | Merge FilePath [FilePath]
+  | Extract FilePath FilePath ExtractOptions
 
 parseOptions :: Parser Options
 parseOptions =
@@ -65,6 +67,12 @@ parseOptions =
                 (Merge <$> fileArg <*> some (argument str (metavar "FILES")))
                 (progDesc "Merge multiple SCLS files into one (last file is output)")
             )
+          <> command
+            "extract"
+            ( info
+                (Extract <$> fileArg <*> (argument str (metavar "OUTPUT_FILE" <> help "Output file for extracted data")) <*> extractOptions)
+                (progDesc "Extract specific data into a new SCLS file")
+            )
       )
  where
   fileArg =
@@ -79,6 +87,22 @@ parseOptions =
     argument
       str
       (metavar "NAMESPACE" <> help "Namespace identifier")
+  extractOptions :: Parser ExtractOptions
+  extractOptions =
+    ExtractOptions
+      <$> namespaceOption
+  namespaceOption =
+    optional $
+      option
+        parseNamespaceList
+        ( long "namespaces"
+            <> short 'n'
+            <> metavar "NAMESPACES"
+            <> help "Comma-separated list of namespaces to extract"
+        )
+  parseNamespaceList :: ReadM [Text]
+  parseNamespaceList = eitherReader $ \ns ->
+    Right $ map T.strip (T.split (== ',') (T.pack ns))
 
 -- | Main entry point
 main :: IO ()
@@ -100,3 +124,5 @@ runCommand = \case
     pure OtherError
   Merge outputFile allFiles ->
     mergeFiles outputFile allFiles
+  Extract file outputDir options ->
+    extract file outputDir options
