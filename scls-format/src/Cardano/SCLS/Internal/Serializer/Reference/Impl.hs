@@ -43,9 +43,9 @@ serialize resultFilePath network slotNo (DumpConfig{..}) = do
     !orderedStream <- mkVectors configChunkStream
     dumpToHandle handle hdr $
       DumpConfigSorted $
-        newDumpConfig
-          & withChunks ((S.each [n S.:> S.each v | (n, v) <- Map.toList orderedStream]))
-          & withMetadata metadataStream
+        DumpConfig
+          ((S.each [n S.:> S.each v | (n, v) <- Map.toList orderedStream]))
+          configMetadataStream
  where
   mkVectors :: (Ord a) => S.Stream (S.Of (InputChunk a)) IO () -> IO (Map Text (V.Vector a))
   mkVectors = do

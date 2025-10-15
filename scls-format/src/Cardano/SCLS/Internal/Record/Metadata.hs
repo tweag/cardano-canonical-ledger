@@ -55,7 +55,7 @@ instance IsFrameRecord 0x31 Metadata where
       putWord64be totalEntries
       put entriesHash
 
-  decodeRecordContents = do
+  decodeRecordContents _ = do
     _ <- getWord8 -- type offset: maintain consistency with Chunk pattern
     entriesSize <- getWord32be
     entries <- getByteString (fromIntegral entriesSize)

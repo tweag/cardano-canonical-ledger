@@ -1,4 +1,5 @@
 {-# LANGUAGE BlockArguments #-}
+{-# LANGUAGE RecordWildCards #-}
 
 module Roundtrip (
   tests,
@@ -7,9 +8,8 @@ module Roundtrip (
 import Cardano.SCLS.CDDL (namespaces)
 import Cardano.SCLS.Internal.Entry
 import Cardano.SCLS.Internal.Hash (Digest (..))
-import Cardano.SCLS.Internal.Reader (extractRootHash, withHeader, withNamespacedData, withRecordData)
+import Cardano.SCLS.Internal.Reader (extractRootHash, withNamespacedData, withRecordData)
 import Cardano.SCLS.Internal.Record.Metadata (mkMetadata)
-import Cardano.SCLS.Internal.Record.Hdr (mkHdr)
 import Cardano.SCLS.Internal.Serializer.External.Impl qualified as External (serialize)
 import Cardano.SCLS.Internal.Serializer.MemPack
 import Cardano.SCLS.Internal.Serializer.Reference.Dump (DumpConfig, newDumpConfig, withChunks, withMetadata)
@@ -86,7 +86,6 @@ mkRoundtripTestsFor groupName serialize =
             term <- (applyAtomicGen (generateCBORTerm' mt (Name (T.pack "record_entry") mempty)) globalStdGen)
             let encoded_data = toStrictByteString (encodeTerm term)
             pure $ ChunkEntry utxoIn (RawBytes encoded_data)
-        -- let encoded_data = [toStrictByteString (encodeTerm term) | term <- data_]
         let fileName = (fn </> "data.scls")
         _ <-
           serialize
@@ -94,11 +93,14 @@ mkRoundtripTestsFor groupName serialize =
             Mainnet
             (SlotNo 1)
             $ ( newDumpConfig
-                  & withChunks
-                    (S.each [(namespace S.:> (S.each encoded_data & S.map RawBytes))])
+                  & withChunks (S.each [namespace S.:> S.each entries])
                   -- TODO: metadata entry supposedly is { subject: URI, entries: CBOR-encoded bytes}
                   -- reuse encoded_data for metadata for now
-                  & withMetadata (S.each encoded_data & S.map (\bytes -> mkMetadata bytes 1024))
+                  & withMetadata
+                    ( S.each entries
+                        & S.map
+                          (\ChunkEntry{chunkEntryValue = RawBytes bytes} -> mkMetadata bytes 1024)
+                    )
               )
         withNamespacedData
           fileName
@@ -127,7 +129,7 @@ mkRoundtripTestsFor groupName serialize =
               annotate
                 "Metadata stream roundtrip successful"
                 $ (decoded_metadata)
-                  `shouldBe` ([mkMetadata bytes 1024 | bytes <- encoded_data]) -- TODO: should be sorted
+                  `shouldBe` ([mkMetadata bytes 1024 | ChunkEntry{chunkEntryValue = RawBytes bytes} <- entries]) -- TODO: should be sorted
           )
 
-type SerializeF = FilePath -> NetworkId -> SlotNo -> DumpConfig RawBytes -> IO ()
+type SerializeF = FilePath -> NetworkId -> SlotNo -> DumpConfig (ChunkEntry UtxoIn RawBytes) -> IO ()

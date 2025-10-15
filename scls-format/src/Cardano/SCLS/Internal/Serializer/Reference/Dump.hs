@@ -10,10 +10,6 @@ module Cardano.SCLS.Internal.Serializer.Reference.Dump (
   DumpConfigSorted (..),
   newDumpConfig,
   withChunks,
-  DumpConfig (..),
-  DumpConfigSorted (..),
-  newDumpConfig,
-  withChunks,
   withMetadata,
   dumpToHandle,
   constructChunks_,
@@ -66,8 +62,6 @@ newtype DataStream a = DataStream {runDataStream :: Stream (Of (InputChunk a)) I
 
 -- | Configuration for dumping data to a handle.
 data DumpConfig a = (MemPack a, Typeable a) => DumpConfig
-  { configChunkStream :: Stream (Of (InputChunk a)) IO ()
-  , configMetadataStream :: Maybe (Stream (Of Metadata) IO ())
   -- Future fields for more dump configurations can be added here
   -- e.g. configIsToBuildIndex, configDeltaStream, etc.
   { configChunkStream :: Stream (Of (InputChunk a)) IO ()
@@ -77,6 +71,7 @@ data DumpConfig a = (MemPack a, Typeable a) => DumpConfig
   }
 
 newtype DumpConfigSorted a = DumpConfigSorted {getDumpConfigSorted :: DumpConfig a}
+
 
 -- | Create a new empty dump configuration.
 newDumpConfig :: forall a. (MemPack a, Typeable a) => DumpConfig a
