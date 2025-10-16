@@ -1,4 +1,5 @@
 {-# LANGUAGE BlockArguments #-}
+{-# LANGUAGE RecordWildCards #-}
 
 module Cardano.SCLS.Internal.Serializer.Reference.Impl (
   serialize,
@@ -34,15 +35,16 @@ serialize ::
   NetworkId ->
   -- | Slot of the current transaction
   SlotNo ->
-  -- | Input stream of entries to serialize, can be unsorted
-  (S.Stream (S.Of (InputChunk a)) IO ()) ->
+  DumpConfig a ->
   IO ()
-serialize resultFilePath network slotNo stream = do
+serialize resultFilePath network slotNo (DumpConfig{..}) = do
   withBinaryFile resultFilePath WriteMode \handle -> do
     let hdr = mkHdr network slotNo
-    !orderedStream <- mkVectors stream
-    dumpToHandle handle hdr do
-      DataStream (S.each [n S.:> S.each v | (n, v) <- Map.toList orderedStream])
+    !orderedStream <- mkVectors configChunkStream
+    dumpToHandle handle hdr $
+      DumpConfigSorted $
+        DumpConfig
+          ((S.each [n S.:> S.each v | (n, v) <- Map.toList orderedStream]))
  where
   mkVectors :: (Ord a) => S.Stream (S.Of (InputChunk a)) IO () -> IO (Map Text (V.Vector a))
   mkVectors = do

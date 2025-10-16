@@ -1,5 +1,6 @@
 {-# LANGUAGE BlockArguments #-}
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ViewPatterns #-}
 
 module Cardano.SCLS.Internal.Serializer.External.Impl (
@@ -52,18 +53,20 @@ serialize ::
   -- | Slot of the current transaction
   SlotNo ->
   -- | Input stream of entries to serialize, can be unsorted
-  S.Stream (S.Of (InputChunk a)) IO () ->
+  DumpConfig a ->
   IO ()
-serialize resultFilePath network slotNo inputStream = do
+serialize resultFilePath network slotNo (DumpConfig{..}) = do
   let !hdr = mkHdr network slotNo
   withTempDirectory (takeDirectory resultFilePath) "tmp.XXXXXX" \tmpDir -> do
-    prepareExternalSortNamespaced tmpDir inputStream
+    prepareExternalSortNamespaced tmpDir configChunkStream
     handles <- newIORef []
     onException
       do
         withBinaryFile resultFilePath WriteMode \handle -> do
           dumpToHandle handle hdr $
-            sourceNs handles tmpDir
+            DumpConfigSorted $
+              DumpConfig
+                (sourceNs handles tmpDir)
       do traverse hClose =<< readIORef handles
 
 {- | Accepts an unordered stream of entries, and prepares a structure of
@@ -195,8 +198,8 @@ merge2 f1 f2 = do
       loop
 
 -- | Create a stream from the list of namespaces.
-sourceNs :: IORef [Handle] -> FilePath -> DataStream RawBytes
-sourceNs handles baseDir = DataStream do
+sourceNs :: IORef [Handle] -> FilePath -> Stream (Of (InputChunk RawBytes)) IO ()
+sourceNs handles baseDir = do
   ns <- liftIO $ listDirectory baseDir
   S.each ns & S.map (\n -> (T.pack n :> kMergeNs handles (baseDir </> n)))
 

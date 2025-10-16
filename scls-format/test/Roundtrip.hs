@@ -11,7 +11,7 @@ import Cardano.SCLS.Internal.Reader (extractRootHash, withHeader, withNamespaced
 import Cardano.SCLS.Internal.Record.Hdr (mkHdr)
 import Cardano.SCLS.Internal.Serializer.External.Impl qualified as External (serialize)
 import Cardano.SCLS.Internal.Serializer.MemPack
-import Cardano.SCLS.Internal.Serializer.Reference.Impl (InputChunk)
+import Cardano.SCLS.Internal.Serializer.Reference.Dump (DumpConfig, newDumpConfig, withChunks)
 import Cardano.SCLS.Internal.Serializer.Reference.Impl qualified as Reference (serialize)
 import Cardano.Types.ByteOrdered
 import Cardano.Types.Network (NetworkId (..))
@@ -92,7 +92,7 @@ mkRoundtripTestsFor groupName serialize =
             fileName
             Mainnet
             (SlotNo 1)
-            (S.each [namespace S.:> S.each entries])
+            (newDumpConfig & withChunks (S.each [namespace S.:> S.each entries]))
         withHeader
           fileName
           ( \hdr ->
@@ -121,4 +121,4 @@ mkRoundtripTestsFor groupName serialize =
           $ file_digest
             `shouldBe` (Digest $ MT.merkleRootHash $ MT.finalize $ MT.add (MT.empty undefined) expected_digest)
 
-type SerializeF = FilePath -> NetworkId -> SlotNo -> S.Stream (S.Of (InputChunk (ChunkEntry UtxoIn RawBytes))) IO () -> IO ()
+type SerializeF = FilePath -> NetworkId -> SlotNo -> DumpConfig (ChunkEntry UtxoIn RawBytes) -> IO ()

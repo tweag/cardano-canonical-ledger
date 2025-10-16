@@ -3,10 +3,12 @@
 module Common (generateTestFile, runSclsUtil) where
 
 import Cardano.SCLS.Internal.Serializer.MemPack (RawBytes (..))
+import Cardano.SCLS.Internal.Serializer.Reference.Dump (newDumpConfig, withChunks)
 import Cardano.SCLS.Internal.Serializer.Reference.Impl qualified as Reference
 import Cardano.Types.Network (NetworkId (Mainnet))
 import Cardano.Types.SlotNo (SlotNo (SlotNo))
 import Data.ByteString.Char8 qualified as BS8
+import Data.Function ((&))
 import Data.Text (Text)
 import Streaming qualified as S
 import Streaming.Prelude qualified as S
@@ -32,7 +34,7 @@ generateTestFile dir = do
     fileName
     Mainnet
     (SlotNo 1)
-    mkStream
+    (newDumpConfig & withChunks mkStream)
 
   return (fileName, map fst testData)
 
