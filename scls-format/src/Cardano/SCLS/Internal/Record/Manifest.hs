@@ -29,38 +29,38 @@ import Cardano.SCLS.Internal.Record.Internal.Class
 
 -- | Manifest summary information
 data ManifestSummary = ManifestSummary
-  { createdAt :: Text
+  { createdAt :: !Text
   -- ^ ISO 8601 date string
-  , tool :: Text
+  , tool :: !Text
   -- ^ tool info
-  , comment :: Maybe Text
+  , comment :: !(Maybe Text)
   -- ^ optional comment
   }
   deriving (Show)
 
 data NamespaceInfo = NamespaceInfo
-  { namespaceEntries :: Word64
+  { namespaceEntries :: {-# UNPACK #-} !Word64
   -- ^ number of entries
-  , namespaceChunks :: Word64
+  , namespaceChunks :: {-# UNPACK #-} !Word64
   -- ^ number of chunks
-  , namespaceHash :: Digest
+  , namespaceHash :: !Digest
   -- ^ multihash of root entry
   }
   deriving (Show, Eq)
 
 -- | Manifest record
 data Manifest = Manifest
-  { totalEntries :: Word64
+  { totalEntries :: !Word64
   -- ^ number of entries
-  , totalChunks :: Word64
+  , totalChunks :: !Word64
   -- ^ number of chunks
-  , rootHash :: Digest
+  , rootHash :: !Digest
   -- ^ multihash of root entry
-  , nsInfo :: Map Text NamespaceInfo
+  , nsInfo :: !(Map Text NamespaceInfo)
   -- ^ map from namespace to its entries, chunks and multihash
-  , prevManifestOffset :: Word64
+  , prevManifestOffset :: !Word64
   -- ^ offset of previous manifest
-  , summary :: ManifestSummary
+  , summary :: !ManifestSummary
   -- ^ summary information
   }
   deriving (Show)
