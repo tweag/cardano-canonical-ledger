@@ -13,7 +13,7 @@ Current implementation expects the incoming values in already sorted order.
 Implementation is done in the way so it would be possible to use it with
 any existing stream and effect system as long as they could carry a state.
 -}
-module Cardano.SCLS.Internal.Serializer.ChunksBuilder.InMemory (
+module Cardano.SCLS.Internal.Serializer.Builder.InMemory (
   mkMachine,
   Command (..),
   BuilderMachine (..),

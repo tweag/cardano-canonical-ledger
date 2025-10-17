@@ -30,6 +30,7 @@ library
     Cardano.SCLS.Internal.Record.Internal.Class
     Cardano.SCLS.Internal.Record.Manifest
     Cardano.SCLS.Internal.Serializer.ChunksBuilder.InMemory
+    Cardano.SCLS.Internal.Serializer.Builder.InMemory
     Cardano.SCLS.Internal.Serializer.External.Impl
     Cardano.SCLS.Internal.Serializer.HasKey
     Cardano.SCLS.Internal.Serializer.MemPack
