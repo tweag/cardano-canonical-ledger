@@ -7,4 +7,4 @@ import Data.Map.Strict qualified as Map
 namespaces :: Map.Map String Huddle
 namespaces =
   Map.fromList
-    [("utxo", collectFromInit [HIRule UTxO.record_entry])]
+    [("utxo/v0", collectFromInit [HIRule UTxO.record_entry])]
