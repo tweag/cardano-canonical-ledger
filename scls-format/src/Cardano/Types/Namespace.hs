@@ -37,7 +37,7 @@ newtype Namespace = Namespace {asText :: Text}
 instance IsString Namespace where
   fromString = fromText . T.pack
 
-{- | Construct a 'Namespace' from 'Text'. Cleans
+{- | Construct a 'Namespace' from 'Text'. Trims leading and trailing whitespace.
 
 Prefer using qualified.
 -}
