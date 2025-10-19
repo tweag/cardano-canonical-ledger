@@ -83,7 +83,7 @@ asString = T.unpack . asText
 
 -- | Errors that can occur during decoding of a 'Namespace'.
 data DecodeError
-  = -- | There is a encoded byte that is not a valid UTF-8.
+  = -- | There is an encoded byte that is not a valid UTF-8.
     InvalidUtf8 UnicodeException
   | -- | Hex encoding contains invalid characters.
     InvalidHex String
