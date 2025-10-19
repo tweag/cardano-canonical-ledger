@@ -81,24 +81,6 @@ library
   hs-source-dirs: src
   default-language: GHC2021
 
-executable example-read-file
-  import: warnings
-  hs-source-dirs: examples/read-file
-  main-is: Main.hs
-  build-depends:
-    base,
-    scls-format,
-
-executable example-extract-by-ns
-  import: warnings
-  hs-source-dirs: examples/extract-by-ns
-  main-is: Main.hs
-  build-depends:
-    base,
-    bytestring,
-    scls-format,
-    text,
-
 test-suite scls-format-test
   import: warnings
   default-language: GHC2021
