@@ -1,4 +1,5 @@
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE RecordWildCards #-}
 
 {- |
@@ -18,12 +19,12 @@ import Data.Binary (Binary (..))
 import Data.Binary.Get (getByteString, getWord32be, getWord64be, getWord8)
 import Data.Binary.Put
 import Data.ByteString qualified as BS
-import Data.Text (Text)
-import Data.Text.Encoding qualified as T
 import Data.Word (Word32, Word64)
 
 import Cardano.SCLS.Internal.Hash
 import Cardano.SCLS.Internal.Record.Internal.Class
+import Cardano.Types.Namespace (Namespace (..))
+import Cardano.Types.Namespace qualified as Namespace
 
 data ChunkFormat
   = -- | Entries are stored uncompressed
@@ -50,7 +51,7 @@ instance Binary ChunkFormat where
 data Chunk = Chunk
   { chunkSeq :: Word64
   , chunkFormat :: ChunkFormat
-  , chunkNamespace :: Text
+  , chunkNamespace :: Namespace
   , chunkData :: BS.ByteString -- Use buffer instead (?) or even values generator
   , chunkEntriesCount :: Word32
   , chunkHash :: Digest
@@ -65,7 +66,7 @@ instance Show DebugChunk where
       ++ ", format="
       ++ show chunkFormat
       ++ ", namespace="
-      ++ show chunkNamespace
+      ++ Namespace.asString chunkNamespace
       ++ ", data.len="
       ++ show (BS.length chunkData)
       ++ ", entries="
@@ -84,20 +85,23 @@ instance IsFrameRecord 0x10 Chunk where
     putWord32be chunkEntriesCount
     put chunkHash
    where
-    namespace_bytes = T.encodeUtf8 chunkNamespace
+    namespace_bytes = Namespace.asBytes chunkNamespace
   decodeRecordContents size = do
     _ <- getWord8 -- type offset: TODO: it does not look sane to me!
     chunkSeq <- getWord64be
     chunkFormat <- get
     namespace_size <- getWord32be
-    chunkNamespace <- T.decodeUtf8 <$> getByteString (fromIntegral namespace_size)
+    chunkNamespace <-
+      (Namespace.parseBytes <$> getByteString (fromIntegral namespace_size)) >>= \case
+        Left e -> fail (show e)
+        Right x -> pure x
     let chunkDataSize = fromIntegral size - 1 - 8 - 1 - 4 - fromIntegral namespace_size - 4 - hashDigestSize
     chunkData <- getByteString chunkDataSize
     chunkEntriesCount <- getWord32be
     chunkHash <- get
     pure Chunk{..}
 
-mkChunk :: Word64 -> ChunkFormat -> Text -> BS.ByteString -> Word32 -> Chunk
+mkChunk :: Word64 -> ChunkFormat -> Namespace -> BS.ByteString -> Word32 -> Chunk
 mkChunk seqno format namespace chunkData entriesCount =
   Chunk
     { chunkSeq = seqno

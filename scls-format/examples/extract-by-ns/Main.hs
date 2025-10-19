@@ -14,10 +14,10 @@ module Main where
 import Cardano.SCLS.Internal.Frame
 import Cardano.SCLS.Internal.Record.Chunk
 import Cardano.SCLS.Internal.Record.Hdr
+import qualified Cardano.Types.Namespace as Namespace
 import qualified Data.ByteString as BS
 import Data.Char
 import Data.Function (fix)
-import qualified Data.Text as T
 import System.Environment
 import System.IO
 
@@ -35,7 +35,7 @@ main = do
               | frameRecordType == mkRecordType @Hdr -> pure ()
               | frameRecordType == mkRecordType @Chunk -> do
                   let Just decoded_frame :: Maybe (FrameView Chunk) = decodeFrame data_record
-                  let fn = normalizeFile (T.unpack (chunkNamespace $ frameViewContent (decoded_frame)))
+                  let fn = normalizeFile (Namespace.humanFileNameFor (chunkNamespace $ frameViewContent (decoded_frame)))
                   withFile fn AppendMode $ \h -> do
                     BS.hPut h (chunkData $ frameViewContent decoded_frame)
             _ -> pure ()

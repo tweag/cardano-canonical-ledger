@@ -9,10 +9,12 @@ module Cardano.SCLS.Internal.Serializer.External.Impl (
 import Cardano.SCLS.Internal.Record.Hdr
 import Cardano.SCLS.Internal.Serializer.MemPack (Entry (..), RawBytes (..))
 import Cardano.SCLS.Internal.Serializer.Reference.Dump
+import Cardano.Types.Namespace (Namespace)
+import Cardano.Types.Namespace qualified as Namespace
 import Cardano.Types.Network
 import Cardano.Types.SlotNo
 
-import Control.Exception (onException)
+import Control.Exception (onException, throwIO)
 import Control.Monad.ST (runST)
 import Data.ByteString qualified as B
 import Data.Function (fix, (&))
@@ -23,8 +25,7 @@ import Data.Map.Strict qualified as Map
 import Data.MemPack
 
 import Data.PQueue.Prio.Min qualified as Q
-import Data.Text (Text)
-import Data.Text qualified as T
+import Data.Traversable (for)
 import Data.Typeable (Typeable)
 import Data.Vector qualified as V
 import Data.Vector.Algorithms.Tim qualified as Tim
@@ -91,8 +92,8 @@ prepareExternalSortNamespaced ::
 prepareExternalSortNamespaced tmpDir = storeChunks . mergeChunks
  where
   storeChunks = S.mapM_ \(namespace, vec) -> do
-    let dir = tmpDir </> T.unpack namespace
-    let mkFileName i = tmpDir </> T.unpack namespace </> "chunk" <.> show (i :: Int) <.> "bin"
+    let dir = tmpDir </> Namespace.toFilePath namespace
+    let mkFileName i = dir </> "chunk" <.> show (i :: Int) <.> "bin"
     liftIO $ createDirectoryIfMissing True dir
     withBinaryFile (mkFileName 0) WriteMode \h ->
       S.each vec
@@ -113,7 +114,7 @@ multiple times in the stream
 mergeChunks ::
   (Ord a) =>
   S.Stream (S.Of (InputChunk a)) IO () ->
-  S.Stream (S.Of (Text, V.Vector a)) IO ()
+  S.Stream (S.Of (Namespace, V.Vector a)) IO ()
 mergeChunks = loop Map.empty
  where
   chunkSize = 1024
@@ -197,8 +198,12 @@ merge2 f1 f2 = do
 -- | Create a stream from the list of namespaces.
 sourceNs :: IORef [Handle] -> FilePath -> DataStream RawBytes
 sourceNs handles baseDir = DataStream do
-  ns <- liftIO $ listDirectory baseDir
-  S.each ns & S.map (\n -> (T.pack n :> kMergeNs handles (baseDir </> n)))
+  rawNss <- liftIO $ listDirectory baseDir
+  ns <- for rawNss \rawNs ->
+    case Namespace.parseFilePath rawNs of
+      Left e -> liftIO (throwIO e)
+      Right ns -> pure ns
+  S.each ns & S.map (\n -> (n :> kMergeNs handles (baseDir </> Namespace.toFilePath n)))
 
 {- | K-merge files from the multiple namespaces.
 

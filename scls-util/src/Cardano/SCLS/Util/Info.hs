@@ -6,9 +6,9 @@ module Cardano.SCLS.Util.Info (listNamespaces, displayInfo) where
 import Cardano.SCLS.Internal.Reader
 import Cardano.SCLS.Internal.Record.Manifest
 import Cardano.SCLS.Util.Result
+import Cardano.Types.Namespace qualified as Namespace
 import Control.Exception (SomeException, catch)
 import Data.Map.Strict qualified as Map
-import Data.Text qualified as T
 
 displayInfo :: FilePath -> IO Result
 displayInfo filePath = do
@@ -28,7 +28,7 @@ displayInfo filePath = do
         else do
           mapM_
             ( \(ns, NamespaceInfo{..}) -> do
-                putStrLn $ "\n" ++ T.unpack ns ++ ":"
+                putStrLn $ "\n" ++ Namespace.asString ns ++ ":"
                 putStrLn $ "  Hash: " ++ show namespaceHash
                 putStrLn $ "  Entries: " ++ show namespaceEntries
                 putStrLn $ "  Chunks: " ++ show namespaceChunks
@@ -49,7 +49,7 @@ listNamespaces filePath = do
         then putStrLn "No namespaces found"
         else do
           putStrLn "Namespaces:"
-          mapM_ (putStrLn . ("  - " <>) . T.unpack) namespaces
+          mapM_ (putStrLn . ("  - " <>) . Namespace.asString) namespaces
       pure Ok
     \(e :: SomeException) -> do
       putStrLn $ "Error: " ++ show e

@@ -36,6 +36,7 @@ library
     Cardano.SCLS.Internal.Serializer.Reference.Impl
     Cardano.SCLS.Internal.Version
     Cardano.Types.ByteOrdered
+    Cardano.Types.Namespace
     Cardano.Types.Network
     Cardano.Types.SlotNo
 

@@ -7,13 +7,13 @@ module Cardano.SCLS.Internal.Serializer.Reference.Impl (
 
 import Cardano.SCLS.Internal.Record.Hdr
 import Cardano.SCLS.Internal.Serializer.Reference.Dump
+import Cardano.Types.Namespace (Namespace (..))
 import Cardano.Types.Network
 import Cardano.Types.SlotNo
 import Control.Monad.ST (runST)
 import Data.Map.Strict (Map)
 import Data.Map.Strict qualified as Map
 import Data.MemPack
-import Data.Text (Text)
 import Data.Typeable (Typeable)
 import Data.Vector qualified as V
 import Data.Vector.Algorithms.Tim qualified as Tim
@@ -44,7 +44,7 @@ serialize resultFilePath network slotNo stream = do
     dumpToHandle handle hdr do
       DataStream (S.each [n S.:> S.each v | (n, v) <- Map.toList orderedStream])
  where
-  mkVectors :: (Ord a) => S.Stream (S.Of (InputChunk a)) IO () -> IO (Map Text (V.Vector a))
+  mkVectors :: (Ord a) => S.Stream (S.Of (InputChunk a)) IO () -> IO (Map Namespace (V.Vector a))
   mkVectors = do
     S.foldM_
       do

@@ -11,6 +11,7 @@ import Cardano.SCLS.Internal.Serializer.External.Impl qualified as External (ser
 import Cardano.SCLS.Internal.Serializer.MemPack
 import Cardano.SCLS.Internal.Serializer.Reference.Impl (InputChunk)
 import Cardano.SCLS.Internal.Serializer.Reference.Impl qualified as Reference (serialize)
+import Cardano.Types.Namespace (Namespace (..))
 import Cardano.Types.Network (NetworkId (..))
 import Cardano.Types.SlotNo (SlotNo (..))
 import Crypto.Hash.MerkleTree.Incremental qualified as MT
@@ -19,8 +20,6 @@ import Data.ByteString.Char8 qualified as BS8
 import Data.Function ((&))
 import Data.List (sort)
 import Data.Map.Strict qualified as Map
-import Data.Text (Text)
-import Data.Text qualified as T
 import Data.Traversable (for)
 import Streaming.Prelude qualified as S
 import System.FilePath ((</>))
@@ -70,7 +69,7 @@ mkTestsFor serialize = do
 
 type SerializeF = FilePath -> NetworkId -> SlotNo -> S.Stream (S.Of (InputChunk RawBytes)) IO () -> IO ()
 
-roundtrip :: SerializeF -> [(Text, [ByteString])] -> IO ()
+roundtrip :: SerializeF -> [(Namespace, [ByteString])] -> IO ()
 roundtrip serialize input = do
   withSystemTempDirectory "scls-format-test-XXXXXX" $ \fn -> do
     let fileName = fn </> "input.data"
@@ -92,7 +91,7 @@ roundtrip serialize input = do
           ( \stream -> do
               decoded_data <- S.toList_ stream
               annotate
-                (T.unpack n <> ": stream roundtrip successful")
+                (show n <> ": stream roundtrip successful")
                 $ [b | RawBytes b <- decoded_data]
                   `shouldBe` (sort q)
           )
@@ -100,7 +99,7 @@ roundtrip serialize input = do
         expectedDigest <-
           S.each (sort q)
             & S.fold_ MT.add (MT.empty undefined) (Digest . MT.merkleRootHash . MT.finalize)
-        annotate (T.unpack n <> " hash matches expected") do
+        annotate (show n <> " hash matches expected") do
           fileDigest `shouldBe` (Just expectedDigest)
         pure expectedDigest
     fileDigest <- extractRootHash fileName
