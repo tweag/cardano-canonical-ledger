@@ -71,7 +71,9 @@ toSerializable (Namespace t) =
 asBytes :: Namespace -> BS.ByteString
 asBytes (Namespace t) = T.encodeUtf8 t
 
--- | Represent 'Namespace' as bytes.
+{- | Parse a 'Namespace' from UTF-8 encoded bytes.
+Returns 'Left' with a 'DecodeError' if the bytes are not valid UTF-8.
+-}
 parseBytes :: BS.ByteString -> Either DecodeError Namespace
 parseBytes bs = Namespace <$> first InvalidUtf8 (T.decodeUtf8' bs)
 
