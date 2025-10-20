@@ -23,9 +23,9 @@ import Data.Function ((&))
 import Data.Map (Map)
 import Data.Map.Strict qualified as Map
 
+import Cardano.Types.Namespace (Namespace)
 import Data.MemPack
 import Data.MemPack.Buffer (pinnedByteArrayToByteString)
-import Data.Text (Text)
 import Data.Text qualified as T
 import Data.Typeable (Typeable)
 import Data.Word (Word64)
@@ -35,7 +35,7 @@ import Streaming.Internal (Stream (..))
 import Streaming.Prelude qualified as S
 import System.IO (Handle)
 
-type InputChunk a = S.Of Text (S.Stream (S.Of a) IO ())
+type InputChunk a = S.Of Namespace (S.Stream (S.Of a) IO ())
 
 {- | A stream of values grouped by namespace.
 
@@ -92,14 +92,14 @@ dumpToHandle handle hdr orderedStream = do
   _ <- hWriteFrame handle manifest
   pure ()
  where
-  storeToHandle :: (S.MonadIO io) => Text -> Stream (Of ChunkItem) io r -> io r
+  storeToHandle :: (S.MonadIO io) => Namespace -> Stream (Of ChunkItem) io r -> io r
   storeToHandle namespace s =
     s
       & S.zip (S.enumFrom 1)
       & S.map (chunkToRecord namespace)
       & S.mapM_ (liftIO . hWriteFrame handle)
 
-  chunkToRecord :: Text -> (Word64, ChunkItem) -> Chunk
+  chunkToRecord :: Namespace -> (Word64, ChunkItem) -> Chunk
   chunkToRecord namespace (seqno, ChunkItem{..}) =
     mkChunk
       seqno
@@ -134,7 +134,7 @@ constructChunks_ s0 = liftIO initialize >>= consume s0
             consume rest machine'
 
 data ManifestInfo = ManifestInfo
-  { _namespaceInfo :: Map Text NamespaceInfo
+  { _namespaceInfo :: Map Namespace NamespaceInfo
   }
 
 instance Semigroup ManifestInfo where

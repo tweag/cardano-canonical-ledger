@@ -28,16 +28,16 @@ import Data.Foldable (for_)
 import Data.Function (fix)
 import Data.Map.Strict qualified as Map
 import Data.MemPack (MemPack, unpackLeftOver)
-import Data.Text (Text)
 import Data.Typeable
 import System.IO
 import System.IO qualified as IO
 
+import Cardano.Types.Namespace (Namespace)
 import Streaming qualified as S
 import Streaming.Prelude qualified as S
 
 -- | Stream all data chunks for the given namespace.
-withNamespacedData :: (MemPack u, Typeable u) => FilePath -> Text -> (S.Stream (S.Of u) IO () -> IO a) -> IO a
+withNamespacedData :: (MemPack u, Typeable u) => FilePath -> Namespace -> (S.Stream (S.Of u) IO () -> IO a) -> IO a
 withNamespacedData filePath namespace f =
   IO.withBinaryFile filePath ReadMode \handle -> f (stream handle)
  where
@@ -68,7 +68,7 @@ extractRootHash :: FilePath -> IO Digest
 extractRootHash = withLatestManifestFrame \Manifest{..} ->
   pure rootHash
 
-extractNamespaceHash :: Text -> FilePath -> IO (Maybe Digest)
+extractNamespaceHash :: Namespace -> FilePath -> IO (Maybe Digest)
 extractNamespaceHash ns = withLatestManifestFrame \Manifest{..} ->
   pure (namespaceHash <$> Map.lookup ns nsInfo)
 
@@ -89,7 +89,7 @@ withLatestManifestFrame f filePath = do
       Just FrameView{frameViewContent = m@Manifest{}} -> f m
       Nothing -> throwIO NotSCLSFile
 
-extractNamespaceList :: FilePath -> IO [Text]
+extractNamespaceList :: FilePath -> IO [Namespace]
 extractNamespaceList = withLatestManifestFrame \Manifest{..} ->
   pure (Map.keys nsInfo)
 

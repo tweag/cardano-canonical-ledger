@@ -8,6 +8,8 @@ import Cardano.SCLS.Util.Info
 import Cardano.SCLS.Util.Result
 import Cardano.SCLS.Util.Tool
 import Cardano.SCLS.Util.Verify
+import Cardano.Types.Namespace (Namespace (..))
+import Cardano.Types.Namespace qualified as Namespace
 import Data.Text (Text)
 import Data.Text qualified as T
 import Options.Applicative
@@ -100,9 +102,9 @@ parseOptions =
             <> metavar "NAMESPACES"
             <> help "Comma-separated list of namespaces to extract"
         )
-  parseNamespaceList :: ReadM [Text]
+  parseNamespaceList :: ReadM [Namespace]
   parseNamespaceList = eitherReader $ \ns ->
-    Right $ map T.strip (T.split (== ',') (T.pack ns))
+    Right $ map (Namespace.fromText . T.strip) (T.split (== ',') (T.pack ns))
 
 -- | Main entry point
 main :: IO ()
@@ -115,7 +117,7 @@ main = do
 runCommand :: Command -> IO Result
 runCommand = \case
   Verify file -> verifyRoot file
-  VerifyNamespace file ns -> verifyNamespace file ns
+  VerifyNamespace file ns -> verifyNamespace file (Namespace.fromText ns)
   Info file -> displayInfo file
   ListNamespaces file -> listNamespaces file
   Split file outputDir -> splitFile file outputDir

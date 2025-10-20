@@ -9,6 +9,7 @@ import Cardano.SCLS.Internal.Reader (
   withLatestManifestFrame,
  )
 import Cardano.SCLS.Internal.Record.Manifest
+import Cardano.Types.Namespace qualified as Namespace
 import Common
 import Control.Monad (forM_)
 import Data.Map.Strict qualified as Map
@@ -33,7 +34,7 @@ splitCommandTests = describe "split command" do
 
       -- Verify each namespace was split into its own file
       forM_ namespaces \ns -> do
-        let splitFile = outputDir </> T.unpack ns ++ ".scls"
+        let splitFile = outputDir </> Namespace.humanFileNameFor ns
         fileExists <- doesFileExist splitFile
         fileExists `shouldBe` True
 
@@ -53,7 +54,7 @@ splitCommandTests = describe "split command" do
       withLatestManifestFrame
         ( \Manifest{nsInfo = originalNsInfo} -> do
             forM_ namespaces \ns -> do
-              let splitFile = outputDir </> T.unpack ns ++ ".scls"
+              let splitFile = outputDir </> Namespace.humanFileNameFor ns
               withLatestManifestFrame
                 ( \Manifest{..} -> do
                     annotate "only one namespace" $ Map.size nsInfo `shouldBe` 1
@@ -77,7 +78,7 @@ splitCommandTests = describe "split command" do
 
       let namespacesToExtract = [namespaces !! 0, namespaces !! 2]
 
-      (exitCode, _, _) <- runSclsUtil ["extract", sourceFile, outputFile, "--namespaces", T.unpack $ T.intercalate "," namespacesToExtract]
+      (exitCode, _, _) <- runSclsUtil ["extract", sourceFile, outputFile, "--namespaces", T.unpack $ T.intercalate "," (Namespace.asText <$> namespacesToExtract)]
 
       exitCode `shouldBe` ExitSuccess
 

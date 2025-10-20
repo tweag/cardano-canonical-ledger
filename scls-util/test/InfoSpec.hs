@@ -8,11 +8,11 @@ module InfoSpec (infoCommandTests, listNsCommandTests) where
 
 import Cardano.SCLS.Internal.Serializer.MemPack (RawBytes (..))
 import Cardano.SCLS.Internal.Serializer.Reference.Impl qualified as Reference
+import Cardano.Types.Namespace qualified as Namespace
 import Cardano.Types.Network (NetworkId (Mainnet))
 import Cardano.Types.SlotNo (SlotNo (SlotNo))
 import Common
 import Control.Monad (forM_)
-import Data.Text qualified as T
 import Streaming.Prelude qualified as S
 import System.Exit (ExitCode (..))
 import System.FilePath ((</>))
@@ -36,7 +36,7 @@ infoCommandTests = describe "info command" do
       exitCode `shouldBe` ExitSuccess
 
       forM_ namespaces \ns -> do
-        stdout `shouldContain` T.unpack ns
+        stdout `shouldContain` Namespace.asString ns
 
   it "fails for non-existent file" do
     (exitCode, stdout, stderr) <- runSclsUtil ["info", "/nonexistent/file.scls"]
@@ -56,7 +56,7 @@ listNsCommandTests = describe "list-ns command" do
       exitCode `shouldBe` ExitSuccess
 
       forM_ expectedNamespaces \ns -> do
-        stdout `shouldContain` T.unpack ns
+        stdout `shouldContain` Namespace.asString ns
 
   it "fails for non-existent file" do
     (exitCode, stdout, stderr) <- runSclsUtil ["list-ns", "/nonexistent/file.scls"]

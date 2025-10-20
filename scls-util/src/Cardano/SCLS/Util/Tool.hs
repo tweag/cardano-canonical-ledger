@@ -9,14 +9,14 @@ import Cardano.SCLS.Internal.Serializer.External.Impl (serialize)
 import Cardano.SCLS.Internal.Serializer.MemPack
 import Cardano.SCLS.Internal.Serializer.Reference.Dump
 import Cardano.SCLS.Util.Result
+import Cardano.Types.Namespace (Namespace (..))
+import Cardano.Types.Namespace qualified as Namespace
 import Cardano.Types.Network (NetworkId (Mainnet))
 import Cardano.Types.SlotNo (SlotNo (SlotNo))
 import Control.Exception (SomeException, catch)
 import Control.Monad (foldM)
 import Data.Function ((&))
 import Data.Map.Strict qualified as Map
-import Data.Text (Text)
-import Data.Text qualified as T
 import Streaming qualified as S
 import Streaming.Prelude qualified as S
 import System.Directory (createDirectoryIfMissing)
@@ -35,8 +35,8 @@ splitFile sourceFile outputDir = do
 
       mapM_
         ( \ns -> do
-            let outputFile = outputDir </> T.unpack ns ++ ".scls"
-            putStrLn $ "  Creating " ++ outputFile ++ " for namespace " ++ T.unpack ns
+            let outputFile = outputDir </> Namespace.humanFileNameFor ns
+            putStrLn $ "  Creating " ++ outputFile ++ " for namespace " ++ Namespace.asString ns
 
             withBinaryFile outputFile WriteMode $ \handle -> do
               withNamespacedData @RawBytes sourceFile ns $ \stream -> do
@@ -47,7 +47,7 @@ splitFile sourceFile outputDir = do
         namespaces
 
       putStrLn $ "Split complete. Generated these files:"
-      mapM_ (putStrLn . ("  - " ++) . (outputDir </>) . (++ ".scls") . T.unpack) namespaces
+      mapM_ (putStrLn . ("  - " ++) . (outputDir </>) . Namespace.humanFileNameFor) namespaces
       pure Ok
     \(e :: SomeException) -> do
       putStrLn $ "Error: " ++ show e
@@ -91,7 +91,7 @@ mergeFiles outputFile sourceFiles = do
       putStrLn $ "Error: " ++ show e
       pure OtherError
  where
-  collectNamespaceFiles :: [FilePath] -> IO (Map.Map Text [FilePath])
+  collectNamespaceFiles :: [FilePath] -> IO (Map.Map Namespace [FilePath])
   collectNamespaceFiles files = do
     foldM
       ( \acc f -> do
@@ -107,7 +107,7 @@ mergeFiles outputFile sourceFiles = do
       files
 
 data ExtractOptions = ExtractOptions
-  { extractNamespaces :: Maybe [Text]
+  { extractNamespaces :: Maybe [Namespace]
   }
 
 extract :: FilePath -> FilePath -> ExtractOptions -> IO Result
