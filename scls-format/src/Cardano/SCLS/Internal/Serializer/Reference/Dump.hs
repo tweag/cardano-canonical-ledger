@@ -59,7 +59,7 @@ This type is used as input to chunked serialization routines, which expect the d
 newtype DataStream a = DataStream {runDataStream :: Stream (Of (InputChunk a)) IO ()}
 
 -- | Configuration for dumping data to a handle.
-data DumpConfig a = (MemPack a, Typeable a) => DumpConfig
+data DumpConfig a = DumpConfig
   -- Future fields for more dump configurations can be added here
   -- e.g. configIsToBuildIndex, configDeltaStream, etc.
   { configChunkStream :: Stream (Of (InputChunk a)) IO ()
