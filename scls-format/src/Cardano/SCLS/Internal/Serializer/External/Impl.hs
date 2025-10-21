@@ -45,7 +45,7 @@ import VectorBuilder.Builder qualified as Builder
 import VectorBuilder.MVector qualified as Builder
 
 serialize ::
-  (MemPack a, Ord a, Typeable a) =>
+  (MemPack a, Ord a, Typeable a, HasKey a) =>
   -- | path to resulting file
   FilePath ->
   -- | Network identifier

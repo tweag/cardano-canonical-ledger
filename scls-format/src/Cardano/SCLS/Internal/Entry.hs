@@ -1,17 +1,19 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE TypeFamilies #-}
 
 module Cardano.SCLS.Internal.Entry (
   IsKey (..),
   ChunkEntry (..),
 ) where
 
+import Cardano.SCLS.Internal.Serializer.HasKey
 import Cardano.Types.ByteOrdered (BigEndian (..))
 import Data.MemPack
 import Data.MemPack.Buffer
 import Data.Typeable
 import Data.Word (Word32)
 
-class IsKey a where
+class (Ord a) => IsKey a where
   keySize :: Int
   packKeyM :: a -> Pack b ()
   unpackKeyM :: (Buffer s) => Unpack s a
@@ -21,6 +23,10 @@ data ChunkEntry k v = ChunkEntry
   , chunkEntryValue :: v
   }
   deriving (Show)
+
+instance (Eq k) => HasKey (ChunkEntry k v) where
+  type Key (ChunkEntry k v) = k
+  getKey (ChunkEntry k _) = k
 
 instance (Typeable k, IsKey k, MemPack v, Typeable v) => MemPack (ChunkEntry k v) where
   packedByteCount (ChunkEntry _ v) = 4 + keySize @k + packedByteCount v

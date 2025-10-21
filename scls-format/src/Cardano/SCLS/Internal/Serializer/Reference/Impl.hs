@@ -29,7 +29,7 @@ import VectorBuilder.MVector qualified as Builder
 At this point it accepts values from one namespace only.
 -}
 serialize ::
-  (MemPack a, Ord a, Typeable a) =>
+  (MemPack a, Ord a, Typeable a, HasKey a) =>
   -- | path to resulting file
   FilePath ->
   -- | Network identifier

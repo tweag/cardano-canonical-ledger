@@ -5,6 +5,7 @@
 
 module Cardano.SCLS.Internal.Serializer.Reference.Dump (
   DataStream (..),
+  HasKey (..),
   InputChunk,
   SerializationPlan,
   mkSortedSerializationPlan,
@@ -28,6 +29,7 @@ import Data.Function ((&))
 import Data.Map (Map)
 import Data.Map.Strict qualified as Map
 
+import Cardano.SCLS.Internal.Serializer.HasKey (HasKey (..))
 import Cardano.Types.Namespace (Namespace)
 import Data.MemPack
 import Data.MemPack.Buffer (pinnedByteArrayToByteString)
@@ -50,9 +52,7 @@ Each element of the outer stream is a pair of:
 
 Constraints:
   * Each namespace appears at most once in the stream (no duplicate namespaces).
-  * The namespaces are ordered as they appear in the stream; no global ordering is enforced.
   * The values within each namespace stream are ordered as they appear.
-  * Multiple segments per namespace are NOT allowed; all values for a namespace must be in a single contiguous stream.
   * The stream may be empty.
 
 This type is used as input to chunked serialization routines, which expect the data to be grouped and ordered as described.
@@ -123,7 +123,7 @@ withChunkFormat format SerializationPlan{..} =
 -- This is reference implementation and it does not yet care about
 -- proper working with the hardware, i.e. flushing and calling fsync
 -- at the right moments.
-dumpToHandle :: (MemPack a, Typeable a) => Handle -> Hdr -> SortedSerializationPlan a -> IO ()
+dumpToHandle :: (HasKey a, MemPack a, Typeable a) => Handle -> Hdr -> SortedSerializationPlan a -> IO ()
 dumpToHandle handle hdr plan = do
   let SerializationPlan{..} = getSerializationPlan plan
   _ <- hWriteFrame handle hdr
@@ -132,6 +132,7 @@ dumpToHandle handle hdr plan = do
       & S.mapM
         ( \(namespace :> inner) -> do
             inner
+              & dedup
               & constructChunks_ chunkFormat -- compose entries into data for chunks records, returns digest of entries
               & S.copy
               & storeToHandle namespace -- stores data to handle,passes digest of entries
@@ -173,6 +174,23 @@ dumpToHandle handle hdr plan = do
       namespace
       (pinnedByteArrayToByteString chunkItemData)
       (fromIntegral chunkItemEntriesCount)
+
+dedup ::
+  (HasKey a, MemPack a, S.MonadIO io) =>
+  Stream (Of a) io r ->
+  Stream (Of a) io r
+dedup s0 = initialize s0
+ where
+  initialize (Return r) = Return r
+  initialize (Effect e) = Effect (initialize <$> e)
+  initialize (Step (x :> rest)) = S.yield x >> go (getKey x) rest
+  go _ (Return r) = return r
+  go p (Effect e) = Effect (go p <$> e)
+  go p (Step (x :> rest)) =
+    let currentKey = getKey x
+     in if p == currentKey
+          then go p rest
+          else S.yield x >> go currentKey rest
 
 constructChunks_ ::
   forall a r.
