@@ -1,5 +1,6 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE UndecidableInstances #-}
 
 -- | Useful utilities for working with MemPack types.
@@ -10,6 +11,7 @@ module Cardano.SCLS.Internal.Serializer.MemPack (
   isolate,
 ) where
 
+import Cardano.SCLS.Internal.Serializer.HasKey
 import Control.Monad.Reader
 import Control.Monad.State.Class
 import Control.Monad.Trans.Fail
@@ -34,6 +36,10 @@ it does not provide a way to decode the data back.
 -}
 newtype RawBytes = RawBytes ByteString
   deriving (Eq, Ord, Show)
+
+instance HasKey RawBytes where
+  type Key RawBytes = ByteString
+  getKey (RawBytes bs) = bs
 
 -- Instance that reads all remaining bytes as a ByteString, relies
 -- on running in 'isolated' context.
