@@ -6,9 +6,9 @@
 module Cardano.SCLS.Internal.Serializer.Reference.Dump (
   DataStream (..),
   InputChunk,
-  DumpConfig (..),
-  mkSortedDumpConfig,
-  defaultDumpConfig,
+  SerializationPlan,
+  mkSortedSerializationPlan,
+  defaultSerializationPlan,
   withChunks,
   dumpToHandle,
   constructChunks_,
@@ -58,34 +58,37 @@ This type is used as input to chunked serialization routines, which expect the d
 -}
 newtype DataStream a = DataStream {runDataStream :: Stream (Of (InputChunk a)) IO ()}
 
--- | Configuration for dumping data to a handle.
-data DumpConfig a = DumpConfig
+-- | Serialization plan with data sources and configuration options.
+data SerializationPlan a = SerializationPlan
   -- Future fields for more dump configurations can be added here
-  -- e.g. configIsToBuildIndex, configDeltaStream, etc.
-  { configChunkStream :: Stream (Of (InputChunk a)) IO ()
+  -- e.g. isToBuildIndex, deltaStream, etc.
+  { chunkStream :: Stream (Of (InputChunk a)) IO ()
   -- ^ Input stream of entries to serialize, can be unsorted
   }
 
-newtype SortedDumpConfig a = SortedDumpConfig {runSortedDumpConfig :: DumpConfig a}
+newtype SortedSerializationPlan a = SortedSerializationPlan {getSerializationPlan :: SerializationPlan a}
 
-mkSortedDumpConfig :: DumpConfig a -> ((Stream (Of (InputChunk a)) IO ()) -> (Stream (Of (InputChunk b)) IO ())) -> SortedDumpConfig b
-mkSortedDumpConfig DumpConfig{..} sorter =
-  SortedDumpConfig $
-    DumpConfig
-      { configChunkStream = sortedStream
+mkSortedSerializationPlan :: SerializationPlan a -> ((Stream (Of (InputChunk a)) IO ()) -> (Stream (Of (InputChunk b)) IO ())) -> SortedSerializationPlan b
+mkSortedSerializationPlan SerializationPlan{..} sorter =
+  SortedSerializationPlan $
+    SerializationPlan
+      { chunkStream = sortedStream
       }
  where
-  sortedStream = sorter configChunkStream
+  sortedStream = sorter chunkStream
 
--- | Create a new empty dump configuration.
-defaultDumpConfig :: forall a. (MemPack a, Typeable a) => DumpConfig a
-defaultDumpConfig = DumpConfig{configChunkStream = mempty}
+-- | Create a serialization plan with default options and no data.
+defaultSerializationPlan :: forall a. (MemPack a, Typeable a) => SerializationPlan a
+defaultSerializationPlan =
+  SerializationPlan
+    { chunkStream = mempty
+    }
 
 -- | Add a chunked data stream to the dump configuration.
-withChunks :: (MemPack a, Typeable a) => Stream (Of (InputChunk a)) IO () -> DumpConfig a -> DumpConfig a
-withChunks stream DumpConfig{..} =
-  DumpConfig
-    { configChunkStream = configChunkStream <> stream
+withChunks :: (MemPack a, Typeable a) => Stream (Of (InputChunk a)) IO () -> SerializationPlan a -> SerializationPlan a
+withChunks stream SerializationPlan{..} =
+  SerializationPlan
+    { chunkStream = chunkStream <> stream
     }
 
 -- Dumps data to the handle, while splitting it into chunks.
@@ -93,12 +96,12 @@ withChunks stream DumpConfig{..} =
 -- This is reference implementation and it does not yet care about
 -- proper working with the hardware, i.e. flushing and calling fsync
 -- at the right moments.
-dumpToHandle :: (MemPack a, Typeable a) => Handle -> Hdr -> SortedDumpConfig a -> IO ()
-dumpToHandle handle hdr config = do
-  let DumpConfig{..} = runSortedDumpConfig config
+dumpToHandle :: (MemPack a, Typeable a) => Handle -> Hdr -> SortedSerializationPlan a -> IO ()
+dumpToHandle handle hdr plan = do
+  let SerializationPlan{..} = getSerializationPlan plan
   _ <- hWriteFrame handle hdr
   manifestData <-
-    configChunkStream -- output our sorted stream
+    chunkStream -- output our sorted stream
       & S.mapM
         ( \(namespace :> inner) -> do
             inner

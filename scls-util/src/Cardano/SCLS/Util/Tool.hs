@@ -40,7 +40,7 @@ splitFile sourceFile outputDir = do
               withNamespacedData @RawBytes sourceFile ns $ \stream -> do
                 let dataStream = S.yield (ns S.:> stream)
                 -- namespace-specific data should be sorted, so we can assume that and dump directly
-                dumpToHandle handle hdr (mkSortedDumpConfig (defaultDumpConfig & withChunks dataStream) id)
+                dumpToHandle handle hdr (mkSortedSerializationPlan (defaultSerializationPlan & withChunks dataStream) id)
         )
         namespaces
 
@@ -81,7 +81,7 @@ mergeFiles outputFile sourceFiles = do
         outputFile
         Mainnet
         (SlotNo 1)
-        (defaultDumpConfig & withChunks stream)
+        (defaultSerializationPlan & withChunks stream)
 
       putStrLn "Merge complete"
       pure Ok

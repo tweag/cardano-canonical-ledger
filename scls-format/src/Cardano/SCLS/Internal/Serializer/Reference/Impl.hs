@@ -10,6 +10,7 @@ import Cardano.SCLS.Internal.Record.Hdr
 import Cardano.SCLS.Internal.Serializer.Reference.Dump
 import Cardano.Types.Network
 import Cardano.Types.SlotNo
+import Control.Monad.IO.Class (MonadIO (liftIO))
 import Control.Monad.ST (runST)
 import Data.Map.Strict (Map)
 import Data.Map.Strict qualified as Map
@@ -22,7 +23,6 @@ import Streaming.Prelude qualified as S
 import System.IO (IOMode (WriteMode), withBinaryFile)
 import VectorBuilder.Builder qualified as Builder
 import VectorBuilder.MVector qualified as Builder
-import Control.Monad.IO.Class (MonadIO(liftIO))
 
 {- | Reference serialization interface. Performs all operations in memory
 
@@ -36,15 +36,17 @@ serialize ::
   NetworkId ->
   -- | Slot of the current transaction
   SlotNo ->
-  DumpConfig a ->
+  SerializationPlan a ->
   IO ()
-serialize resultFilePath network slotNo config = do
+serialize resultFilePath network slotNo plan = do
   withBinaryFile resultFilePath WriteMode \handle -> do
     let hdr = mkHdr network slotNo
     dumpToHandle handle hdr $
-      mkSortedDumpConfig config (\s -> do
-          !orderedStream <- liftIO $ mkVectors s
-          S.each [n S.:> S.each v | (n, v) <- Map.toList orderedStream]          
+      mkSortedSerializationPlan
+        plan
+        ( \s -> do
+            !orderedStream <- liftIO $ mkVectors s
+            S.each [n S.:> S.each v | (n, v) <- Map.toList orderedStream]
         )
  where
   mkVectors :: (Ord a) => S.Stream (S.Of (InputChunk a)) IO () -> IO (Map Text (V.Vector a))

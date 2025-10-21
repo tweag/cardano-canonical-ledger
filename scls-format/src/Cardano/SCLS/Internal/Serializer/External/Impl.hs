@@ -52,9 +52,9 @@ serialize ::
   -- | Slot of the current transaction
   SlotNo ->
   -- | Input stream of entries to serialize, can be unsorted
-  DumpConfig a ->
+  SerializationPlan a ->
   IO ()
-serialize resultFilePath network slotNo config = do
+serialize resultFilePath network slotNo plan = do
   let !hdr = mkHdr network slotNo
   withTempDirectory (takeDirectory resultFilePath) "tmp.XXXXXX" \tmpDir -> do
     handles <- newIORef []
@@ -62,8 +62,8 @@ serialize resultFilePath network slotNo config = do
       do
         withBinaryFile resultFilePath WriteMode \handle -> do
           dumpToHandle handle hdr $
-            mkSortedDumpConfig
-              config
+            mkSortedSerializationPlan
+              plan
               ( \s -> do
                   liftIO $ prepareExternalSortNamespaced tmpDir s
                   runDataStream $ sourceNs handles tmpDir
