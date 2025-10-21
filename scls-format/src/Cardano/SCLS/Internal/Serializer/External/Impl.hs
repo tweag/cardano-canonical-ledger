@@ -51,7 +51,7 @@ serialize ::
   NetworkId ->
   -- | Slot of the current transaction
   SlotNo ->
-  -- | Input stream of entries to serialize, can be unsorted
+  -- | Serialization plan to use
   SerializationPlan a ->
   IO ()
 serialize resultFilePath network slotNo plan = do
