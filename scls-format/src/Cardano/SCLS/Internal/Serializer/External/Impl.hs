@@ -64,7 +64,7 @@ serialize resultFilePath network slotNo (DumpConfig{..}) = do
       do
         withBinaryFile resultFilePath WriteMode \handle -> do
           dumpToHandle handle hdr $
-            DumpConfigSorted $
+            SortedDumpConfig $
               DumpConfig
                 (sourceNs handles tmpDir)
       do traverse hClose =<< readIORef handles

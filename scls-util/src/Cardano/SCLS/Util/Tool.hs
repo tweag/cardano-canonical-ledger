@@ -40,7 +40,7 @@ splitFile sourceFile outputDir = do
               withNamespacedData @RawBytes sourceFile ns $ \stream -> do
                 let dataStream = S.yield (ns S.:> stream)
                 -- namespace-specific data should be sorted, so we can assume that and dump directly
-                dumpToHandle handle hdr (DumpConfigSorted (newDumpConfig & withChunks dataStream))
+                dumpToHandle handle hdr (SortedDumpConfig (newDumpConfig & withChunks dataStream))
         )
         namespaces
 

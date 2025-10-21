@@ -42,7 +42,7 @@ serialize resultFilePath network slotNo (DumpConfig{..}) = do
     let hdr = mkHdr network slotNo
     !orderedStream <- mkVectors configChunkStream
     dumpToHandle handle hdr $
-      DumpConfigSorted $
+      SortedDumpConfig $
         DumpConfig
           ((S.each [n S.:> S.each v | (n, v) <- Map.toList orderedStream]))
  where
