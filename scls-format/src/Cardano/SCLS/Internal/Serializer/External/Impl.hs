@@ -66,7 +66,7 @@ serialize resultFilePath network slotNo (DumpConfig{..}) = do
           dumpToHandle handle hdr $
             SortedDumpConfig $
               DumpConfig
-                (sourceNs handles tmpDir)
+                (runDataStream $ sourceNs handles tmpDir)
       do traverse hClose =<< readIORef handles
 
 {- | Accepts an unordered stream of entries, and prepares a structure of
@@ -198,8 +198,8 @@ merge2 f1 f2 = do
       loop
 
 -- | Create a stream from the list of namespaces.
-sourceNs :: IORef [Handle] -> FilePath -> Stream (Of (InputChunk RawBytes)) IO ()
-sourceNs handles baseDir = do
+sourceNs :: IORef [Handle] -> FilePath -> DataStream RawBytes
+sourceNs handles baseDir = DataStream do
   ns <- liftIO $ listDirectory baseDir
   S.each ns & S.map (\n -> (T.pack n :> kMergeNs handles (baseDir </> n)))
 
