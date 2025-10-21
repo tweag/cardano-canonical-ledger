@@ -8,7 +8,7 @@ module Cardano.SCLS.Internal.Serializer.Reference.Dump (
   InputChunk,
   DumpConfig (..),
   SortedDumpConfig (..),
-  newDumpConfig,
+  defaultDumpConfig,
   withChunks,
   dumpToHandle,
   constructChunks_,
@@ -69,8 +69,8 @@ data DumpConfig a = DumpConfig
 newtype SortedDumpConfig a = SortedDumpConfig {getSortedDumpConfig :: DumpConfig a}
 
 -- | Create a new empty dump configuration.
-newDumpConfig :: forall a. (MemPack a, Typeable a) => DumpConfig a
-newDumpConfig = DumpConfig{configChunkStream = mempty}
+defaultDumpConfig :: forall a. (MemPack a, Typeable a) => DumpConfig a
+defaultDumpConfig = DumpConfig{configChunkStream = mempty}
 
 -- | Add a chunked data stream to the dump configuration.
 withChunks :: (MemPack a, Typeable a) => Stream (Of (InputChunk a)) IO () -> DumpConfig a -> DumpConfig a
