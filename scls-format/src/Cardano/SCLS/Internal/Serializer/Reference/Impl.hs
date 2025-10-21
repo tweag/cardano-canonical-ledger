@@ -22,6 +22,7 @@ import Streaming.Prelude qualified as S
 import System.IO (IOMode (WriteMode), withBinaryFile)
 import VectorBuilder.Builder qualified as Builder
 import VectorBuilder.MVector qualified as Builder
+import Control.Monad.IO.Class (MonadIO(liftIO))
 
 {- | Reference serialization interface. Performs all operations in memory
 
@@ -37,14 +38,14 @@ serialize ::
   SlotNo ->
   DumpConfig a ->
   IO ()
-serialize resultFilePath network slotNo (DumpConfig{..}) = do
+serialize resultFilePath network slotNo config = do
   withBinaryFile resultFilePath WriteMode \handle -> do
     let hdr = mkHdr network slotNo
-    !orderedStream <- mkVectors configChunkStream
     dumpToHandle handle hdr $
-      SortedDumpConfig $
-        DumpConfig
-          ((S.each [n S.:> S.each v | (n, v) <- Map.toList orderedStream]))
+      mkSortedDumpConfig config (\s -> do
+          !orderedStream <- liftIO $ mkVectors s
+          S.each [n S.:> S.each v | (n, v) <- Map.toList orderedStream]          
+        )
  where
   mkVectors :: (Ord a) => S.Stream (S.Of (InputChunk a)) IO () -> IO (Map Text (V.Vector a))
   mkVectors = do

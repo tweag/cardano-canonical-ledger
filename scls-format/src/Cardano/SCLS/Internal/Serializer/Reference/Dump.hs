@@ -7,7 +7,7 @@ module Cardano.SCLS.Internal.Serializer.Reference.Dump (
   DataStream (..),
   InputChunk,
   DumpConfig (..),
-  SortedDumpConfig (..),
+  mkSortedDumpConfig,
   defaultDumpConfig,
   withChunks,
   dumpToHandle,
@@ -66,7 +66,16 @@ data DumpConfig a = DumpConfig
   -- ^ Input stream of entries to serialize, can be unsorted
   }
 
-newtype SortedDumpConfig a = SortedDumpConfig {getSortedDumpConfig :: DumpConfig a}
+newtype SortedDumpConfig a = SortedDumpConfig {runSortedDumpConfig :: DumpConfig a}
+
+mkSortedDumpConfig :: DumpConfig a -> ((Stream (Of (InputChunk a)) IO ()) -> (Stream (Of (InputChunk b)) IO ())) -> SortedDumpConfig b
+mkSortedDumpConfig DumpConfig{..} sorter =
+  SortedDumpConfig $
+    DumpConfig
+      { configChunkStream = sortedStream
+      }
+ where
+  sortedStream = sorter configChunkStream
 
 -- | Create a new empty dump configuration.
 defaultDumpConfig :: forall a. (MemPack a, Typeable a) => DumpConfig a
@@ -86,7 +95,7 @@ withChunks stream DumpConfig{..} =
 -- at the right moments.
 dumpToHandle :: (MemPack a, Typeable a) => Handle -> Hdr -> SortedDumpConfig a -> IO ()
 dumpToHandle handle hdr config = do
-  let DumpConfig{..} = getSortedDumpConfig config
+  let DumpConfig{..} = runSortedDumpConfig config
   _ <- hWriteFrame handle hdr
   manifestData <-
     configChunkStream -- output our sorted stream

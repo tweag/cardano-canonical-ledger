@@ -55,18 +55,20 @@ serialize ::
   -- | Input stream of entries to serialize, can be unsorted
   DumpConfig a ->
   IO ()
-serialize resultFilePath network slotNo (DumpConfig{..}) = do
+serialize resultFilePath network slotNo config = do
   let !hdr = mkHdr network slotNo
   withTempDirectory (takeDirectory resultFilePath) "tmp.XXXXXX" \tmpDir -> do
-    prepareExternalSortNamespaced tmpDir configChunkStream
     handles <- newIORef []
     onException
       do
         withBinaryFile resultFilePath WriteMode \handle -> do
           dumpToHandle handle hdr $
-            SortedDumpConfig $
-              DumpConfig
-                (runDataStream $ sourceNs handles tmpDir)
+            mkSortedDumpConfig
+              config
+              ( \s -> do
+                  liftIO $ prepareExternalSortNamespaced tmpDir s
+                  runDataStream $ sourceNs handles tmpDir
+              )
       do traverse hClose =<< readIORef handles
 
 {- | Accepts an unordered stream of entries, and prepares a structure of
