@@ -69,9 +69,18 @@ data SerializationPlan a = SerializationPlan
   -- ^ Input stream of entries to serialize, can be unsorted
   }
 
+-- | A serialization plan with sorted streams.
 newtype SortedSerializationPlan a = SortedSerializationPlan {getSerializationPlan :: SerializationPlan a}
 
-mkSortedSerializationPlan :: SerializationPlan a -> ((Stream (Of (InputChunk a)) IO ()) -> (Stream (Of (InputChunk b)) IO ())) -> SortedSerializationPlan b
+-- | A function that sorts a stream (possibly restricting the element type).
+type SortF a b =
+  (Stream (Of a) IO ()) ->
+  (Stream (Of b) IO ())
+
+mkSortedSerializationPlan ::
+  SerializationPlan a ->
+  SortF (InputChunk a) (InputChunk b) ->
+  SortedSerializationPlan b
 mkSortedSerializationPlan SerializationPlan{..} sorter =
   SortedSerializationPlan $
     SerializationPlan
