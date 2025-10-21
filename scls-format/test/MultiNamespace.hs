@@ -42,6 +42,10 @@ mkTestsFor serialize = do
     roundtrip
       serialize
       [("ns0", ["a"]), ("ns1", ["1"])]
+  it "works for multiple elements ordered by namespace with duplicates" do
+    roundtrip
+      serialize
+      [("ns0", ["a", "b", "b", "c"]), ("ns1", ["1", "2", "2", "3"])]
   it "works for multiple elements ordered by namespace" do
     roundtrip
       serialize
@@ -91,14 +95,16 @@ roundtrip serialize input = do
           n
           ( \stream -> do
               decoded_data <- S.toList_ stream
+              zs <- S.toList_ (S.each (sort q) & S.nubOrd)
               annotate
                 (Namespace.asString n <> ": stream roundtrip successful")
                 $ [b | RawBytes b <- decoded_data]
-                  `shouldBe` (sort q)
+                  `shouldBe` zs
           )
         fileDigest <- extractNamespaceHash n fileName
         expectedDigest <-
           S.each (sort q)
+            & S.nubOrd
             & S.fold_ MT.add (MT.empty undefined) (Digest . MT.merkleRootHash . MT.finalize)
         annotate (Namespace.asString n <> " hash matches expected") do
           fileDigest `shouldBe` (Just expectedDigest)
