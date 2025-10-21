@@ -10,9 +10,9 @@ import Cardano.SCLS.Internal.Reader (
   extractNamespaceHash,
   extractRootHash,
  )
+import Cardano.Types.Namespace qualified as Namespace
 import Common
 import Control.Monad (forM_)
-import Data.Text qualified as T
 import System.Exit (ExitCode (..))
 import System.IO.Temp (withSystemTempDirectory)
 import Test.Hspec
@@ -41,7 +41,7 @@ verifyNsCommandTests = describe "verify-ns command" do
       (fileName, namespaces) <- generateTestFile dir
 
       forM_ namespaces \ns -> do
-        (exitCode, stdout, _) <- runSclsUtil ["verify-ns", fileName, T.unpack ns]
+        (exitCode, stdout, _) <- runSclsUtil ["verify-ns", fileName, Namespace.asString ns]
         Just h <- extractNamespaceHash ns fileName
 
         exitCode `shouldBe` ExitSuccess

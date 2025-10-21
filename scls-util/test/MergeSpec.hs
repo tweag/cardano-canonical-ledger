@@ -10,14 +10,14 @@ import Cardano.SCLS.Internal.Reader (
 import Cardano.SCLS.Internal.Serializer.MemPack (RawBytes (..))
 import Cardano.SCLS.Internal.Serializer.Reference.Dump (addChunks, defaultSerializationPlan)
 import Cardano.SCLS.Internal.Serializer.Reference.Impl qualified as Reference
+import Cardano.Types.Namespace (Namespace (..))
+import Cardano.Types.Namespace qualified as Namespace
 import Cardano.Types.Network (NetworkId (Mainnet))
 import Cardano.Types.SlotNo (SlotNo (SlotNo))
 import Common (generateTestFile, runSclsUtil)
 import Control.Monad (forM)
 import Data.ByteString.Char8 qualified as BS8
 import Data.Function ((&))
-import Data.Text (Text)
-import Data.Text qualified as T
 import Streaming qualified as S
 import Streaming.Prelude qualified as S
 import System.Exit (ExitCode (..))
@@ -26,7 +26,7 @@ import System.IO.Temp (withSystemTempDirectory)
 import Test.Hspec
 import Test.Hspec.Expectations.Contrib (annotate)
 
-generateSplitTestFiles :: FilePath -> IO ([(FilePath, Text)])
+generateSplitTestFiles :: FilePath -> IO ([(FilePath, Namespace)])
 generateSplitTestFiles dir = do
   let testData =
         [ ("namespace1", [BS8.pack (show i) | i <- [1 :: Int .. 100]])
@@ -35,7 +35,7 @@ generateSplitTestFiles dir = do
         ]
 
   forM testData \(ns, entries) -> do
-    let fileName = dir </> T.unpack ns ++ ".scls"
+    let fileName = dir </> Namespace.humanFileNameFor ns
         mkStream = S.yield (ns S.:> S.each (map RawBytes entries))
 
     Reference.serialize @RawBytes
@@ -46,7 +46,7 @@ generateSplitTestFiles dir = do
 
     pure (fileName, ns)
 
-generateOverlappingNsSplitTestFiles :: FilePath -> IO ([(FilePath, [Text])])
+generateOverlappingNsSplitTestFiles :: FilePath -> IO ([(FilePath, [Namespace])])
 generateOverlappingNsSplitTestFiles dir = do
   let testData =
         [
@@ -124,7 +124,7 @@ mergeCommandTests = describe "merge command" do
       annotate "splits successfully" $ splitExitCode `shouldBe` ExitSuccess
 
       let mergedFile = dir </> "merged.scls"
-      let splitFiles = [splitDir </> T.unpack ns ++ ".scls" | ns <- namespaces]
+      let splitFiles = [splitDir </> Namespace.humanFileNameFor ns | ns <- namespaces]
       (mergeExitCode, _, _) <- runSclsUtil $ ["merge", mergedFile] ++ splitFiles
       annotate "merges successfully" $ mergeExitCode `shouldBe` ExitSuccess
 

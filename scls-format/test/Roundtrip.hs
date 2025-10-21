@@ -1,4 +1,5 @@
 {-# LANGUAGE BlockArguments #-}
+{-# LANGUAGE ViewPatterns #-}
 
 module Roundtrip (
   tests,
@@ -14,6 +15,7 @@ import Cardano.SCLS.Internal.Serializer.MemPack
 import Cardano.SCLS.Internal.Serializer.Reference.Dump (SerializationPlan, addChunks, defaultSerializationPlan)
 import Cardano.SCLS.Internal.Serializer.Reference.Impl qualified as Reference (serialize)
 import Cardano.Types.ByteOrdered
+import Cardano.Types.Namespace qualified as Namespace
 import Cardano.Types.Network (NetworkId (..))
 import Cardano.Types.SlotNo (SlotNo (..))
 import Codec.CBOR.Cuddle.CBOR.Gen (generateCBORTerm')
@@ -33,6 +35,7 @@ import Data.Function ((&))
 import Data.List (sort)
 import Data.Map.Strict qualified as Map
 import Data.MemPack
+import Data.String
 import Data.Text qualified as T
 import Data.Word (Word32, Word64)
 import Streaming.Prelude qualified as S
@@ -68,8 +71,8 @@ mkRoundtripTestsFor :: String -> SerializeF -> Spec
 mkRoundtripTestsFor groupName serialize =
   describe groupName $ do
     sequence_
-      [ context n $ it "should succeed with stream roundtrip" $ roundtrip (T.pack n) (toCDDL huddle)
-      | (n, huddle) <- Map.toList namespaces
+      [ context (Namespace.asString n) $ it "should succeed with stream roundtrip" $ roundtrip n (toCDDL huddle)
+      | (fromString -> n, huddle) <- Map.toList namespaces
       ]
  where
   roundtrip namespace cddl = do

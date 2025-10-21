@@ -1,4 +1,5 @@
 {-# LANGUAGE BlockArguments #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 
 module SplitSpec where
@@ -8,6 +9,7 @@ import Cardano.SCLS.Internal.Reader (
   withLatestManifestFrame,
  )
 import Cardano.SCLS.Internal.Record.Manifest
+import Cardano.Types.Namespace qualified as Namespace
 import Common
 import Control.Monad (forM_)
 import Data.Map.Strict qualified as Map
@@ -32,7 +34,7 @@ splitCommandTests = describe "split command" do
 
       -- Verify each namespace was split into its own file
       forM_ namespaces \ns -> do
-        let splitFile = outputDir </> T.unpack ns ++ ".scls"
+        let splitFile = outputDir </> Namespace.humanFileNameFor ns
         fileExists <- doesFileExist splitFile
         fileExists `shouldBe` True
 
@@ -52,7 +54,7 @@ splitCommandTests = describe "split command" do
       withLatestManifestFrame
         ( \Manifest{nsInfo = originalNsInfo} -> do
             forM_ namespaces \ns -> do
-              let splitFile = outputDir </> T.unpack ns ++ ".scls"
+              let splitFile = outputDir </> Namespace.humanFileNameFor ns
               withLatestManifestFrame
                 ( \Manifest{..} -> do
                     annotate "only one namespace" $ Map.size nsInfo `shouldBe` 1
@@ -68,3 +70,26 @@ splitCommandTests = describe "split command" do
       (exitCode, _, _) <- runSclsUtil ["split", "/nonexistent/file.scls", outputDir]
 
       exitCode `shouldBe` ExitFailure 1
+
+  it "extracts namespaces correctly" do
+    withSystemTempDirectory "scls-util-test-XXXXXX" \dir -> do
+      (sourceFile, namespaces) <- generateTestFile dir
+      let outputFile = dir </> "extracted.scls"
+
+      let namespacesToExtract = [namespaces !! 0, namespaces !! 2]
+
+      (exitCode, _, _) <- runSclsUtil ["extract", sourceFile, outputFile, "--namespaces", T.unpack $ T.intercalate "," (Namespace.asText <$> namespacesToExtract)]
+
+      exitCode `shouldBe` ExitSuccess
+
+      withLatestManifestFrame
+        ( \Manifest{nsInfo = originalNsInfo} -> do
+            withLatestManifestFrame
+              ( \Manifest{nsInfo = extractedNsInfo} -> do
+                  annotate "extracted namespaces should match" $ Map.keys extractedNsInfo `shouldMatchList` namespacesToExtract
+                  forM_ namespacesToExtract \ns -> do
+                    annotate "namespace info should match" $ Map.lookup ns extractedNsInfo `shouldBe` Map.lookup ns originalNsInfo
+              )
+              outputFile
+        )
+        sourceFile

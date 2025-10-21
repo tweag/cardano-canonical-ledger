@@ -28,9 +28,9 @@ import Data.Function ((&))
 import Data.Map (Map)
 import Data.Map.Strict qualified as Map
 
+import Cardano.Types.Namespace (Namespace)
 import Data.MemPack
 import Data.MemPack.Buffer (pinnedByteArrayToByteString)
-import Data.Text (Text)
 import Data.Text qualified as T
 import Data.Typeable (Typeable)
 import Data.Word (Word64)
@@ -40,7 +40,7 @@ import Streaming.Internal (Stream (..))
 import Streaming.Prelude qualified as S
 import System.IO (Handle)
 
-type InputChunk a = S.Of Text (S.Stream (S.Of a) IO ())
+type InputChunk a = S.Of Namespace (S.Stream (S.Of a) IO ())
 
 {- | A stream of values grouped by namespace.
 
@@ -158,14 +158,14 @@ dumpToHandle handle hdr plan = do
   _ <- hWriteFrame handle manifest
   pure ()
  where
-  storeToHandle :: (S.MonadIO io) => Text -> Stream (Of ChunkItem) io r -> io r
+  storeToHandle :: (S.MonadIO io) => Namespace -> Stream (Of ChunkItem) io r -> io r
   storeToHandle namespace s =
     s
       & S.zip (S.enumFrom 1)
       & S.map (chunkToRecord namespace)
       & S.mapM_ (liftIO . hWriteFrame handle)
 
-  chunkToRecord :: Text -> (Word64, ChunkItem) -> Chunk
+  chunkToRecord :: Namespace -> (Word64, ChunkItem) -> Chunk
   chunkToRecord namespace (seqno, ChunkItem{..}) =
     mkChunk
       seqno
@@ -187,7 +187,7 @@ constructChunks_ format s0 = liftIO initialize >>= consume s0
     Stream (Of a) IO r ->
     BuilderMachine ->
     Stream (Of ChunkItem) IO (Digest)
-  consume s1 machine = do
+  consume s1 !machine = do
     case s1 of
       Return{} ->
         liftIO (interpretCommand machine Finalize) >>= \case
@@ -201,7 +201,7 @@ constructChunks_ format s0 = liftIO initialize >>= consume s0
             consume rest machine'
 
 data ManifestInfo = ManifestInfo
-  { _namespaceInfo :: Map Text NamespaceInfo
+  { _namespaceInfo :: Map Namespace NamespaceInfo
   }
 
 instance Semigroup ManifestInfo where
@@ -213,8 +213,8 @@ instance Monoid ManifestInfo where
 mkManifest :: ManifestInfo -> IO Manifest
 mkManifest (ManifestInfo namespaceInfo) = do
   let ns = Map.toList namespaceInfo
-      totalEntries = sum (namespaceEntries . snd <$> ns)
-      totalChunks = sum (namespaceChunks . snd <$> ns)
+      totalEntries = F.foldl' (+) 0 (namespaceEntries . snd <$> ns)
+      totalChunks = F.foldl' (+) 0 (namespaceChunks . snd <$> ns)
       rootHash =
         Digest $
           MT.merkleRootHash $

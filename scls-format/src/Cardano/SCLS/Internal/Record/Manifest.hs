@@ -1,6 +1,7 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE StrictData #-}
 {-# LANGUAGE ViewPatterns #-}
 
 {- |
@@ -26,6 +27,8 @@ import Data.Word
 import Cardano.SCLS.Internal.Frame (frameHeaderSize)
 import Cardano.SCLS.Internal.Hash
 import Cardano.SCLS.Internal.Record.Internal.Class
+import Cardano.Types.Namespace (Namespace)
+import Cardano.Types.Namespace qualified as Namespace
 
 -- | Manifest summary information
 data ManifestSummary = ManifestSummary
@@ -39,9 +42,9 @@ data ManifestSummary = ManifestSummary
   deriving (Show)
 
 data NamespaceInfo = NamespaceInfo
-  { namespaceEntries :: Word64
+  { namespaceEntries :: {-# UNPACK #-} !Word64
   -- ^ number of entries
-  , namespaceChunks :: Word64
+  , namespaceChunks :: {-# UNPACK #-} !Word64
   -- ^ number of chunks
   , namespaceHash :: Digest
   -- ^ multihash of root entry
@@ -56,7 +59,7 @@ data Manifest = Manifest
   -- ^ number of chunks
   , rootHash :: Digest
   -- ^ multihash of root entry
-  , nsInfo :: Map Text NamespaceInfo
+  , nsInfo :: Map Namespace NamespaceInfo
   -- ^ map from namespace to its entries, chunks and multihash
   , prevManifestOffset :: Word64
   -- ^ offset of previous manifest
@@ -77,7 +80,7 @@ instance IsFrameRecord 0x01 Manifest where
     putWord32be (fromIntegral $ 8 + 8 + summarySize + nsSize + 4 + 8 + hashDigestSize + frameHeaderSize)
    where
     putNsInfo (ns, h) = do
-      let nsBytes = T.encodeUtf8 ns
+      let nsBytes = Namespace.asBytes ns
           bytesLength = BS.length nsBytes
       putWord32be (fromIntegral bytesLength)
       putWord64be (namespaceEntries h)
@@ -123,7 +126,7 @@ instance IsFrameRecord 0x01 Manifest where
           namespaceChunks <- getWord64be
           ns <- T.decodeUtf8 <$> getByteString (fromIntegral nsLen)
           namespaceHash <- get
-          pure (Just (ns, NamespaceInfo{..}))
+          pure (Just (Namespace.fromText ns, NamespaceInfo{..}))
     decodeSummary = do
       createdAtLen <- getWord32be
       createdAt <- T.decodeUtf8 <$> getByteString (fromIntegral createdAtLen)
