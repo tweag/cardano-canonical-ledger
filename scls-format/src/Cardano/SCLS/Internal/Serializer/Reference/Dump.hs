@@ -72,11 +72,15 @@ data SerializationPlan a = SerializationPlan
 -- | A serialization plan with sorted streams.
 newtype SortedSerializationPlan a = SortedSerializationPlan {getSerializationPlan :: SerializationPlan a}
 
--- | A function that sorts a stream (possibly restricting the element type).
+{- | A function type used to sort streams.
+This type alias represents a function that takes a stream and produces a sorted stream of elements.
+Elements of type 'a' may be transformed into elements of type 'b' in the output stream.
+-}
 type SortF a b =
   (Stream (Of a) IO ()) ->
   (Stream (Of b) IO ())
 
+-- | Create a sorted serialization plan from an existing plan and sorter functions.
 mkSortedSerializationPlan ::
   SerializationPlan a ->
   SortF (InputChunk a) (InputChunk b) ->
