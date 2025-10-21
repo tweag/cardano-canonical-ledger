@@ -9,7 +9,7 @@ module Cardano.SCLS.Internal.Serializer.Reference.Dump (
   SerializationPlan,
   mkSortedSerializationPlan,
   defaultSerializationPlan,
-  withChunks,
+  addChunks,
   withChunkFormat,
   dumpToHandle,
   constructChunks_,
@@ -90,8 +90,8 @@ defaultSerializationPlan =
     }
 
 -- | Add a chunked data stream to the dump configuration.
-withChunks :: (MemPack a, Typeable a) => Stream (Of (InputChunk a)) IO () -> SerializationPlan a -> SerializationPlan a
-withChunks stream SerializationPlan{..} =
+addChunks :: (MemPack a, Typeable a) => Stream (Of (InputChunk a)) IO () -> SerializationPlan a -> SerializationPlan a
+addChunks stream SerializationPlan{..} =
   SerializationPlan
     { chunkFormat = chunkFormat
     , chunkStream = chunkStream <> stream

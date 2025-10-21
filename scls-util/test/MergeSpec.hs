@@ -8,7 +8,7 @@ import Cardano.SCLS.Internal.Reader (
   extractRootHash,
  )
 import Cardano.SCLS.Internal.Serializer.MemPack (RawBytes (..))
-import Cardano.SCLS.Internal.Serializer.Reference.Dump (defaultSerializationPlan, withChunks)
+import Cardano.SCLS.Internal.Serializer.Reference.Dump (addChunks, defaultSerializationPlan)
 import Cardano.SCLS.Internal.Serializer.Reference.Impl qualified as Reference
 import Cardano.Types.Network (NetworkId (Mainnet))
 import Cardano.Types.SlotNo (SlotNo (SlotNo))
@@ -42,7 +42,7 @@ generateSplitTestFiles dir = do
       fileName
       Mainnet
       (SlotNo 1)
-      (defaultSerializationPlan & withChunks mkStream)
+      (defaultSerializationPlan & addChunks mkStream)
 
     pure (fileName, ns)
 
@@ -82,7 +82,7 @@ generateOverlappingNsSplitTestFiles dir = do
       fileName
       Mainnet
       (SlotNo 1)
-      (defaultSerializationPlan & withChunks stream)
+      (defaultSerializationPlan & addChunks stream)
 
     pure (fileName, map fst nsEntries)
 
