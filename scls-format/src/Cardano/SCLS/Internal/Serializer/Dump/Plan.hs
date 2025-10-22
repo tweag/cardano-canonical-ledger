@@ -14,6 +14,7 @@ module Cardano.SCLS.Internal.Serializer.Dump.Plan (
   defaultSerializationPlan,
   addChunks,
   withChunkFormat,
+  addMetadata,
 
   -- * Sorted plan
   SortedSerializationPlan,
@@ -23,6 +24,7 @@ module Cardano.SCLS.Internal.Serializer.Dump.Plan (
 ) where
 
 import Cardano.SCLS.Internal.Record.Chunk
+import Cardano.SCLS.Internal.Record.Metadata
 
 import Cardano.Types.Namespace (Namespace)
 import Data.MemPack
@@ -44,6 +46,8 @@ data SerializationPlan a = SerializationPlan
   -- ^ Compression format for chunks
   , chunkStream :: Stream (Of (InputChunk a)) IO ()
   -- ^ Input stream of entries to serialize, can be unsorted
+  , metadataStream :: Maybe (Stream (Of MetadataEntry) IO ())
+  -- ^ Optional stream of metadata records to include in the dump
   }
 
 {- | A function type used to sort streams.
@@ -60,6 +64,7 @@ defaultSerializationPlan =
   SerializationPlan
     { chunkFormat = ChunkFormatRaw
     , chunkStream = mempty
+    , metadataStream = Nothing
     }
 
 -- | Add a chunked data stream to the dump configuration.
@@ -68,6 +73,7 @@ addChunks stream SerializationPlan{..} =
   SerializationPlan
     { chunkFormat = chunkFormat
     , chunkStream = chunkStream <> stream
+    , metadataStream = metadataStream
     }
 
 -- | Set the chunk format in the serialization plan.
@@ -76,6 +82,16 @@ withChunkFormat format SerializationPlan{..} =
   SerializationPlan
     { chunkFormat = format
     , chunkStream = chunkStream
+    , metadataStream = metadataStream
+    }
+
+-- | Add a metadata stream to the serialization plan.
+addMetadata :: Stream (Of MetadataEntry) IO () -> SerializationPlan a -> SerializationPlan a
+addMetadata stream (SerializationPlan{..}) =
+  SerializationPlan
+    { chunkFormat = chunkFormat
+    , chunkStream = chunkStream
+    , metadataStream = Just stream
     }
 
 -- | A serialization plan with sorted streams.
@@ -91,6 +107,7 @@ mkSortedSerializationPlan SerializationPlan{..} sorter =
     SerializationPlan
       { chunkFormat = chunkFormat
       , chunkStream = sortedStream
+      , metadataStream = metadataStream
       }
  where
   sortedStream = sorter chunkStream

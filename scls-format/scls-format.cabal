@@ -37,6 +37,7 @@ library
     Cardano.SCLS.Internal.Serializer.External.Impl
     Cardano.SCLS.Internal.Serializer.HasKey
     Cardano.SCLS.Internal.Serializer.MemPack
+    Cardano.SCLS.Internal.Serializer.MetadataBuilder.InMemory
     Cardano.SCLS.Internal.Serializer.Reference.Impl
     Cardano.SCLS.Internal.Version
     Cardano.Types.ByteOrdered
