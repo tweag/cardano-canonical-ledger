@@ -156,35 +156,44 @@ other components
 - blocks/v0
   key: keyhash
   value: (Nat, Nat) - blocks made previous epoch, blocks made this epoch
+  type: BlocksMade
 
 - pots/v0
   key: Treasury / Reserves / Deposit / Fee / Donation
   value: Coin
+  type: ChainAccountState, UTxOState
 
 - snapshot/v0/{mark,set,go}
   key: credential / keyhash
   value: (Coin, keyhash) / PoolParams
+  type: Snapshots, Snapshot
 
 - utxo/v0
   key: txin
   value: txout
+  type: UTxO
 
 - gov/pparams/v0
   key: Prev / Current / Future
   value: PParams
+  type: PParams
 
 - gov/committee/v0
   key: 0
   value : Committee
+  type: Committee
 
 - gov/proposals/v0
   key: 0
   value : Proposals
+  type: Proposals
 
 - gov/constitution/v0
   key: 0
   value: Constitution
+  type: Consistution
 
 - poolStake/v0
   key: keyhash
   value: Coin
+  type: PoolDistr
