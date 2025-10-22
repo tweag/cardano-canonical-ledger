@@ -14,6 +14,9 @@ import Test.Hspec.Expectations.Contrib
 import Test.Hspec.QuickCheck
 import Test.QuickCheck
 
+mkMachine' :: Int -> IO BuilderMachine
+mkMachine' = flip mkMachine ChunkFormatRaw
+
 chunksBuilderTests :: Spec
 chunksBuilderTests =
   describe "ChunksBuilder.InMemory" $ do
@@ -67,7 +70,7 @@ bufferBoundaryTests =
   describe "Buffer Boundary Tests" $ do
     prop "should not emit chunks when data fits" $
       forAll bufferFittingChunks $ \(bufferLength, chunkLengths) -> do
-        machine <- mkMachine bufferLength ChunkFormatRaw
+        machine <- mkMachine' bufferLength
         (_machine, emittedChunks) <-
           foldAppendChunks machine (map (RawBytes . flip BS.replicate 0x43) chunkLengths)
         annotate "no chunks should be emitted since all data fits" $ length emittedChunks `shouldBe` 0
@@ -75,7 +78,7 @@ bufferBoundaryTests =
     prop "should not emit chunk when data exactly fills buffer, only after" $
       forAll bufferFillingChunks $ \(bufferLength, chunkLengths) ->
         do
-          machine <- mkMachine bufferLength ChunkFormatRaw
+          machine <- mkMachine' bufferLength
           (machine', emittedChunks) <-
             foldAppendChunks machine (map (RawBytes . flip BS.replicate 0x43) chunkLengths)
           annotate "after appending exact fit data should not emit" $ length emittedChunks `shouldBe` 0
@@ -92,7 +95,7 @@ bufferBoundaryTests =
       forM_ [0, 1, 4, 31, 128] $ \chunkDataLength -> do
         it ("should emit one chunk when buffer is empty and data is oversized (dataLen =" ++ show chunkDataLength) $ do
           let bufferLength = chunkDataLength + 3
-          machine <- mkMachine bufferLength ChunkFormatRaw
+          machine <- mkMachine' bufferLength
           let chunkData = RawBytes (BS.replicate chunkDataLength 0x46)
           (_machine, chunks) <- interpretCommand machine (Append chunkData)
           case chunks of
@@ -104,7 +107,7 @@ bufferBoundaryTests =
     prop "should emit oversized chunk and buffer when buffer is not empty" $
       forAll bufferFittingAndOversizedChunks $
         \(bufferLength, smallDataLength, largeDataLength) -> do
-          machine <- mkMachine bufferLength ChunkFormatRaw
+          machine <- mkMachine' bufferLength
           -- Add data that fits first
           let smallData = RawBytes (BS.replicate smallDataLength 0x47)
           (machine', chunks) <- interpretCommand machine (Append smallData)
@@ -126,7 +129,7 @@ bufferBoundaryTests =
 
     it "should handle multiple boundary crossings correctly" $ do
       let bufferLength = 50
-      machine <- mkMachine bufferLength ChunkFormatRaw
+      machine <- mkMachine' bufferLength
       -- Add data that will cause multiple boundary crossings
       -- 26 bytes total with prefix
       let dataChunk1Length = 22
@@ -181,7 +184,7 @@ bufferBoundaryTests =
         it ("should emit chunk immediately when buffer length is zero (dataLen =" ++ show dataChunkLength ++ ")") $ do
           let bufferLength = 0
           let dataChunk = RawBytes (BS.replicate dataChunkLength 0x4B)
-          machine <- mkMachine bufferLength ChunkFormatRaw
+          machine <- mkMachine' bufferLength
           (_machine', chunks) <- interpretCommand machine (Append dataChunk)
           case chunks of
             [chunk] -> do
@@ -194,7 +197,7 @@ finalizationTests =
   describe "Finalization Tests" $ do
     prop "should not emit chunk when finalizing empty buffer" $
       \(Positive bufferLength) -> do
-        machine <- mkMachine bufferLength ChunkFormatRaw
+        machine <- mkMachine' bufferLength
         (digest, maybeChunk) <- interpretCommand machine Finalize
         isNothing maybeChunk `shouldBe` True
         -- Digest should still be computed (even if empty)
@@ -202,7 +205,7 @@ finalizationTests =
 
     prop "should emit fitting chunks only on finalize" $
       forAll bufferFittingChunks $ \(bufferLength, chunkLengths) -> do
-        machine <- mkMachine bufferLength ChunkFormatRaw
+        machine <- mkMachine' bufferLength
         (machine', chunks) <- foldAppendChunks machine (map (RawBytes . flip BS.replicate 0x49) chunkLengths)
         annotate "should not emit chunks before finalization" $ (length chunks) `shouldBe` 0
 
