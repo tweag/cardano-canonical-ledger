@@ -6,6 +6,11 @@
 module Cardano.SCLS.Internal.Serializer.Reference.Dump (
   DataStream (..),
   InputChunk,
+  SerializationPlan,
+  mkSortedSerializationPlan,
+  defaultSerializationPlan,
+  addChunks,
+  withChunkFormat,
   dumpToHandle,
   constructChunks_,
 ) where
@@ -54,20 +59,80 @@ This type is used as input to chunked serialization routines, which expect the d
 -}
 newtype DataStream a = DataStream {runDataStream :: Stream (Of (InputChunk a)) IO ()}
 
+-- | Serialization plan with data sources and configuration options.
+data SerializationPlan a = SerializationPlan
+  -- Future fields for more dump configurations can be added here
+  -- e.g. isToBuildIndex, deltaStream, etc.
+  { chunkFormat :: ChunkFormat
+  -- ^ Compression format for chunks
+  , chunkStream :: Stream (Of (InputChunk a)) IO ()
+  -- ^ Input stream of entries to serialize, can be unsorted
+  }
+
+-- | A serialization plan with sorted streams.
+newtype SortedSerializationPlan a = SortedSerializationPlan {getSerializationPlan :: SerializationPlan a}
+
+{- | A function type used to sort streams.
+This type alias represents a function that takes a stream and produces a sorted stream of elements.
+Elements of type 'a' may be transformed into elements of type 'b' in the output stream.
+-}
+type SortF a b =
+  (Stream (Of a) IO ()) ->
+  (Stream (Of b) IO ())
+
+-- | Create a sorted serialization plan from an existing plan and sorter functions.
+mkSortedSerializationPlan ::
+  SerializationPlan a ->
+  SortF (InputChunk a) (InputChunk b) ->
+  SortedSerializationPlan b
+mkSortedSerializationPlan SerializationPlan{..} sorter =
+  SortedSerializationPlan $
+    SerializationPlan
+      { chunkFormat = chunkFormat
+      , chunkStream = sortedStream
+      }
+ where
+  sortedStream = sorter chunkStream
+
+-- | Create a serialization plan with default options and no data.
+defaultSerializationPlan :: forall a. (MemPack a, Typeable a) => SerializationPlan a
+defaultSerializationPlan =
+  SerializationPlan
+    { chunkFormat = ChunkFormatRaw
+    , chunkStream = mempty
+    }
+
+-- | Add a chunked data stream to the dump configuration.
+addChunks :: (MemPack a, Typeable a) => Stream (Of (InputChunk a)) IO () -> SerializationPlan a -> SerializationPlan a
+addChunks stream SerializationPlan{..} =
+  SerializationPlan
+    { chunkFormat = chunkFormat
+    , chunkStream = chunkStream <> stream
+    }
+
+-- | Set the chunk format in the serialization plan.
+withChunkFormat :: ChunkFormat -> SerializationPlan a -> SerializationPlan a
+withChunkFormat format SerializationPlan{..} =
+  SerializationPlan
+    { chunkFormat = format
+    , chunkStream = chunkStream
+    }
+
 -- Dumps data to the handle, while splitting it into chunks.
 --
 -- This is reference implementation and it does not yet care about
 -- proper working with the hardware, i.e. flushing and calling fsync
 -- at the right moments.
-dumpToHandle :: (MemPack a, Typeable a) => Handle -> Hdr -> DataStream a -> IO ()
-dumpToHandle handle hdr orderedStream = do
+dumpToHandle :: (MemPack a, Typeable a) => Handle -> Hdr -> SortedSerializationPlan a -> IO ()
+dumpToHandle handle hdr plan = do
+  let SerializationPlan{..} = getSerializationPlan plan
   _ <- hWriteFrame handle hdr
-  manifestData :: ManifestInfo <-
-    runDataStream orderedStream -- output our sorted stream
+  manifestData <-
+    chunkStream -- output our sorted stream
       & S.mapM
         ( \(namespace :> inner) -> do
             inner
-              & constructChunks_ -- compose entries into data for chunks records, returns digest of entries
+              & constructChunks_ chunkFormat -- compose entries into data for chunks records, returns digest of entries
               & S.copy
               & storeToHandle namespace -- stores data to handle,passes digest of entries
               & S.map chunkItemEntriesCount -- keep only number of entries (other things are not needed)
@@ -87,7 +152,8 @@ dumpToHandle handle hdr orderedStream = do
                     }
              in Map.insert namespace ni rest
         mempty
-        do \x -> ManifestInfo x
+        ManifestInfo
+
   manifest <- mkManifest manifestData
   _ <- hWriteFrame handle manifest
   pure ()
@@ -111,11 +177,12 @@ dumpToHandle handle hdr orderedStream = do
 constructChunks_ ::
   forall a r.
   (MemPack a, Typeable a) =>
+  ChunkFormat ->
   Stream (Of a) IO r ->
   Stream (Of ChunkItem) IO (Digest)
-constructChunks_ s0 = liftIO initialize >>= consume s0
+constructChunks_ format s0 = liftIO initialize >>= consume s0
  where
-  initialize = mkMachine (16 * 1024 * 1024) ChunkFormatRaw -- TODO: allow configuration of buffer size and format
+  initialize = mkMachine (16 * 1024 * 1024) format
   consume ::
     Stream (Of a) IO r ->
     BuilderMachine ->

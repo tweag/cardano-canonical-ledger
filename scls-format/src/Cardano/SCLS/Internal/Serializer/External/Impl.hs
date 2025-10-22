@@ -52,19 +52,23 @@ serialize ::
   NetworkId ->
   -- | Slot of the current transaction
   SlotNo ->
-  -- | Input stream of entries to serialize, can be unsorted
-  S.Stream (S.Of (InputChunk a)) IO () ->
+  -- | Serialization plan to use
+  SerializationPlan a ->
   IO ()
-serialize resultFilePath network slotNo inputStream = do
+serialize resultFilePath network slotNo plan = do
   let !hdr = mkHdr network slotNo
   withTempDirectory (takeDirectory resultFilePath) "tmp.XXXXXX" \tmpDir -> do
-    prepareExternalSortNamespaced tmpDir inputStream
     handles <- newIORef []
     onException
       do
         withBinaryFile resultFilePath WriteMode \handle -> do
           dumpToHandle handle hdr $
-            sourceNs handles tmpDir
+            mkSortedSerializationPlan
+              plan
+              ( \s -> do
+                  liftIO $ prepareExternalSortNamespaced tmpDir s
+                  runDataStream $ sourceNs handles tmpDir
+              )
       do traverse hClose =<< readIORef handles
 
 {- | Accepts an unordered stream of entries, and prepares a structure of

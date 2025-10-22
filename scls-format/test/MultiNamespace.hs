@@ -9,7 +9,7 @@ import Cardano.SCLS.Internal.Hash (Digest (..))
 import Cardano.SCLS.Internal.Reader (extractNamespaceHash, extractNamespaceList, extractRootHash, withNamespacedData)
 import Cardano.SCLS.Internal.Serializer.External.Impl qualified as External (serialize)
 import Cardano.SCLS.Internal.Serializer.MemPack
-import Cardano.SCLS.Internal.Serializer.Reference.Impl (InputChunk)
+import Cardano.SCLS.Internal.Serializer.Reference.Dump (SerializationPlan, addChunks, defaultSerializationPlan)
 import Cardano.SCLS.Internal.Serializer.Reference.Impl qualified as Reference (serialize)
 import Cardano.Types.Namespace (Namespace (..))
 import Cardano.Types.Namespace qualified as Namespace
@@ -68,7 +68,7 @@ mkTestsFor serialize = do
     let input = [("ns0", []), ("ns1", ["data"]), ("ns2", [])]
     roundtrip serialize input
 
-type SerializeF = FilePath -> NetworkId -> SlotNo -> S.Stream (S.Of (InputChunk RawBytes)) IO () -> IO ()
+type SerializeF = FilePath -> NetworkId -> SlotNo -> SerializationPlan RawBytes -> IO ()
 
 roundtrip :: SerializeF -> [(Namespace, [ByteString])] -> IO ()
 roundtrip serialize input = do
@@ -79,7 +79,7 @@ roundtrip serialize input = do
         fileName
         Mainnet
         (SlotNo 1)
-        mkStream
+        mkPlan
     nsps <- extractNamespaceList fileName
     annotate "Namespaces are as expected" do
       (sort nsps) `shouldBe` (Map.keys nsData)
@@ -111,9 +111,12 @@ roundtrip serialize input = do
     annotate "File hash matches expected" do
       fileDigest `shouldBe` expectedDigest
  where
-  mkStream =
-    S.each
-      [ n S.:> (S.each q & S.map RawBytes)
-      | (n, q) <- input
-      ]
+  mkPlan =
+    defaultSerializationPlan
+      & ( addChunks $
+            S.each
+              [ n S.:> (S.each q & S.map RawBytes)
+              | (n, q) <- input
+              ]
+        )
   nsData = Map.fromListWith (<>) input

@@ -1,4 +1,5 @@
 {-# LANGUAGE BlockArguments #-}
+{-# LANGUAGE RecordWildCards #-}
 
 module Cardano.SCLS.Internal.Serializer.Reference.Impl (
   serialize,
@@ -10,6 +11,7 @@ import Cardano.SCLS.Internal.Serializer.Reference.Dump
 import Cardano.Types.Namespace (Namespace (..))
 import Cardano.Types.Network
 import Cardano.Types.SlotNo
+import Control.Monad.IO.Class (MonadIO (liftIO))
 import Control.Monad.ST (runST)
 import Data.Map.Strict (Map)
 import Data.Map.Strict qualified as Map
@@ -34,15 +36,18 @@ serialize ::
   NetworkId ->
   -- | Slot of the current transaction
   SlotNo ->
-  -- | Input stream of entries to serialize, can be unsorted
-  (S.Stream (S.Of (InputChunk a)) IO ()) ->
+  SerializationPlan a ->
   IO ()
-serialize resultFilePath network slotNo stream = do
+serialize resultFilePath network slotNo plan = do
   withBinaryFile resultFilePath WriteMode \handle -> do
     let hdr = mkHdr network slotNo
-    !orderedStream <- mkVectors stream
-    dumpToHandle handle hdr do
-      DataStream (S.each [n S.:> S.each v | (n, v) <- Map.toList orderedStream])
+    dumpToHandle handle hdr $
+      mkSortedSerializationPlan
+        plan
+        ( \s -> do
+            !orderedStream <- liftIO $ mkVectors s
+            S.each [n S.:> S.each v | (n, v) <- Map.toList orderedStream]
+        )
  where
   mkVectors :: (Ord a) => S.Stream (S.Of (InputChunk a)) IO () -> IO (Map Namespace (V.Vector a))
   mkVectors = do
