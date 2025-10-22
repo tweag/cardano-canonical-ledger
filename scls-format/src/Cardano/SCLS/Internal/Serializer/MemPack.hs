@@ -9,6 +9,7 @@ module Cardano.SCLS.Internal.Serializer.MemPack (
   RawBytes (..),
   CStringLenBuffer (..),
   isolate,
+  MemPackHeaderOffset (..),
 ) where
 
 import Cardano.SCLS.Internal.Serializer.HasKey
@@ -28,6 +29,10 @@ import Foreign.C.String
 import Foreign.Ptr
 import GHC.Stack (HasCallStack)
 import System.ByteOrder
+
+-- | Typeclass for types that have a fixed header offset when serialized.
+class (MemPack a) => MemPackHeaderOffset a where
+  headerSizeOffset :: Int
 
 {- | Wrapper that allows to store raw bytes without any prefix.
 
@@ -51,6 +56,9 @@ instance MemPack (RawBytes) where
       get >>= \s -> do
         return (bufferByteCount b - s)
     RawBytes <$> unpackByteStringM len
+
+instance MemPackHeaderOffset RawBytes where
+  headerSizeOffset = 4
 
 {- | Entry wrapper for other mempack values, that explicitly
 stores its length as a big-endian 'Word32' before the value

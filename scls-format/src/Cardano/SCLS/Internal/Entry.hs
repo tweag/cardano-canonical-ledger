@@ -7,6 +7,7 @@ module Cardano.SCLS.Internal.Entry (
 ) where
 
 import Cardano.SCLS.Internal.Serializer.HasKey
+import Cardano.SCLS.Internal.Serializer.MemPack (MemPackHeaderOffset (..))
 import Cardano.Types.ByteOrdered (BigEndian (..))
 import Data.MemPack
 import Data.MemPack.Buffer
@@ -40,6 +41,9 @@ instance (Typeable k, IsKey k, MemPack v, Typeable v) => MemPack (ChunkEntry k v
     k <- unpackKeyM
     v <- unpackM
     return (ChunkEntry k v)
+
+instance (Typeable k, IsKey k, Typeable v, MemPack v) => MemPackHeaderOffset (ChunkEntry k v) where
+  headerSizeOffset = 4
 
 instance (Eq k, Eq v) => Eq (ChunkEntry k v) where
   (ChunkEntry k1 v1) == (ChunkEntry k2 v2) = k1 == k2 && v1 == v2
