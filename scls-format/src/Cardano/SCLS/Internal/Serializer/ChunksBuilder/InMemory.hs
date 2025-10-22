@@ -42,5 +42,5 @@ instance B.BuilderItem ChunkItem where
 
 type BuilderMachine = B.BuilderMachine ChunkItem
 
-mkMachine :: Int -> Parameters ChunkItem -> IO BuilderMachine
+mkMachine :: Int -> B.Parameters ChunkItem -> IO BuilderMachine
 mkMachine = B.mkMachine
