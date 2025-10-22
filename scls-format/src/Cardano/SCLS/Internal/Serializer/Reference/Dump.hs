@@ -67,11 +67,11 @@ newtype DataStream a = DataStream {runDataStream :: Stream (Of (InputChunk a)) I
 data SerializationPlan a = SerializationPlan
   -- Future fields for more dump configurations can be added here
   -- e.g. isToBuildIndex, deltaStream, etc.
-  { chunkFormat :: ChunkFormat
+  { pChunkFormat :: ChunkFormat
   -- ^ Compression format for chunks
-  , chunkStream :: Stream (Of (InputChunk a)) IO ()
+  , pChunkStream :: Stream (Of (InputChunk a)) IO ()
   -- ^ Input stream of entries to serialize, can be unsorted
-  , metadataStream :: Maybe (Stream (Of MetadataEntry) IO ())
+  , pMetadataStream :: Maybe (Stream (Of MetadataEntry) IO ())
   -- ^ Optional stream of metadata records to include in the dump
   }
 
@@ -91,50 +91,50 @@ mkSortedSerializationPlan ::
   SerializationPlan a ->
   SortF (InputChunk a) (InputChunk b) ->
   SortedSerializationPlan b
-mkSortedSerializationPlan SerializationPlan{..} sorter =
+mkSortedSerializationPlan plan@SerializationPlan{..} sorter =
   SortedSerializationPlan $
-    SerializationPlan
-      { chunkFormat = chunkFormat
-      , chunkStream = sortedStream
-      , metadataStream = metadataStream
+    plan
+      { pChunkStream = sorter pChunkStream
       }
- where
-  sortedStream = sorter chunkStream
 
--- | Create a serialization plan with default options and no data.
+{- | Create a serialization plan with default options and no data.
+    The default options are:
+    Chunk format: Raw (no compression)
+    Buffer size: 16 MB
+-}
 defaultSerializationPlan :: forall a. (MemPack a, Typeable a) => SerializationPlan a
 defaultSerializationPlan =
   SerializationPlan
-    { chunkFormat = ChunkFormatRaw
-    , chunkStream = mempty
-    , metadataStream = Nothing
+    { pChunkFormat = ChunkFormatRaw
+    , pChunkStream = mempty
+    , pMetadataStream = Nothing
     }
 
 -- | Add a chunked data stream to the serialization plan.
 addChunks :: (MemPack a, Typeable a) => Stream (Of (InputChunk a)) IO () -> SerializationPlan a -> SerializationPlan a
-addChunks stream SerializationPlan{..} =
-  SerializationPlan
-    { chunkFormat = chunkFormat
-    , chunkStream = chunkStream <> stream
-    , metadataStream = metadataStream
+addChunks stream plan@SerializationPlan{..} =
+  plan
+    { pChunkStream = pChunkStream <> stream
     }
 
 -- | Set the chunk format in the serialization plan.
 withChunkFormat :: ChunkFormat -> SerializationPlan a -> SerializationPlan a
-withChunkFormat format SerializationPlan{..} =
-  SerializationPlan
-    { chunkFormat = format
-    , chunkStream = chunkStream
-    , metadataStream = metadataStream
+withChunkFormat format plan =
+  plan
+    { pChunkFormat = format
     }
 
 -- | Add a metadata stream to the serialization plan.
 addMetadata :: Stream (Of MetadataEntry) IO () -> SerializationPlan a -> SerializationPlan a
-addMetadata stream (SerializationPlan{..}) =
-  SerializationPlan
-    { chunkFormat = chunkFormat
-    , chunkStream = chunkStream
-    , metadataStream = Just stream
+addMetadata stream plan =
+  plan
+    { pMetadataStream = Just stream
+    }
+
+withBufferSize :: Int -> SerializationPlan a -> SerializationPlan a
+withBufferSize size plan =
+  plan
+    { pBufferSize = size
     }
 
 -- Dumps data to the handle, while splitting it into chunks.
@@ -147,11 +147,11 @@ dumpToHandle handle hdr plan = do
   let SerializationPlan{..} = getSerializationPlan plan
   _ <- hWriteFrame handle hdr
   manifestData <-
-    chunkStream -- output our sorted stream
+    pChunkStream -- output our sorted stream
       & S.mapM
         ( \(namespace :> inner) -> do
             inner
-              & constructChunks_ chunkFormat -- compose entries into data for chunks records, returns digest of entries
+              & constructChunks_ pChunkFormat -- compose entries into data for chunks records, returns digest of entries
               & S.copy
               & storeToHandle namespace -- stores data to handle,passes digest of entries
               & S.map CB.chunkItemEntriesCount -- keep only number of entries (other things are not needed)
@@ -173,7 +173,7 @@ dumpToHandle handle hdr plan = do
         mempty
         ManifestInfo
 
-  case metadataStream of
+  case pMetadataStream of
     Nothing -> pure ()
     Just s -> do
       (_entries :> (_metadataRecords :> _rootHash)) <-
