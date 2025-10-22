@@ -26,7 +26,6 @@ import Cardano.SCLS.Internal.Record.Chunk
 import Cardano.SCLS.Internal.Serializer.Builder.InMemory qualified as B
 
 import Data.Primitive.ByteArray
-import Cardano.SCLS.Internal.Serializer.Builder.InMemory (BuilderItem(Parameters))
 
 data ChunkItem = ChunkItem
   { chunkItemFormat :: ChunkFormat
@@ -42,5 +41,5 @@ instance B.BuilderItem ChunkItem where
 
 type BuilderMachine = B.BuilderMachine ChunkItem
 
-mkMachine :: Int -> Parameters ChunkItem -> IO BuilderMachine
+mkMachine :: Int -> B.Parameters ChunkItem -> IO BuilderMachine
 mkMachine = B.mkMachine
