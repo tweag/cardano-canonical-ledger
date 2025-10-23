@@ -37,6 +37,7 @@ import Unsafe.Coerce (unsafeCoerce)
 
 -- | Typeclass for items that can be emitted by the builder state machine.
 class BuilderItem item where
+  -- | Type of parameters needed to encode entries and build the item
   type Parameters item :: Type
 
   -- | Get the data payload of the item
@@ -45,7 +46,7 @@ class BuilderItem item where
   -- | Get the number of entries contained in the item
   bItemEntriesCount :: item -> Int
 
-  -- | Construct an item from data and entry count
+  -- | Construct an item from build parameters, data and entry count
   bMkItem :: Parameters item -> ByteArray -> Int -> item
 
 -- | Command for the state machine
