@@ -58,7 +58,6 @@ where
 import Crypto.Hash (Digest, HashAlgorithm, hash, hashFinalize, hashInit, hashUpdate, hashUpdates)
 import Data.ByteArray (ByteArrayAccess)
 import Data.ByteString qualified as B
-import Data.ByteString.Char8 qualified as BC
 
 -- ----------------------------------------------------------------
 -- Merkle Tree and Hashes
@@ -141,7 +140,7 @@ leaf hashes, maintaining the integrity of the tree structure.
 -}
 nodeHash :: forall a. (HashAlgorithm a) => MerkleHash a -> MerkleHash a -> MerkleHash a
 nodeHash h1 h2 =
-  hashFinalize $ flip hashUpdates [BC.pack (show h1), BC.pack (show h2)] $ hashUpdate hashInit $ B.singleton 1
+  hashFinalize $ flip hashUpdates [h1, h2] $ hashUpdate hashInit $ B.singleton 1
 
 -- ----------------------------------------------------------------
 -- Incremental Merkle Tree construction

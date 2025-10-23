@@ -46,6 +46,7 @@ test-suite merkle-tree-incremental-test
   main-is: Spec.hs
   other-modules:
     Paths_merkle_tree_incremental
+    Reference
 
   autogen-modules:
     Paths_merkle_tree_incremental
@@ -58,7 +59,7 @@ test-suite merkle-tree-incremental-test
     bytestring >=0.11.0.0,
     crypton >=1.0.0,
     hspec,
-    merkle-tree,
+    memory,
     merkle-tree-incremental,
     quickcheck-instances,
 

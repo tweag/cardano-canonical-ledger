@@ -1,7 +1,6 @@
 import Crypto.Hash.Algorithms (SHA3_256 (..))
-import Crypto.Hash.MerkleTree (mkMerkleTree, mtHash)
+import Reference (mkMerkleTree, mtHash)
 import Crypto.Hash.MerkleTree.Incremental (add, empty, finalize, merkleRootHash)
-import Data.ByteString.Char8 qualified as C
 
 import Test.Hspec
 import Test.Hspec.QuickCheck
@@ -16,4 +15,4 @@ main = do
           let state = foldl add (empty SHA3_256) entries
               merkleTree1 = finalize state
               merkleTree2 = mkMerkleTree entries
-          (C.pack $ show $ merkleRootHash merkleTree1) `shouldBe` (mtHash merkleTree2)
+          merkleRootHash merkleTree1 `shouldBe` mtHash merkleTree2
