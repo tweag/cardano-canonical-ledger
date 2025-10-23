@@ -28,6 +28,7 @@ library
 
   other-modules:
     Cardano.SCLS.Common
+    Cardano.SCLS.Namespace.Blocks
     Cardano.SCLS.Namespace.UTxO
 
   build-depends:
