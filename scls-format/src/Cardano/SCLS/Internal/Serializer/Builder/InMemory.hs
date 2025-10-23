@@ -49,6 +49,9 @@ class BuilderItem item where
   -- | Construct an item from build parameters, data and entry count
   bMkItem :: Parameters item -> ByteArray -> Int -> item
 
+  -- | Encode an entry for the item using the provided parameters
+  bEncodeEntry :: (MemPack a, Typeable a) => Parameters item -> a -> a
+
 -- | Command for the state machine
 data Command item type_ where
   -- | Append a new item to the buffer.
@@ -99,7 +102,7 @@ mkMachine bufferSize params = do
                     frozenData <- freezeByteArrayPinned storage 0 offset
                     pure (final, Just (bMkItem params frozenData entriesCount))
               Append @a input -> do
-                let entry = Entry input
+                let entry = Entry $ bEncodeEntry @item params input
                 let l = packedByteCount entry
                 if offset + l <= bufferSize -- if we fit the current buffer we just need to write data and continue
                   then do

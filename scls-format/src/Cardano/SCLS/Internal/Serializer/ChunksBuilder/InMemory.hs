@@ -39,6 +39,9 @@ instance B.BuilderItem ChunkItem where
   bItemData = chunkItemData
   bItemEntriesCount = chunkItemEntriesCount
   bMkItem chunkItemFormat data_ count = ChunkItem{chunkItemData = data_, chunkItemEntriesCount = count, chunkItemFormat}
+  bEncodeEntry ChunkFormatRaw entry = entry
+  bEncodeEntry ChunkFormatZstd _entry = error "Chunk format zstd is not implemented yet"
+  bEncodeEntry ChunkFormatZstdE _entry = error "Chunk format zstd-e is not implemented yet"
 
 type BuilderMachine = B.BuilderMachine ChunkItem
 
