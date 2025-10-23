@@ -7,7 +7,7 @@ module Cardano.SCLS.Internal.Serializer.External.Impl (
 ) where
 
 import Cardano.SCLS.Internal.Record.Hdr
-import Cardano.SCLS.Internal.Serializer.MemPack (Entry (..), RawBytes (..))
+import Cardano.SCLS.Internal.Serializer.MemPack
 import Cardano.SCLS.Internal.Serializer.Reference.Dump
 import Cardano.Types.Namespace (Namespace)
 import Cardano.Types.Namespace qualified as Namespace
@@ -45,7 +45,7 @@ import VectorBuilder.Builder qualified as Builder
 import VectorBuilder.MVector qualified as Builder
 
 serialize ::
-  (MemPack a, Ord a, Typeable a, HasKey a) =>
+  (MemPack a, Ord a, Typeable a, HasKey a, MemPackHeaderOffset a) =>
   -- | path to resulting file
   FilePath ->
   -- | Network identifier

@@ -7,6 +7,7 @@ module Cardano.SCLS.Internal.Serializer.Reference.Impl (
 ) where
 
 import Cardano.SCLS.Internal.Record.Hdr
+import Cardano.SCLS.Internal.Serializer.MemPack
 import Cardano.SCLS.Internal.Serializer.Reference.Dump
 import Cardano.Types.Namespace (Namespace (..))
 import Cardano.Types.Network
@@ -29,7 +30,7 @@ import VectorBuilder.MVector qualified as Builder
 At this point it accepts values from one namespace only.
 -}
 serialize ::
-  (MemPack a, Ord a, Typeable a, HasKey a) =>
+  (MemPack a, Ord a, Typeable a, HasKey a, MemPackHeaderOffset a) =>
   -- | path to resulting file
   FilePath ->
   -- | Network identifier

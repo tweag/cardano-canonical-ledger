@@ -22,6 +22,7 @@ import Cardano.SCLS.Internal.Record.Chunk
 import Cardano.SCLS.Internal.Record.Hdr
 import Cardano.SCLS.Internal.Record.Manifest
 import Cardano.SCLS.Internal.Serializer.ChunksBuilder.InMemory
+import Cardano.SCLS.Internal.Serializer.MemPack
 import Crypto.Hash.MerkleTree.Incremental qualified as MT
 
 import Data.Foldable qualified as F
@@ -123,7 +124,7 @@ withChunkFormat format SerializationPlan{..} =
 -- This is reference implementation and it does not yet care about
 -- proper working with the hardware, i.e. flushing and calling fsync
 -- at the right moments.
-dumpToHandle :: (HasKey a, MemPack a, Typeable a) => Handle -> Hdr -> SortedSerializationPlan a -> IO ()
+dumpToHandle :: (HasKey a, MemPack a, Typeable a, MemPackHeaderOffset a) => Handle -> Hdr -> SortedSerializationPlan a -> IO ()
 dumpToHandle handle hdr plan = do
   let SerializationPlan{..} = getSerializationPlan plan
   _ <- hWriteFrame handle hdr
@@ -194,7 +195,7 @@ dedup s0 = initialize s0
 
 constructChunks_ ::
   forall a r.
-  (MemPack a, Typeable a) =>
+  (MemPack a, Typeable a, MemPackHeaderOffset a) =>
   ChunkFormat ->
   Stream (Of a) IO r ->
   Stream (Of ChunkItem) IO (Digest)
