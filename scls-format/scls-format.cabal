@@ -31,10 +31,11 @@ library
     Cardano.SCLS.Internal.Record.Manifest
     Cardano.SCLS.Internal.Serializer.Builder.InMemory
     Cardano.SCLS.Internal.Serializer.ChunksBuilder.InMemory
+    Cardano.SCLS.Internal.Serializer.Dump
+    Cardano.SCLS.Internal.Serializer.Dump.Plan
     Cardano.SCLS.Internal.Serializer.External.Impl
     Cardano.SCLS.Internal.Serializer.HasKey
     Cardano.SCLS.Internal.Serializer.MemPack
-    Cardano.SCLS.Internal.Serializer.Reference.Dump
     Cardano.SCLS.Internal.Serializer.Reference.Impl
     Cardano.SCLS.Internal.Version
     Cardano.Types.ByteOrdered

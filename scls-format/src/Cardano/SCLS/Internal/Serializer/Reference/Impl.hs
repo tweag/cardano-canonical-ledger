@@ -7,8 +7,8 @@ module Cardano.SCLS.Internal.Serializer.Reference.Impl (
 ) where
 
 import Cardano.SCLS.Internal.Record.Hdr
+import Cardano.SCLS.Internal.Serializer.Dump
 import Cardano.SCLS.Internal.Serializer.MemPack
-import Cardano.SCLS.Internal.Serializer.Reference.Dump
 import Cardano.Types.Namespace (Namespace (..))
 import Cardano.Types.Network
 import Cardano.Types.SlotNo

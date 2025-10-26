@@ -2,8 +2,8 @@
 
 module Common (generateTestFile, runSclsUtil) where
 
+import Cardano.SCLS.Internal.Serializer.Dump (addChunks, defaultSerializationPlan)
 import Cardano.SCLS.Internal.Serializer.MemPack (RawBytes (..))
-import Cardano.SCLS.Internal.Serializer.Reference.Dump (addChunks, defaultSerializationPlan)
 import Cardano.SCLS.Internal.Serializer.Reference.Impl qualified as Reference
 import Cardano.Types.Namespace (Namespace (..))
 import Cardano.Types.Network (NetworkId (Mainnet))
