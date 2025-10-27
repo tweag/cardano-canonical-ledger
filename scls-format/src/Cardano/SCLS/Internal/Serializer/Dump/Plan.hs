@@ -32,7 +32,7 @@ import Streaming qualified as S
 import Streaming.Internal (Stream (..))
 
 {- | Helper to define an input data.
-Each chunk is a strem of values that will be written under a given namespace.
+Each chunk is a stream of values that will be written under a given namespace.
 -}
 type InputChunk a = S.Of Namespace (S.Stream (S.Of a) IO ())
 
