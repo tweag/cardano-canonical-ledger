@@ -2,7 +2,7 @@
 
 {- | Plan for running serialization.
 
-SerializationPlan explains how to costruct the values that should be serialized to
+SerializationPlan explains how to construct the values that should be serialized to
 the dump file.
 -}
 module Cardano.SCLS.Internal.Serializer.Dump.Plan (
