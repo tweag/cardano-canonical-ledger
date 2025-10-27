@@ -7,8 +7,8 @@ module Cardano.SCLS.Internal.Serializer.External.Impl (
 ) where
 
 import Cardano.SCLS.Internal.Record.Hdr
+import Cardano.SCLS.Internal.Serializer.Dump
 import Cardano.SCLS.Internal.Serializer.MemPack
-import Cardano.SCLS.Internal.Serializer.Reference.Dump
 import Cardano.Types.Namespace (Namespace)
 import Cardano.Types.Namespace qualified as Namespace
 import Cardano.Types.Network
@@ -20,7 +20,6 @@ import Data.ByteString qualified as B
 import Data.Function (fix, (&))
 import Data.IORef (IORef, modifyIORef', newIORef, readIORef)
 
--- import Data.Map.Strict (Map)
 import Data.Map.Strict qualified as Map
 import Data.MemPack
 

@@ -3,7 +3,8 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ViewPatterns #-}
 
-module Cardano.SCLS.Internal.Serializer.Reference.Dump (
+-- | Functions to dump SCLS stream to a handle in a chunked format.
+module Cardano.SCLS.Internal.Serializer.Dump (
   DataStream (..),
   HasKey (..),
   InputChunk,
@@ -22,6 +23,7 @@ import Cardano.SCLS.Internal.Record.Chunk
 import Cardano.SCLS.Internal.Record.Hdr
 import Cardano.SCLS.Internal.Record.Manifest
 import Cardano.SCLS.Internal.Serializer.ChunksBuilder.InMemory
+import Cardano.SCLS.Internal.Serializer.Dump.Plan
 import Cardano.SCLS.Internal.Serializer.MemPack
 import Crypto.Hash.MerkleTree.Incremental qualified as MT
 
@@ -43,8 +45,6 @@ import Streaming.Internal (Stream (..))
 import Streaming.Prelude qualified as S
 import System.IO (Handle)
 
-type InputChunk a = S.Of Namespace (S.Stream (S.Of a) IO ())
-
 {- | A stream of values grouped by namespace.
 
 Each element of the outer stream is a pair of:
@@ -59,65 +59,6 @@ Constraints:
 This type is used as input to chunked serialization routines, which expect the data to be grouped and ordered as described.
 -}
 newtype DataStream a = DataStream {runDataStream :: Stream (Of (InputChunk a)) IO ()}
-
--- | Serialization plan with data sources and configuration options.
-data SerializationPlan a = SerializationPlan
-  -- Future fields for more dump configurations can be added here
-  -- e.g. isToBuildIndex, deltaStream, etc.
-  { chunkFormat :: ChunkFormat
-  -- ^ Compression format for chunks
-  , chunkStream :: Stream (Of (InputChunk a)) IO ()
-  -- ^ Input stream of entries to serialize, can be unsorted
-  }
-
--- | A serialization plan with sorted streams.
-newtype SortedSerializationPlan a = SortedSerializationPlan {getSerializationPlan :: SerializationPlan a}
-
-{- | A function type used to sort streams.
-This type alias represents a function that takes a stream and produces a sorted stream of elements.
-Elements of type 'a' may be transformed into elements of type 'b' in the output stream.
--}
-type SortF a b =
-  (Stream (Of a) IO ()) ->
-  (Stream (Of b) IO ())
-
--- | Create a sorted serialization plan from an existing plan and sorter functions.
-mkSortedSerializationPlan ::
-  SerializationPlan a ->
-  SortF (InputChunk a) (InputChunk b) ->
-  SortedSerializationPlan b
-mkSortedSerializationPlan SerializationPlan{..} sorter =
-  SortedSerializationPlan $
-    SerializationPlan
-      { chunkFormat = chunkFormat
-      , chunkStream = sortedStream
-      }
- where
-  sortedStream = sorter chunkStream
-
--- | Create a serialization plan with default options and no data.
-defaultSerializationPlan :: forall a. (MemPack a, Typeable a) => SerializationPlan a
-defaultSerializationPlan =
-  SerializationPlan
-    { chunkFormat = ChunkFormatRaw
-    , chunkStream = mempty
-    }
-
--- | Add a chunked data stream to the dump configuration.
-addChunks :: (MemPack a, Typeable a) => Stream (Of (InputChunk a)) IO () -> SerializationPlan a -> SerializationPlan a
-addChunks stream SerializationPlan{..} =
-  SerializationPlan
-    { chunkFormat = chunkFormat
-    , chunkStream = chunkStream <> stream
-    }
-
--- | Set the chunk format in the serialization plan.
-withChunkFormat :: ChunkFormat -> SerializationPlan a -> SerializationPlan a
-withChunkFormat format SerializationPlan{..} =
-  SerializationPlan
-    { chunkFormat = format
-    , chunkStream = chunkStream
-    }
 
 -- Dumps data to the handle, while splitting it into chunks.
 --

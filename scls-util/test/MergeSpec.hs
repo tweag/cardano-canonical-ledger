@@ -7,8 +7,8 @@ import Cardano.SCLS.Internal.Reader (
   extractNamespaceList,
   extractRootHash,
  )
+import Cardano.SCLS.Internal.Serializer.Dump (addChunks, defaultSerializationPlan)
 import Cardano.SCLS.Internal.Serializer.MemPack (RawBytes (..))
-import Cardano.SCLS.Internal.Serializer.Reference.Dump (addChunks, defaultSerializationPlan)
 import Cardano.SCLS.Internal.Serializer.Reference.Impl qualified as Reference
 import Cardano.Types.Namespace (Namespace (..))
 import Cardano.Types.Namespace qualified as Namespace

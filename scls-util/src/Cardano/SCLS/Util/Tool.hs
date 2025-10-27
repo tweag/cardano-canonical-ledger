@@ -5,9 +5,9 @@ module Cardano.SCLS.Util.Tool (splitFile, mergeFiles, extract, ExtractOptions (.
 
 import Cardano.SCLS.Internal.Reader
 import Cardano.SCLS.Internal.Record.Hdr (Hdr (..))
+import Cardano.SCLS.Internal.Serializer.Dump
 import Cardano.SCLS.Internal.Serializer.External.Impl (serialize)
 import Cardano.SCLS.Internal.Serializer.MemPack
-import Cardano.SCLS.Internal.Serializer.Reference.Dump
 import Cardano.SCLS.Util.Result
 import Cardano.Types.Namespace (Namespace (..))
 import Cardano.Types.Namespace qualified as Namespace
