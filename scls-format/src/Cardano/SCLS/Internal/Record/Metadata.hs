@@ -49,8 +49,8 @@ instance MemPackHeaderOffset MetadataEntry where
   headerSizeOffset = 8
 
 data MetadataFooter = MetadataFooter
-  { totalEntries :: Word64
-  , entriesHash :: Digest
+  { totalEntries :: !Word64
+  , entriesHash :: !Digest
   }
   deriving (Show, Eq)
 
