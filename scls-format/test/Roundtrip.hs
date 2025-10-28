@@ -11,7 +11,7 @@ import Cardano.SCLS.Internal.Hash (Digest (..))
 import Cardano.SCLS.Internal.Reader (extractRootHash, withHeader, withNamespacedData, withRecordData)
 import Cardano.SCLS.Internal.Record.Hdr (mkHdr)
 import Cardano.SCLS.Internal.Record.Metadata (Metadata (..), MetadataEntry (MetadataEntry))
-import Cardano.SCLS.Internal.Serializer.Dump (SerializationPlan, addChunks, defaultSerializationPlan, addMetadata)
+import Cardano.SCLS.Internal.Serializer.Dump (SerializationPlan, addChunks, addMetadata, defaultSerializationPlan)
 import Cardano.SCLS.Internal.Serializer.External.Impl qualified as External (serialize)
 import Cardano.SCLS.Internal.Serializer.MemPack
 import Cardano.SCLS.Internal.Serializer.Reference.Impl qualified as Reference (serialize)
@@ -100,9 +100,9 @@ mkRoundtripTestsFor groupName serialize =
             fileName
             Mainnet
             (SlotNo 1)
-            (defaultSerializationPlan
-              & addChunks (S.each [namespace S.:> S.each entries])
-              & addMetadata (S.each mEntries)
+            ( defaultSerializationPlan
+                & addChunks (S.each [namespace S.:> S.each entries])
+                & addMetadata (S.each mEntries)
             )
         withHeader
           fileName

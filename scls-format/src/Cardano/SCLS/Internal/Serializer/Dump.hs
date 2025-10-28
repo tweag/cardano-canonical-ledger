@@ -12,6 +12,7 @@ module Cardano.SCLS.Internal.Serializer.Dump (
   mkSortedSerializationPlan,
   defaultSerializationPlan,
   addChunks,
+  addMetadata,
   withChunkFormat,
   dumpToHandle,
   constructChunks_,
@@ -72,12 +73,12 @@ dumpToHandle handle hdr plan = do
   let SerializationPlan{..} = getSerializationPlan plan
   _ <- hWriteFrame handle hdr
   manifestData <-
-    chunkStream -- output our sorted stream
+    pChunkStream -- output our sorted stream
       & S.mapM
         ( \(namespace :> inner) -> do
             inner
               & dedup
-              & constructChunks_ chunkFormat -- compose entries into data for chunks records, returns digest of entries
+              & constructChunks_ pChunkFormat -- compose entries into data for chunks records, returns digest of entries
               & S.copy
               & storeToHandle namespace -- stores data to handle,passes digest of entries
               & S.map CB.chunkItemEntriesCount -- keep only number of entries (other things are not needed)
@@ -99,7 +100,7 @@ dumpToHandle handle hdr plan = do
         mempty
         ManifestInfo
 
-  case metadataStream of
+  case pMetadataStream of
     Nothing -> pure ()
     Just s -> do
       (_entries :> (_metadataRecords :> _rootHash)) <-
