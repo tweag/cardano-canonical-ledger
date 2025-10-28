@@ -15,6 +15,7 @@ module Cardano.SCLS.Internal.Serializer.Dump.Plan (
   addChunks,
   withChunkFormat,
   addMetadata,
+  withBufferSize,
 
   -- * Sorted plan
   SortedSerializationPlan,
@@ -44,6 +45,8 @@ data SerializationPlan a = SerializationPlan
   -- e.g. isToBuildIndex, deltaStream, etc.
   { pChunkFormat :: ChunkFormat
   -- ^ Compression format for chunks
+    , pBufferSize :: Int
+  -- ^ Buffer size for record building (in bytes)
   , pChunkStream :: Stream (Of (InputChunk a)) IO ()
   -- ^ Input stream of entries to serialize, can be unsorted
   , pMetadataStream :: Maybe (Stream (Of MetadataEntry) IO ())
@@ -63,6 +66,7 @@ defaultSerializationPlan :: forall a. (MemPack a, Typeable a) => SerializationPl
 defaultSerializationPlan =
   SerializationPlan
     { pChunkFormat = ChunkFormatRaw
+    , pBufferSize = 16 * 1024 * 1024 -- 16 MB buffer size
     , pChunkStream = mempty
     , pMetadataStream = Nothing
     }
@@ -83,9 +87,16 @@ withChunkFormat format plan =
 
 -- | Add a metadata stream to the serialization plan.
 addMetadata :: Stream (Of MetadataEntry) IO () -> SerializationPlan a -> SerializationPlan a
-addMetadata stream plan@SerializationPlan{..} =
+addMetadata stream plan =
   plan
     { pMetadataStream = Just stream
+    }
+
+-- | Set the buffer size in the serialization plan.
+withBufferSize :: Int -> SerializationPlan a -> SerializationPlan a
+withBufferSize size plan =
+  plan
+    { pBufferSize = size
     }
 
 -- | A serialization plan with sorted streams.

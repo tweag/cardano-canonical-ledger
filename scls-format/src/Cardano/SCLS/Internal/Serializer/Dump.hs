@@ -16,6 +16,7 @@ module Cardano.SCLS.Internal.Serializer.Dump (
   withChunkFormat,
   dumpToHandle,
   constructChunks_,
+  withBufferSize,
 ) where
 
 import Cardano.SCLS.Internal.Frame
@@ -78,7 +79,7 @@ dumpToHandle handle hdr plan = do
         ( \(namespace :> inner) -> do
             inner
               & dedup
-              & constructChunks_ pChunkFormat -- compose entries into data for chunks records, returns digest of entries
+              & constructChunks_ pChunkFormat pBufferSize -- compose entries into data for chunks records, returns digest of entries
               & S.copy
               & storeToHandle namespace -- stores data to handle,passes digest of entries
               & S.map CB.chunkItemEntriesCount -- keep only number of entries (other things are not needed)
@@ -105,7 +106,7 @@ dumpToHandle handle hdr plan = do
     Just s -> do
       (_entries :> (_metadataRecords :> _rootHash)) <-
         s
-          & constructMetadata_ -- compose entries into data for metadata records, returns digest of entries
+          & constructMetadata_ pBufferSize -- compose entries into data for metadata records, returns digest of entries
           & S.copy
           & S.map metadataToRecord
           & S.mapM_ (liftIO . hWriteFrame handle)
@@ -162,11 +163,12 @@ constructChunks_ ::
   forall a r.
   (MemPack a, Typeable a, MemPackHeaderOffset a) =>
   ChunkFormat ->
+  Int ->
   Stream (Of a) IO r ->
   Stream (Of CB.ChunkItem) IO (Digest)
-constructChunks_ format s0 = liftIO initialize >>= consume s0
+constructChunks_ format bufferSize s0 = liftIO initialize >>= consume s0
  where
-  initialize = CB.mkMachine (16 * 1024 * 1024) format
+  initialize = CB.mkMachine bufferSize format
   consume ::
     Stream (Of a) IO r ->
     CB.BuilderMachine ->
@@ -186,11 +188,12 @@ constructChunks_ format s0 = liftIO initialize >>= consume s0
 
 constructMetadata_ ::
   forall r.
+  Int ->
   Stream (Of MetadataEntry) IO r ->
   Stream (Of MB.MetadataItem) IO (Digest)
-constructMetadata_ s0 = liftIO initialize >>= consume s0
+constructMetadata_ bufferSize s0 = liftIO initialize >>= consume s0
  where
-  initialize = MB.mkMachine (16 * 1024 * 1024)
+  initialize = MB.mkMachine bufferSize
   consume ::
     Stream (Of MetadataEntry) IO r ->
     MB.BuilderMachine ->
