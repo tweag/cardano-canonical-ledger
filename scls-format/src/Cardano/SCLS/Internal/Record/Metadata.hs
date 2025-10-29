@@ -104,17 +104,15 @@ mkMetadata metadataBytes totalEntries = do
   let
     entriesHash = digest metadataBytes
     metadataFooter = MetadataFooter{..}
-    (metadataEntries, _) =
-      flip
+    metadataEntries =
         fix
-        ([], metadataBytes)
-        ( \rec (acc, bs) ->
+        ( \rec bs -> 
             if BS.null bs
-              then (reverse acc, bs)
-              else do
+              then []
+              else
                 let (Entry e, n) = errorFail $ unpackLeftOver bs
-                    rest = BS.drop n bs
-                rec (e : acc, rest)
+                in e : rec (BS.drop n bs)
         )
+        metadataBytes
 
   Metadata{..}
