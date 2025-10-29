@@ -104,16 +104,11 @@ dumpToHandle handle hdr plan = do
   case pMetadataStream of
     Nothing -> pure ()
     Just s -> do
-      (_entries :> (_metadataRecords :> _rootHash)) <-
+      _rootHash <- -- TODO: parametrize builder machine to customize accumulator operation (replace hash computation with something else)
         s
           & constructMetadata_ pBufferSize -- compose entries into data for metadata records, returns digest of entries
-          & S.copy
           & S.map metadataToRecord
           & S.mapM_ (liftIO . hWriteFrame handle)
-          & S.map MB.metadataItemEntriesCount -- keep only number of entries (other things are not needed)
-          & S.copy
-          & S.length -- returns number of metadata
-          & S.sum -- returns number of entries
       pure ()
 
   manifest <- mkManifest manifestData
