@@ -130,7 +130,7 @@ dumpToHandle handle hdr plan = do
       namespace
       (pinnedByteArrayToByteString chunkItemData)
       (fromIntegral chunkItemEntriesCount)
-  
+
   metadataToRecord :: MB.MetadataItem -> Metadata
   metadataToRecord MB.MetadataItem{..} =
     mkMetadata

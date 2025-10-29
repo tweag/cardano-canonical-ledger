@@ -116,7 +116,7 @@ bufferBoundaryTests =
               -- Second metadata should contain the large data
               annotate "second metadata should have correct entries count" $ metadataItemEntriesCount secondMetadata `shouldBe` 1
               annotate "second metadata should match large input size" $ (sizeofByteArray $ metadataItemData secondMetadata) `shouldBe` (packedByteCount $ Entry largeData)
-            l -> annotate "after adding overd data should emit two metadata" $ length l `shouldBe` 2
+            l -> annotate "after adding oversized data should emit two metadata" $ length l `shouldBe` 2
 
     prop "should handle multiple boundary crossings correctly" $ do
       let dataMetadata1Length = 26
