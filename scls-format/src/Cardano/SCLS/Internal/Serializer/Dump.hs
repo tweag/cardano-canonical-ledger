@@ -193,7 +193,7 @@ constructMetadata_ bufferSize s0 = liftIO initialize >>= consume s0
     Stream (Of MetadataEntry) IO r ->
     MB.BuilderMachine ->
     Stream (Of MB.MetadataItem) IO (Digest)
-  consume s1 machine = do
+  consume s1 !machine = do
     case s1 of
       Return{} ->
         liftIO (MB.interpretCommand machine MB.Finalize) >>= \case
