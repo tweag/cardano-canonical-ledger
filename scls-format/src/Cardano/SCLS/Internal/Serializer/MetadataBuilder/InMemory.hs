@@ -3,17 +3,7 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TypeFamilies #-}
 
-{- |
-Implementation of the state machine that fills current chunk in memory.
-
-It manages proper filling of the buffers and emitting the values when
-the next item can't be added.
-
-Current implementation expects the incoming values in already sorted order.
-
-Implementation is done in the way so it would be possible to use it with
-any existing stream and effect system as long as they could carry a state.
--}
+-- | Instance of the state machine that fills the current metadata chunk in memory.
 module Cardano.SCLS.Internal.Serializer.MetadataBuilder.InMemory (
   mkMachine,
   B.Command (..),
