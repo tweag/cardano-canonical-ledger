@@ -14,6 +14,8 @@ module Cardano.SCLS.Internal.Serializer.Dump.Plan (
   defaultSerializationPlan,
   addChunks,
   withChunkFormat,
+  addMetadata,
+  withBufferSize,
 
   -- * Sorted plan
   SortedSerializationPlan,
@@ -23,6 +25,7 @@ module Cardano.SCLS.Internal.Serializer.Dump.Plan (
 ) where
 
 import Cardano.SCLS.Internal.Record.Chunk
+import Cardano.SCLS.Internal.Record.Metadata
 
 import Cardano.Types.Namespace (Namespace)
 import Data.MemPack
@@ -40,10 +43,14 @@ type InputChunk a = S.Of Namespace (S.Stream (S.Of a) IO ())
 data SerializationPlan a = SerializationPlan
   -- Future fields for more dump configurations can be added here
   -- e.g. isToBuildIndex, deltaStream, etc.
-  { chunkFormat :: ChunkFormat
+  { pChunkFormat :: ChunkFormat
   -- ^ Compression format for chunks
-  , chunkStream :: Stream (Of (InputChunk a)) IO ()
+    , pBufferSize :: Int
+  -- ^ Buffer size for record building (in bytes)
+  , pChunkStream :: Stream (Of (InputChunk a)) IO ()
   -- ^ Input stream of entries to serialize, can be unsorted
+  , pMetadataStream :: Maybe (Stream (Of MetadataEntry) IO ())
+  -- ^ Optional stream of metadata records to include in the dump
   }
 
 {- | A function type used to sort streams.
@@ -58,24 +65,38 @@ type SortF a b =
 defaultSerializationPlan :: forall a. (MemPack a, Typeable a) => SerializationPlan a
 defaultSerializationPlan =
   SerializationPlan
-    { chunkFormat = ChunkFormatRaw
-    , chunkStream = mempty
+    { pChunkFormat = ChunkFormatRaw
+    , pBufferSize = 16 * 1024 * 1024 -- 16 MB buffer size
+    , pChunkStream = mempty
+    , pMetadataStream = Nothing
     }
 
 -- | Add a chunked data stream to the dump configuration.
 addChunks :: (MemPack a, Typeable a) => Stream (Of (InputChunk a)) IO () -> SerializationPlan a -> SerializationPlan a
-addChunks stream SerializationPlan{..} =
-  SerializationPlan
-    { chunkFormat = chunkFormat
-    , chunkStream = chunkStream <> stream
+addChunks stream plan@SerializationPlan{..} =
+  plan
+    { pChunkStream = pChunkStream <> stream
     }
 
 -- | Set the chunk format in the serialization plan.
 withChunkFormat :: ChunkFormat -> SerializationPlan a -> SerializationPlan a
-withChunkFormat format SerializationPlan{..} =
-  SerializationPlan
-    { chunkFormat = format
-    , chunkStream = chunkStream
+withChunkFormat format plan =
+  plan
+    { pChunkFormat = format
+    }
+
+-- | Add a metadata stream to the serialization plan.
+addMetadata :: Stream (Of MetadataEntry) IO () -> SerializationPlan a -> SerializationPlan a
+addMetadata stream plan =
+  plan
+    { pMetadataStream = Just stream
+    }
+
+-- | Set the buffer size in the serialization plan.
+withBufferSize :: Int -> SerializationPlan a -> SerializationPlan a
+withBufferSize size plan =
+  plan
+    { pBufferSize = size
     }
 
 -- | A serialization plan with sorted streams.
@@ -86,11 +107,8 @@ mkSortedSerializationPlan ::
   SerializationPlan a ->
   SortF (InputChunk a) (InputChunk b) ->
   SortedSerializationPlan b
-mkSortedSerializationPlan SerializationPlan{..} sorter =
+mkSortedSerializationPlan plan@SerializationPlan{..} sorter =
   SortedSerializationPlan $
-    SerializationPlan
-      { chunkFormat = chunkFormat
-      , chunkStream = sortedStream
+    plan
+      { pChunkStream = sorter pChunkStream
       }
- where
-  sortedStream = sorter chunkStream

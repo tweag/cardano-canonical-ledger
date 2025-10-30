@@ -12,9 +12,11 @@ module Cardano.SCLS.Internal.Serializer.Dump (
   mkSortedSerializationPlan,
   defaultSerializationPlan,
   addChunks,
+  addMetadata,
   withChunkFormat,
   dumpToHandle,
   constructChunks_,
+  withBufferSize,
 ) where
 
 import Cardano.SCLS.Internal.Frame
@@ -22,9 +24,11 @@ import Cardano.SCLS.Internal.Hash (Digest (..))
 import Cardano.SCLS.Internal.Record.Chunk
 import Cardano.SCLS.Internal.Record.Hdr
 import Cardano.SCLS.Internal.Record.Manifest
-import Cardano.SCLS.Internal.Serializer.ChunksBuilder.InMemory
+import Cardano.SCLS.Internal.Record.Metadata
+import Cardano.SCLS.Internal.Serializer.ChunksBuilder.InMemory qualified as CB
 import Cardano.SCLS.Internal.Serializer.Dump.Plan
 import Cardano.SCLS.Internal.Serializer.MemPack
+import Cardano.SCLS.Internal.Serializer.MetadataBuilder.InMemory qualified as MB
 import Crypto.Hash.MerkleTree.Incremental qualified as MT
 
 import Data.Foldable qualified as F
@@ -70,15 +74,15 @@ dumpToHandle handle hdr plan = do
   let SerializationPlan{..} = getSerializationPlan plan
   _ <- hWriteFrame handle hdr
   manifestData <-
-    chunkStream -- output our sorted stream
+    pChunkStream -- output our sorted stream
       & S.mapM
         ( \(namespace :> inner) -> do
             inner
               & dedup
-              & constructChunks_ chunkFormat -- compose entries into data for chunks records, returns digest of entries
+              & constructChunks_ pChunkFormat pBufferSize -- compose entries into data for chunks records, returns digest of entries
               & S.copy
               & storeToHandle namespace -- stores data to handle,passes digest of entries
-              & S.map chunkItemEntriesCount -- keep only number of entries (other things are not needed)
+              & S.map CB.chunkItemEntriesCount -- keep only number of entries (other things are not needed)
               & S.copy
               & S.length -- returns number of chunks
               & S.sum -- returns number of entries
@@ -97,25 +101,41 @@ dumpToHandle handle hdr plan = do
         mempty
         ManifestInfo
 
+  case pMetadataStream of
+    Nothing -> pure ()
+    Just s -> do
+      _rootHash <- -- TODO: parametrize builder machine to customize accumulator operation (replace hash computation with something else)
+        s
+          & constructMetadata_ pBufferSize -- compose entries into data for metadata records, returns digest of entries
+          & S.map metadataToRecord
+          & S.mapM_ (liftIO . hWriteFrame handle)
+      pure ()
+
   manifest <- mkManifest manifestData
   _ <- hWriteFrame handle manifest
   pure ()
  where
-  storeToHandle :: (S.MonadIO io) => Namespace -> Stream (Of ChunkItem) io r -> io r
+  storeToHandle :: (S.MonadIO io) => Namespace -> Stream (Of CB.ChunkItem) io r -> io r
   storeToHandle namespace s =
     s
       & S.zip (S.enumFrom 1)
       & S.map (chunkToRecord namespace)
       & S.mapM_ (liftIO . hWriteFrame handle)
 
-  chunkToRecord :: Namespace -> (Word64, ChunkItem) -> Chunk
-  chunkToRecord namespace (seqno, ChunkItem{..}) =
+  chunkToRecord :: Namespace -> (Word64, CB.ChunkItem) -> Chunk
+  chunkToRecord namespace (seqno, CB.ChunkItem{..}) =
     mkChunk
       seqno
       chunkItemFormat
       namespace
       (pinnedByteArrayToByteString chunkItemData)
       (fromIntegral chunkItemEntriesCount)
+
+  metadataToRecord :: MB.MetadataItem -> Metadata
+  metadataToRecord MB.MetadataItem{..} =
+    mkMetadata
+      (pinnedByteArrayToByteString metadataItemData)
+      (fromIntegral metadataItemEntriesCount)
 
 dedup ::
   (HasKey a, MemPack a, S.MonadIO io) =>
@@ -138,26 +158,52 @@ constructChunks_ ::
   forall a r.
   (MemPack a, Typeable a, MemPackHeaderOffset a) =>
   ChunkFormat ->
+  Int ->
   Stream (Of a) IO r ->
-  Stream (Of ChunkItem) IO (Digest)
-constructChunks_ format s0 = liftIO initialize >>= consume s0
+  Stream (Of CB.ChunkItem) IO (Digest)
+constructChunks_ format bufferSize s0 = liftIO initialize >>= consume s0
  where
-  initialize = mkMachine (16 * 1024 * 1024) format
+  initialize = CB.mkMachine bufferSize format
   consume ::
     Stream (Of a) IO r ->
-    BuilderMachine ->
-    Stream (Of ChunkItem) IO (Digest)
+    CB.BuilderMachine ->
+    Stream (Of CB.ChunkItem) IO (Digest)
   consume s1 !machine = do
     case s1 of
       Return{} ->
-        liftIO (interpretCommand machine Finalize) >>= \case
+        liftIO (CB.interpretCommand machine CB.Finalize) >>= \case
           (digest, Nothing) -> return digest
           (digest, Just e) -> S.yield e >> return digest
       Effect e -> Effect (e >>= \s -> return (consume s machine))
       Step (u :> rest) -> do
-        liftIO (interpretCommand machine (Append u)) >>= \case
+        liftIO (CB.interpretCommand machine (CB.Append u)) >>= \case
           (machine', chunks) -> do
             S.each chunks
+            consume rest machine'
+
+constructMetadata_ ::
+  forall r.
+  Int ->
+  Stream (Of MetadataEntry) IO r ->
+  Stream (Of MB.MetadataItem) IO (Digest)
+constructMetadata_ bufferSize s0 = liftIO initialize >>= consume s0
+ where
+  initialize = MB.mkMachine bufferSize
+  consume ::
+    Stream (Of MetadataEntry) IO r ->
+    MB.BuilderMachine ->
+    Stream (Of MB.MetadataItem) IO (Digest)
+  consume s1 !machine = do
+    case s1 of
+      Return{} ->
+        liftIO (MB.interpretCommand machine MB.Finalize) >>= \case
+          (digest, Nothing) -> return digest
+          (digest, Just e) -> S.yield e >> return digest
+      Effect e -> Effect (e >>= \s -> return (consume s machine))
+      Step (u :> rest) -> do
+        liftIO (MB.interpretCommand machine (MB.Append u)) >>= \case
+          (machine', metadata) -> do
+            S.each metadata
             consume rest machine'
 
 data ManifestInfo = ManifestInfo
