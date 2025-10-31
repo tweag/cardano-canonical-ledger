@@ -88,7 +88,7 @@ so on, until we have placed a file.
 the size of the entries, but it can be changed without modifying the interface.
 -}
 prepareExternalSortNamespaced ::
-  (Typeable a, Ord (Key a), HasKey a, MemPack a) =>
+  (Typeable a, HasKey a, MemPack a) =>
   FilePath ->
   S.Stream (S.Of (InputChunk a)) IO () ->
   IO ()
@@ -115,7 +115,7 @@ the input may be unordered and we can have a namespaces to appear
 multiple times in the stream
 -}
 mergeChunks ::
-  (Ord (Key a), HasKey a) =>
+  (HasKey a) =>
   S.Stream (S.Of (InputChunk a)) IO () ->
   S.Stream (S.Of (Namespace, V.Vector a)) IO ()
 mergeChunks = loop Map.empty

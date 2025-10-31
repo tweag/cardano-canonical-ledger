@@ -31,7 +31,7 @@ import VectorBuilder.MVector qualified as Builder
 At this point it accepts values from one namespace only.
 -}
 serialize ::
-  (MemPack a, Ord (Key a), Typeable a, HasKey a, MemPackHeaderOffset a) =>
+  (MemPack a, Typeable a, HasKey a, MemPackHeaderOffset a) =>
   -- | path to resulting file
   FilePath ->
   -- | Network identifier
@@ -51,7 +51,7 @@ serialize resultFilePath network slotNo plan = do
             S.each [n S.:> S.each v | (n, v) <- Map.toList orderedStream]
         )
  where
-  mkVectors :: (Ord (Key a), HasKey a) => S.Stream (S.Of (InputChunk a)) IO () -> IO (Map Namespace (V.Vector a))
+  mkVectors :: (HasKey a) => S.Stream (S.Of (InputChunk a)) IO () -> IO (Map Namespace (V.Vector a))
   mkVectors = do
     S.foldM_
       do
