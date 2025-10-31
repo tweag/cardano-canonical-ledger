@@ -88,7 +88,7 @@ so on, until we have placed a file.
 the size of the entries, but it can be changed without modifying the interface.
 -}
 prepareExternalSortNamespaced ::
-  (Typeable a, Ord a, MemPack a) =>
+  (Typeable a, HasKey a, MemPack a) =>
   FilePath ->
   S.Stream (S.Of (InputChunk a)) IO () ->
   IO ()
@@ -115,12 +115,20 @@ the input may be unordered and we can have a namespaces to appear
 multiple times in the stream
 -}
 mergeChunks ::
-  (Ord a) =>
+  (HasKey a) =>
   S.Stream (S.Of (InputChunk a)) IO () ->
   S.Stream (S.Of (Namespace, V.Vector a)) IO ()
 mergeChunks = loop Map.empty
  where
   chunkSize = 1024
+  sort v =
+    Tim.sortBy
+      ( \e1 e2 ->
+          let k1 = getKey e1
+              k2 = getKey e2
+           in compare k1 k2
+      )
+      v
   loop s (Step ((ns :> vecStream) :> rest)) = do
     let (i, s') = case Map.lookup ns s of
           Nothing -> (Builder.empty, Map.insert ns Builder.empty s)
@@ -140,7 +148,7 @@ mergeChunks = loop Map.empty
                 else do
                   let v' = runST do
                         mv <- Builder.build i'
-                        Tim.sort mv
+                        sort mv
                         V.unsafeFreeze mv
                   return $ S.yield (ns, v') >> loop (Map.delete ns s') (Step ((ns :> r) :> rest))
   loop s (Effect e) = Effect (e >>= \s' -> return (loop s s'))
@@ -149,7 +157,7 @@ mergeChunks = loop Map.empty
       & S.map \(ns, builder) ->
         let v = runST do
               mv <- Builder.build builder
-              Tim.sort mv
+              sort mv
               V.unsafeFreeze mv
          in (ns, v)
 
