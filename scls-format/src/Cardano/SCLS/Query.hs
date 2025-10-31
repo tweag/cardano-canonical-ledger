@@ -1,6 +1,6 @@
 {-# LANGUAGE LambdaCase #-}
 
-module Cardano.SCLS.Util.Query where
+module Cardano.SCLS.Query where
 
 import Cardano.SCLS.Internal.Reader (withNamespacedData)
 import Cardano.SCLS.Internal.Serializer.Dump (HasKey (..))
@@ -16,14 +16,16 @@ queryEntry ::
   Key a ->
   IO (Maybe a)
 queryEntry dir ns key = do
-  withNamespacedData dir ns $ \stream ->
-    S.fold_
-      ( \case
-          Just v -> \_ -> Just v
-          Nothing -> \entry ->
-            let k = getKey entry
-             in if k == key then Just entry else Nothing
-      )
-      Nothing
-      id
-      stream
+  withNamespacedData dir ns $ \stream -> do
+    value :: Maybe a <-
+      S.head_
+        $ S.dropWhile
+          ( \entry ->
+              let k = getKey entry
+               in k < key
+          )
+          stream
+    case value of
+      Just entry | getKey entry == key -> pure $ Just entry
+      Nothing -> pure Nothing
+      Just _ -> pure Nothing
