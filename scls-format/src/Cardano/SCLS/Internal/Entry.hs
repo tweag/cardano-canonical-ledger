@@ -25,7 +25,7 @@ data ChunkEntry k v = ChunkEntry
   }
   deriving (Show)
 
-instance (Eq k) => HasKey (ChunkEntry k v) where
+instance (Ord k) => HasKey (ChunkEntry k v) where
   type Key (ChunkEntry k v) = k
   getKey (ChunkEntry k _) = k
 

@@ -8,6 +8,6 @@ module Cardano.SCLS.Internal.Serializer.HasKey (
 import Data.Kind (Type)
 
 -- | Class for types that have an associated key.
-class (Eq (Key a)) => HasKey a where
+class (Ord (Key a)) => HasKey a where
   type Key a :: Type
   getKey :: a -> Key a
