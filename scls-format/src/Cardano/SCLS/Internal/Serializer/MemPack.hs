@@ -9,26 +9,33 @@
 module Cardano.SCLS.Internal.Serializer.MemPack (
   CStringLenBuffer (..),
   isolate,
+  isolated,
   MemPackHeaderOffset (..),
 
   -- * Type helpers
   Entry (..),
-  RawBytes (..),
   ByteStringSized (..),
   SomeByteStringSized (..),
+  CBORTerm (..),
+  RawBytes (..),
 ) where
 
 import Cardano.SCLS.Internal.Serializer.HasKey
+import Codec.CBOR.Read qualified as CBOR
+import Codec.CBOR.Term qualified as CBOR
+import Codec.CBOR.Write qualified as CBOR
 import Control.Monad.Reader
 import Control.Monad.State.Class
 import Control.Monad.Trans.Fail
 import Data.ByteArray (ByteArrayAccess, length, withByteArray)
 import Data.ByteString (ByteString)
 import Data.ByteString qualified as BS
+import Data.ByteString.Lazy qualified as BSL
 import Data.MemPack
 import Data.MemPack.Buffer
 import Data.MemPack.Error
 import Data.Primitive.Ptr
+import Data.Text qualified as T
 import Data.Typeable
 import Data.Word
 import Foreign.C.String
@@ -59,11 +66,7 @@ instance HasKey RawBytes where
 instance MemPack (RawBytes) where
   packedByteCount (RawBytes bs) = BS.length bs
   packM (RawBytes bs) = packByteStringM bs
-  unpackM = do
-    len <- Unpack $ \b ->
-      get >>= \s -> do
-        return (bufferByteCount b - s)
-    RawBytes <$> unpackByteStringM len
+  unpackM = RawBytes <$> consumeBytes
 
 instance MemPackHeaderOffset RawBytes where
   headerSizeOffset = 4
@@ -96,6 +99,16 @@ isolated len = do
   b' :: Isolate b <- asks (isolate start len)
   a <- Unpack $ \_ -> StateT (\_ -> unpackLeftOverOff b' start unpackM)
   return a
+
+{- | Consumes all remaining bytes in the current buffer.
+
+Useful for reading isolated data.
+-}
+consumeBytes :: (Buffer b) => Unpack b ByteString
+consumeBytes = do
+  start <- get
+  len <- asks bufferByteCount
+  unpackByteStringM (len - start)
 
 unpackLeftOverOff :: forall a b. (MemPack a, Buffer b) => (HasCallStack) => b -> Int -> Unpack b a -> Fail SomeError (a, Int)
 unpackLeftOverOff buf off action = do
@@ -189,3 +202,23 @@ instance (KnownNat n) => MemPack (ByteStringSized n) where
     let expected = fromIntegral (natVal (Proxy :: Proxy n)) :: Int
     bs <- unpackByteStringM expected
     pure (ByteStringSized bs)
+
+-- | Helper to store CBOR terms directly as entries.
+newtype CBORTerm = CBORTerm CBOR.Term
+  deriving (Eq, Ord, Show)
+
+instance MemPack CBORTerm where
+  packedByteCount (CBORTerm t) =
+    BS.length (CBOR.toStrictByteString (CBOR.encodeTerm t))
+
+  packM (CBORTerm t) =
+    packByteStringM (CBOR.toStrictByteString (CBOR.encodeTerm t))
+
+  unpackM = do
+    start <- gets fromIntegral
+    bytes <- consumeBytes
+    case CBOR.deserialiseFromBytesWithSize CBOR.decodeTerm (BSL.fromStrict bytes) of
+      Left err -> failUnpack $ TextError $ "CBOR term deserialisation failed: " <> T.pack (show err)
+      Right (_rest, bytesRead, term) -> do
+        put (start + fromIntegral bytesRead)
+        pure (CBORTerm term)
