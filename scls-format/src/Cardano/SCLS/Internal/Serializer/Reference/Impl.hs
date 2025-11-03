@@ -14,6 +14,7 @@ import Cardano.Types.Network
 import Cardano.Types.SlotNo
 import Control.Monad.IO.Class (MonadIO (liftIO))
 import Control.Monad.ST (runST)
+import Data.Function (on)
 import Data.Map.Strict (Map)
 import Data.Map.Strict qualified as Map
 import Data.MemPack
@@ -30,7 +31,7 @@ import VectorBuilder.MVector qualified as Builder
 At this point it accepts values from one namespace only.
 -}
 serialize ::
-  (MemPack a, Ord a, Typeable a, HasKey a, MemPackHeaderOffset a) =>
+  (MemPack a, Ord (Key a), Typeable a, HasKey a, MemPackHeaderOffset a) =>
   -- | path to resulting file
   FilePath ->
   -- | Network identifier
@@ -50,7 +51,7 @@ serialize resultFilePath network slotNo plan = do
             S.each [n S.:> S.each v | (n, v) <- Map.toList orderedStream]
         )
  where
-  mkVectors :: (Ord a) => S.Stream (S.Of (InputChunk a)) IO () -> IO (Map Namespace (V.Vector a))
+  mkVectors :: (Ord (Key a), HasKey a) => S.Stream (S.Of (InputChunk a)) IO () -> IO (Map Namespace (V.Vector a))
   mkVectors = do
     S.foldM_
       do
@@ -61,10 +62,10 @@ serialize resultFilePath network slotNo plan = do
       do
         traverse \builder -> pure $ runST do
           mv <- Builder.build builder
-          Tim.sort mv
+          Tim.sortBy (compare `on` getKey) mv
           V.unsafeFreeze mv
 
-  mkVector :: (Ord a) => S.Stream (S.Of a) IO () -> IO (Builder.Builder a)
+  mkVector :: S.Stream (S.Of a) IO () -> IO (Builder.Builder a)
   mkVector = S.fold_
     do \x e -> x <> Builder.singleton e
     do Builder.empty
