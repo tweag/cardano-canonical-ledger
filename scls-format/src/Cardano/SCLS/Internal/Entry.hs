@@ -10,7 +10,7 @@ module Cardano.SCLS.Internal.Entry (
 ) where
 
 import Cardano.SCLS.Internal.Serializer.HasKey
-import Cardano.SCLS.Internal.Serializer.MemPack (ByteStringSized (..), CBORTerm (..), MemPackHeaderOffset (..), isolated)
+import Cardano.SCLS.Internal.Serializer.MemPack (ByteStringSized (..), CBORTerm (..), MemPackHeaderOffset (..), SomeByteStringSized (..), isolated)
 import Cardano.Types.ByteOrdered (BigEndian (..))
 import Data.MemPack
 import Data.MemPack.Buffer
@@ -97,3 +97,7 @@ instance MemPack SomeCBOREntry where
 
 instance MemPackHeaderOffset SomeCBOREntry where
   headerSizeOffset = 4
+
+instance HasKey SomeCBOREntry where
+  type Key SomeCBOREntry = SomeByteStringSized
+  getKey (SomeCBOREntry gce) = SomeByteStringSized (getKey gce)
