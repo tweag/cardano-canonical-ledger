@@ -4,6 +4,7 @@
 
 module Main where
 
+import Cardano.SCLS.Util.Debug
 import Cardano.SCLS.Util.Info
 import Cardano.SCLS.Util.Result
 import Cardano.SCLS.Util.Tool
@@ -28,11 +29,15 @@ data Command
   | Split FilePath FilePath
   | Merge FilePath [FilePath]
   | Extract FilePath FilePath ExtractOptions
+  | Debug CommandDebug
+
+data CommandDebug
+  = GenerateDebugFile FilePath [(Namespace, Maybe Int)]
 
 parseOptions :: Parser Options
 parseOptions =
   Options
-    <$> subparser
+    <$> hsubparser
       ( command
           "verify"
           ( info
@@ -75,6 +80,7 @@ parseOptions =
                 (Extract <$> fileArg <*> (argument str (metavar "OUTPUT_FILE" <> help "Output file for extracted data")) <*> extractOptions)
                 (progDesc "Extract specific data into a new SCLS file")
             )
+          <> command "debug" (info (Debug <$> debugCommand) (progDesc "Debugging utilities"))
       )
  where
   fileArg =
@@ -105,6 +111,35 @@ parseOptions =
   parseNamespaceList :: ReadM [Namespace]
   parseNamespaceList = eitherReader $ \ns ->
     Right $ map (Namespace.fromText . T.strip) (T.split (== ',') (T.pack ns))
+  debugCommand :: Parser CommandDebug
+  debugCommand =
+    hsubparser
+      ( command
+          "generate"
+          ( info
+              (GenerateDebugFile <$> fileArg <*> namespaceEntriesOption)
+              (progDesc "Generate a debug SCLS file with random data")
+          )
+      )
+   where
+    namespaceEntriesOption :: Parser [(Namespace, Maybe Int)]
+    namespaceEntriesOption =
+      many $
+        option
+          parseNamespaceEntries
+          ( long "namespace"
+              <> metavar "NAMESPACE[:COUNT]"
+              <> help "Namespace and optional number of entries to generate, default is 16"
+          )
+    parseNamespaceEntries :: ReadM (Namespace, Maybe Int)
+    parseNamespaceEntries = eitherReader $ \arg ->
+      case T.split (== ':') (T.pack arg) of
+        [ns] -> Right (Namespace.fromText (T.strip ns), Nothing)
+        [ns, countText] ->
+          case reads (T.unpack (T.strip countText)) :: [(Int, String)] of
+            [(count, "")] -> Right (Namespace.fromText (T.strip ns), Just count)
+            _ -> Left $ "Invalid count: " ++ T.unpack countText
+        _ -> Left $ "Invalid namespace entry: " ++ arg
 
 -- | Main entry point
 main :: IO ()
@@ -128,3 +163,5 @@ runCommand = \case
     mergeFiles outputFile allFiles
   Extract file outputDir options ->
     extract file outputDir options
+  Debug debugCmd -> case debugCmd of
+    GenerateDebugFile outputFile namespaceEntries -> generateDebugFile outputFile namespaceEntries
