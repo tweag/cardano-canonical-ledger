@@ -10,7 +10,7 @@ import Cardano.SCLS.Namespace.UTxO qualified as UTxO
 import Codec.CBOR.Cuddle.Huddle (Huddle, HuddleItem (HIRule), collectFromInit)
 import Data.Map.Strict qualified as Map
 import Data.Text (Text)
-import GHC.Natural (Natural)
+import Numeric.Natural (Natural)
 
 -- | Various information about supported namespaces.
 data NamespaceInfo = NamespaceInfo
