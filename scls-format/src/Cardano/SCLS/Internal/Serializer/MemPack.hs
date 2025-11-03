@@ -1,15 +1,21 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE UndecidableInstances #-}
 
 -- | Useful utilities for working with MemPack types.
 module Cardano.SCLS.Internal.Serializer.MemPack (
-  Entry (..),
-  RawBytes (..),
   CStringLenBuffer (..),
   isolate,
   MemPackHeaderOffset (..),
+
+  -- * Type helpers
+  Entry (..),
+  RawBytes (..),
+  ByteStringSized (..),
+  SomeByteStringSized (..),
 ) where
 
 import Cardano.SCLS.Internal.Serializer.HasKey
@@ -28,6 +34,8 @@ import Data.Word
 import Foreign.C.String
 import Foreign.Ptr
 import GHC.Stack (HasCallStack)
+import GHC.TypeLits (KnownNat, Nat, natVal)
+import GHC.TypeNats (fromSNat, pattern SNat)
 import System.ByteOrder
 
 -- | Typeclass for types that have a fixed header offset when serialized.
@@ -142,3 +150,42 @@ instance ByteArrayAccess CStringLenBuffer where
   length (CStringLenBuffer (_, l)) = l
   withByteArray (CStringLenBuffer (ptr, _)) f =
     f (ptr `plusPtr` 0)
+
+{- | An existential wrapper for the case when we need to compare
+fixes sizes bytestring to each other.
+
+When we compare then we do it in legth-first number, first we compare
+the sizes, and then the bytestring content. This approach matches
+the ordering required by the canonical CBOR.
+-}
+data SomeByteStringSized where
+  SomeByteStringSized :: (KnownNat n) => ByteStringSized n -> SomeByteStringSized
+
+instance Eq SomeByteStringSized where
+  (SomeByteStringSized (ByteStringSized bs1)) == (SomeByteStringSized (ByteStringSized bs2)) = bs1 == bs2
+
+instance Ord SomeByteStringSized where
+  compare (SomeByteStringSized (ByteStringSized bs1 :: ByteStringSized n)) (SomeByteStringSized (ByteStringSized bs2 :: ByteStringSized m)) =
+    compare
+      (fromSNat @n SNat)
+      (fromSNat @m SNat)
+      <> compare bs1 bs2
+
+-- | A bytestring with the size known at compile time.
+newtype ByteStringSized (n :: Nat) = ByteStringSized ByteString
+  deriving (Eq, Ord, Show)
+
+instance (KnownNat n) => MemPack (ByteStringSized n) where
+  packedByteCount _ = fromInteger (natVal (Proxy :: Proxy n))
+
+  packM (ByteStringSized bs) = do
+    let expected = fromIntegral (natVal (Proxy :: Proxy n)) :: Int
+    let len = BS.length bs
+    if len /= expected
+      then error $! "ByteStringSized: expected " ++ show expected ++ " bytes, got " ++ show len
+      else packByteStringM bs
+
+  unpackM = do
+    let expected = fromIntegral (natVal (Proxy :: Proxy n)) :: Int
+    bs <- unpackByteStringM expected
+    pure (ByteStringSized bs)
