@@ -2,12 +2,13 @@
 
 module Main where
 
-import Cardano.SCLS.CDDL (namespaces)
+import Cardano.SCLS.CDDL (NamespaceInfo (..), namespaces)
 
 import Codec.CBOR.Cuddle.Huddle qualified as Cuddle
 import Codec.CBOR.Cuddle.Pretty ()
 import Control.Monad (forM_)
 import Data.Map.Strict qualified as Map
+import Data.Text qualified as T
 import Prettyprinter (pretty)
 import Prettyprinter.Render.Text (hPutDoc)
 import System.Environment (getArgs)
@@ -17,8 +18,8 @@ import System.IO
 main :: IO ()
 main =
   getArgs >>= \case
-    [dir] -> forM_ (Map.toList namespaces) $ \(ns, cddl) -> do
-      writeSpec cddl (dir </> ns <.> "cddl")
+    [dir] -> forM_ (Map.toList namespaces) $ \(ns, NamespaceInfo{namespaceSpec = cddl}) -> do
+      writeSpec cddl (dir </> T.unpack ns <.> "cddl")
     _ -> error "Usage: gen-cddl directory"
 
 writeSpec :: Cuddle.Huddle -> FilePath -> IO ()

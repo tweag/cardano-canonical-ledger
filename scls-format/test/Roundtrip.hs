@@ -5,7 +5,7 @@ module Roundtrip (
   tests,
 ) where
 
-import Cardano.SCLS.CDDL (namespaces)
+import Cardano.SCLS.CDDL (NamespaceInfo (..), namespaces)
 import Cardano.SCLS.Internal.Entry
 import Cardano.SCLS.Internal.Hash (Digest (..))
 import Cardano.SCLS.Internal.Reader (extractRootHash, withHeader, withNamespacedData, withRecordData)
@@ -36,7 +36,6 @@ import Data.Function ((&))
 import Data.List (sort)
 import Data.Map.Strict qualified as Map
 import Data.MemPack
-import Data.String
 import Data.Text qualified as T
 import Data.Word (Word32, Word64)
 import Streaming.Prelude qualified as S
@@ -73,7 +72,7 @@ mkRoundtripTestsFor groupName serialize =
   describe groupName $ do
     sequence_
       [ context (Namespace.asString n) $ it "should succeed with stream roundtrip" $ roundtrip n (toCDDL huddle)
-      | (fromString -> n, huddle) <- Map.toList namespaces
+      | (Namespace.fromText -> n, namespaceSpec -> huddle) <- Map.toList namespaces
       ]
  where
   roundtrip namespace cddl = do
