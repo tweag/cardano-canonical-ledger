@@ -17,7 +17,7 @@ import Cardano.Types.SlotNo
 import Control.Exception (onException, throwIO)
 import Control.Monad.ST (runST)
 import Data.ByteString qualified as B
-import Data.Function (fix, (&))
+import Data.Function (fix, on, (&))
 import Data.IORef (IORef, modifyIORef', newIORef, readIORef)
 
 import Data.Map.Strict qualified as Map
@@ -44,7 +44,7 @@ import VectorBuilder.Builder qualified as Builder
 import VectorBuilder.MVector qualified as Builder
 
 serialize ::
-  (MemPack a, Ord a, Typeable a, HasKey a, MemPackHeaderOffset a) =>
+  (MemPack a, Ord (Key a), Typeable a, HasKey a, MemPackHeaderOffset a) =>
   -- | path to resulting file
   FilePath ->
   -- | Network identifier
@@ -88,7 +88,7 @@ so on, until we have placed a file.
 the size of the entries, but it can be changed without modifying the interface.
 -}
 prepareExternalSortNamespaced ::
-  (Typeable a, Ord a, MemPack a) =>
+  (Typeable a, HasKey a, MemPack a) =>
   FilePath ->
   S.Stream (S.Of (InputChunk a)) IO () ->
   IO ()
@@ -115,7 +115,7 @@ the input may be unordered and we can have a namespaces to appear
 multiple times in the stream
 -}
 mergeChunks ::
-  (Ord a) =>
+  (HasKey a) =>
   S.Stream (S.Of (InputChunk a)) IO () ->
   S.Stream (S.Of (Namespace, V.Vector a)) IO ()
 mergeChunks = loop Map.empty
@@ -138,20 +138,17 @@ mergeChunks = loop Map.empty
            in if Builder.size i' < chunkSize -- we were no able to fill the chunk, so r is empty
                 then return $ loop (Map.insert ns i' s') (rest)
                 else do
-                  let v' = runST do
-                        mv <- Builder.build i'
-                        Tim.sort mv
-                        V.unsafeFreeze mv
+                  let v' = finalizeVector i'
                   return $ S.yield (ns, v') >> loop (Map.delete ns s') (Step ((ns :> r) :> rest))
   loop s (Effect e) = Effect (e >>= \s' -> return (loop s s'))
   loop s (Return _) = do
     S.each (Map.toList s)
-      & S.map \(ns, builder) ->
-        let v = runST do
-              mv <- Builder.build builder
-              Tim.sort mv
-              V.unsafeFreeze mv
-         in (ns, v)
+      & S.map \(ns, builder) -> (ns, finalizeVector builder)
+  finalizeVector :: (Ord (Key a), HasKey a) => Builder.Builder a -> V.Vector a
+  finalizeVector builder = runST do
+    mv <- Builder.build builder
+    Tim.sortBy (compare `on` getKey) mv
+    V.unsafeFreeze mv
 
 merge2 :: FilePath -> FilePath -> IO ()
 merge2 f1 f2 = do
