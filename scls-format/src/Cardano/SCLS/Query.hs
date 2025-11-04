@@ -1,6 +1,6 @@
 {-# LANGUAGE LambdaCase #-}
 
-module Cardano.SCLS.Query where
+module Cardano.SCLS.Query (queryEntry) where
 
 import Cardano.SCLS.Internal.Reader (withNamespacedData)
 import Cardano.SCLS.Internal.Serializer.Dump (HasKey (..))
