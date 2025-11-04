@@ -59,9 +59,13 @@
         };
 
         devShells = let
-          mkDevShells = p:
-            p.shell.overrideAttrs
-            (old: { shellHook = old.shellHook + pre-commit-check.shellHook; });
+          mkDevShells = p: {
+            default = p.shell.overrideAttrs (old: {
+              shellHook = old.shellHook + pre-commit-check.shellHook;
+
+              buildInputs = old.buildInputs ++ pre-commit-check.enabledPackages;
+            });
+          };
         in mkDevShells cardanoCanonicalLedger // lib.mapAttrs
         (compiler-nix-name: _:
           let
