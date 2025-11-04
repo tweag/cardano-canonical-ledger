@@ -2,16 +2,15 @@
   inputs.haskellNix.url = "github:input-output-hk/haskell.nix";
   inputs.nixpkgs.follows = "haskellNix/nixpkgs-unstable";
   inputs.flake-utils.url = "github:numtide/flake-utils";
-  inputs.pre-commit-hooks = {
-    url = "github:cachix/pre-commit-hooks.nix";
+  inputs.git-hooks = {
+    url = "github:cachix/git-hooks.nix";
     inputs.nixpkgs.follows = "nixpkgs";
   };
   inputs.treefmt-nix = {
     url = "github:numtide/treefmt-nix";
     inputs.nixpkgs.follows = "nixpkgs";
   };
-  outputs =
-    { self, nixpkgs, flake-utils, haskellNix, pre-commit-hooks, treefmt-nix }:
+  outputs = { self, nixpkgs, flake-utils, haskellNix, git-hooks, treefmt-nix }:
     let
       supportedSystems =
         [ "x86_64-linux" "x86_64-darwin" "aarch64-linux" "aarch64-darwin" ];
@@ -33,7 +32,8 @@
           variants = lib.genAttrs [ "ghc98" "ghc910" "ghc912" ]
             (compiler-nix-name: { inherit compiler-nix-name; });
         };
-        pre-commit-check = pre-commit-hooks.lib.${system}.run {
+
+        pre-commit-check = git-hooks.lib.${system}.run {
           src = ./.;
           hooks = {
             fourmolu.enable = true;
@@ -47,6 +47,7 @@
               cardanoCanonicalLedger.tool "cabal-gild" project.cabalGildVersion;
           };
         };
+
         treefmtEval =
           treefmt-nix.lib.evalModule pkgs (import ./nix/treefmt.nix project);
       in lib.recursiveUpdate flake {
@@ -68,6 +69,7 @@
               inherit compiler-nix-name;
             };
           in p.shell // (mkDevShells p)) pkgs.haskell-nix.compiler;
+
         formatter = treefmtEval.config.build.wrapper;
       });
 
