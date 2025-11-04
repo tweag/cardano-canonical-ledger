@@ -28,8 +28,8 @@ queryEntry ::
 queryEntry dir ns key = do
   withNamespacedData dir ns $ \stream -> do
     value :: Maybe a <-
-      S.head_
-        $ S.dropWhile
+      S.head_ $
+        S.dropWhile
           ( \entry ->
               let k = getKey entry
                in k < key
