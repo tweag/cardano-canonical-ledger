@@ -94,6 +94,7 @@ test-suite scls-format-test
     ChunksBuilderSpec
     MetadataBuilderSpec
     MultiNamespace
+    QuerySpec
     Roundtrip
 
   -- other-extensions:
