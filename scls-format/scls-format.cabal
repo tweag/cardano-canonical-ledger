@@ -40,6 +40,7 @@ library
     Cardano.SCLS.Internal.Serializer.MetadataBuilder.InMemory
     Cardano.SCLS.Internal.Serializer.Reference.Impl
     Cardano.SCLS.Internal.Version
+    Cardano.SCLS.Query
     Cardano.Types.ByteOrdered
     Cardano.Types.Namespace
     Cardano.Types.Network
@@ -93,6 +94,7 @@ test-suite scls-format-test
     ChunksBuilderSpec
     MetadataBuilderSpec
     MultiNamespace
+    QuerySpec
     Roundtrip
 
   -- other-extensions:
