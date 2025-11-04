@@ -1,6 +1,6 @@
 import Crypto.Hash.Algorithms (SHA3_256 (..))
-import Reference (mkMerkleTree, mtHash)
 import Crypto.Hash.MerkleTree.Incremental (add, empty, finalize, merkleRootHash)
+import Reference (mkMerkleTree, mtHash)
 
 import Test.Hspec
 import Test.Hspec.QuickCheck

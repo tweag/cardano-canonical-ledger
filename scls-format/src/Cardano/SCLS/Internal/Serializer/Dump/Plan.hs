@@ -45,7 +45,7 @@ data SerializationPlan a = SerializationPlan
   -- e.g. isToBuildIndex, deltaStream, etc.
   { pChunkFormat :: ChunkFormat
   -- ^ Compression format for chunks
-    , pBufferSize :: Int
+  , pBufferSize :: Int
   -- ^ Buffer size for record building (in bytes)
   , pChunkStream :: Stream (Of (InputChunk a)) IO ()
   -- ^ Input stream of entries to serialize, can be unsorted
