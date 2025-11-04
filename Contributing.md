@@ -136,7 +136,7 @@ This project follows specific code style guidelines to maintain consistency acro
 If using Nix, you can run the `nix fmt` tool to automatically format your code according to the project's style guidelines. This will run [`treefmt`](https://github.com/numtide/treefmt) configured to format Haskell and Nix files using the following tools:
 
 - [`fourmolu`](https://github.com/fourmolu/fourmolu): Haskell code formatting
-- [`nixfmt`](https://github.com/NixOS/nixfmt): Nix file formatting  
+- [`nixfmt`](https://github.com/NixOS/nixfmt): Nix file formatting
 - [`cabal-gild`](https://github.com/tfausak/cabal-gild): Cabal file formatting
 
 This project also uses pre-commit hooks to ensure code quality and consistency. These hooks are automatically configured by the Nix shell environment. To use them, simply make your changes and commit as usual. The hooks will run automatically before each commit.

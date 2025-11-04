@@ -22,7 +22,6 @@ checkCommandTests = describe "check command" do
   it "checkCommandTestsVerifies a valid SCLS file" do
     withSystemTempDirectory "scls-util-test-XXXXXX" \dir -> do
       -- arrange
-      (fileName, _) <- generateTestFile dir
       (generateExitCode, _stdout, _) <- runSclsUtil ["debug", "output.scls", "--namespace", "utxo/v0:10"]
       generateExitCode `shouldBe` ExitSuccess
       -- act
