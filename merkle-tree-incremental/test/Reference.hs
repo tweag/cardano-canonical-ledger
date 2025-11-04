@@ -38,12 +38,11 @@ module Reference (
 
 --   testMerkleProofN,
 
-
 import Crypto.Hash (Digest, SHA3_256 (..), hash)
 
+import Data.Bits (Bits (shiftL, shiftR, (.&.)))
 import Data.ByteArray qualified as B
 import Data.ByteString qualified as BS
-import Data.Bits (Bits (shiftL, shiftR, (.&.)))
 import Data.Word (Word32)
 
 -------------------------------------------------------------------------------

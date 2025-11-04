@@ -9,7 +9,7 @@ module Cardano.SCLS.Internal.Record.Metadata (Metadata (..), MetadataEntry (..),
 
 import Cardano.SCLS.Internal.Hash (Digest, digest, hashDigestSize)
 import Cardano.SCLS.Internal.Record.Internal.Class
-import Cardano.SCLS.Internal.Serializer.MemPack 
+import Cardano.SCLS.Internal.Serializer.MemPack
 import Cardano.Types.ByteOrdered (BigEndian (..))
 import Control.Applicative (Alternative (many))
 import Control.Monad.Fix (fix)
@@ -105,13 +105,13 @@ mkMetadata metadataBytes totalEntries = do
     entriesHash = digest metadataBytes
     metadataFooter = MetadataFooter{..}
     metadataEntries =
-        fix
-        ( \rec bs -> 
+      fix
+        ( \rec bs ->
             if BS.null bs
               then []
               else
                 let (Entry e, n) = errorFail $ unpackLeftOver bs
-                in e : rec (BS.drop n bs)
+                 in e : rec (BS.drop n bs)
         )
         metadataBytes
 

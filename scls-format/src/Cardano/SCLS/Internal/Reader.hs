@@ -33,8 +33,8 @@ import Data.Typeable
 import System.IO
 import System.IO qualified as IO
 
-import Cardano.Types.Namespace (Namespace)
 import Cardano.SCLS.Internal.Record.Internal.Class (IsFrameRecord)
+import Cardano.Types.Namespace (Namespace)
 import Streaming qualified as S
 import Streaming.Prelude qualified as S
 
