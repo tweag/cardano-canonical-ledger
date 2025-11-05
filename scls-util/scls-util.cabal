@@ -19,6 +19,7 @@ library
   import: warnings
   hs-source-dirs: src
   exposed-modules:
+    Cardano.SCLS.Util.Check
     Cardano.SCLS.Util.Debug
     Cardano.SCLS.Util.Info
     Cardano.SCLS.Util.Result
@@ -26,6 +27,7 @@ library
     Cardano.SCLS.Util.Verify
 
   build-depends:
+    FailT,
     base >=4.18 && <5,
     bytestring,
     cborg,
@@ -34,12 +36,15 @@ library
     cuddle,
     directory,
     filepath,
+    mempack,
     merkle-tree-incremental,
+    prettyprinter,
     random >=1.2,
     scls-cddl,
     scls-format,
     streaming,
     text,
+    transformers,
 
   default-language: GHC2021
 
@@ -68,6 +73,7 @@ test-suite scls-util-test
   hs-source-dirs: test
   main-is: Main.hs
   other-modules:
+    CheckSpec
     Common
     InfoSpec
     MergeSpec

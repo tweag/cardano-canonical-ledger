@@ -4,6 +4,7 @@
 
 module Main where
 
+import Cardano.SCLS.Util.Check
 import Cardano.SCLS.Util.Debug
 import Cardano.SCLS.Util.Info
 import Cardano.SCLS.Util.Result
@@ -23,6 +24,7 @@ data Options = Options
 
 data Command
   = Verify FilePath
+  | Check FilePath
   | VerifyNamespace FilePath Text
   | Info FilePath
   | ListNamespaces FilePath
@@ -79,6 +81,12 @@ parseOptions =
             ( info
                 (Extract <$> fileArg <*> (argument str (metavar "OUTPUT_FILE" <> help "Output file for extracted data")) <*> extractOptions)
                 (progDesc "Extract specific data into a new SCLS file")
+            )
+          <> command
+            "check"
+            ( info
+                (Check <$> fileArg)
+                (progDesc "Check the integrity and validity of an SCLS file")
             )
           <> command "debug" (info (Debug <$> debugCommand) (progDesc "Debugging utilities"))
       )
@@ -163,5 +171,6 @@ runCommand = \case
     mergeFiles outputFile allFiles
   Extract file outputDir options ->
     extract file outputDir options
+  Check file -> check file
   Debug debugCmd -> case debugCmd of
     GenerateDebugFile outputFile namespaceEntries -> generateDebugFile outputFile namespaceEntries

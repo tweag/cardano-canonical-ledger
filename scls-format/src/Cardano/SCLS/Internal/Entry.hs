@@ -7,11 +7,13 @@ module Cardano.SCLS.Internal.Entry (
   ChunkEntry (..),
   GenericCBOREntry (..),
   SomeCBOREntry (..),
+  sortByKey,
 ) where
 
 import Cardano.SCLS.Internal.Serializer.HasKey
 import Cardano.SCLS.Internal.Serializer.MemPack (ByteStringSized (..), CBORTerm (..), MemPackHeaderOffset (..), SomeByteStringSized (..), isolated)
 import Cardano.Types.ByteOrdered (BigEndian (..))
+import Data.List (sortOn)
 import Data.MemPack
 import Data.MemPack.Buffer
 import Data.Typeable
@@ -90,6 +92,13 @@ size in the same plan.
 -}
 data SomeCBOREntry = forall n. (KnownNat n) => SomeCBOREntry (GenericCBOREntry n)
 
+instance Show SomeCBOREntry where
+  show (SomeCBOREntry gce) = show gce
+
+instance Eq SomeCBOREntry where
+  (SomeCBOREntry (GenericCBOREntry (ChunkEntry key1 v1))) == (SomeCBOREntry (GenericCBOREntry (ChunkEntry key2 v2))) =
+    (SomeByteStringSized key1) == (SomeByteStringSized key2) && v1 == v2
+
 instance MemPack SomeCBOREntry where
   packedByteCount (SomeCBOREntry gce) = packedByteCount gce
   packM (SomeCBOREntry gce) = packM gce
@@ -101,3 +110,6 @@ instance MemPackHeaderOffset SomeCBOREntry where
 instance HasKey SomeCBOREntry where
   type Key SomeCBOREntry = SomeByteStringSized
   getKey (SomeCBOREntry gce) = SomeByteStringSized (getKey gce)
+
+sortByKey :: [SomeCBOREntry] -> [SomeCBOREntry]
+sortByKey = sortOn getKey

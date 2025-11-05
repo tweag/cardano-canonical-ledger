@@ -15,7 +15,6 @@ import Cardano.SCLS.Internal.Serializer.Dump (SerializationPlan, addChunks, addM
 import Cardano.SCLS.Internal.Serializer.External.Impl qualified as External (serialize)
 import Cardano.SCLS.Internal.Serializer.MemPack
 import Cardano.SCLS.Internal.Serializer.Reference.Impl qualified as Reference (serialize)
-import Cardano.Types.ByteOrdered
 import Cardano.Types.Namespace qualified as Namespace
 import Cardano.Types.Network (NetworkId (..))
 import Cardano.Types.SlotNo (SlotNo (..))
@@ -28,66 +27,49 @@ import Codec.CBOR.Cuddle.CDDL.Resolve (
   buildResolvedCTree,
  )
 import Codec.CBOR.Cuddle.Huddle
-import Codec.CBOR.Term (encodeTerm)
-import Codec.CBOR.Write (toStrictByteString)
+import Codec.CBOR.Read
+import Codec.CBOR.Term
+import Codec.CBOR.Write
 import Control.Monad (replicateM)
 import Crypto.Hash.MerkleTree.Incremental qualified as MT
 import Data.Function ((&))
-import Data.List (sort)
 import Data.Map.Strict qualified as Map
 import Data.MemPack
 import Data.Text qualified as T
-import Data.Word (Word32, Word64)
+import GHC.TypeNats
 import Streaming.Prelude qualified as S
 import System.FilePath ((</>))
 import System.IO.Temp (withSystemTempDirectory)
-import System.Random.Stateful (applyAtomicGen, globalStdGen, uniform, uniformByteStringM)
+import System.Random.Stateful (applyAtomicGen, globalStdGen, uniformByteStringM)
 import Test.Hspec
 import Test.Hspec.Expectations.Contrib
-
-data UtxoIn = UtxoIn
-  { txId :: Word64 -- Just for simplicity
-  , txIx :: Word32
-  }
-  deriving (Eq, Ord, Show)
-
-instance IsKey UtxoIn where
-  keySize = 12
-  packKeyM (UtxoIn txId txIx) = do
-    packM (BigEndian (fromIntegral txId :: Word64))
-    packM (BigEndian (fromIntegral txIx :: Word32))
-  unpackKeyM = do
-    BigEndian txId <- unpackM
-    BigEndian txIx <- unpackM
-    return (UtxoIn txId txIx)
 
 tests :: Spec
 tests =
   describe "Roundtrip test" do
-    mkRoundtripTestsFor "Reference" (Reference.serialize @(ChunkEntry UtxoIn RawBytes))
-    mkRoundtripTestsFor "External" (External.serialize @(ChunkEntry UtxoIn RawBytes))
+    mkRoundtripTestsFor "Reference" (Reference.serialize @SomeCBOREntry)
+    mkRoundtripTestsFor "External" (External.serialize @SomeCBOREntry)
 
 mkRoundtripTestsFor :: String -> SerializeF -> Spec
 mkRoundtripTestsFor groupName serialize =
   describe groupName $ do
     sequence_
-      [ context (Namespace.asString n) $ it "should succeed with stream roundtrip" $ roundtrip n (toCDDL huddle)
-      | (Namespace.fromText -> n, namespaceSpec -> huddle) <- Map.toList namespaces
+      [ context (Namespace.asString n) $ it "should succeed with stream roundtrip" $ roundtrip n (namespaceKeySize ns, toCDDL (namespaceSpec ns))
+      | (Namespace.fromText -> n, ns) <- Map.toList namespaces
       ]
  where
-  roundtrip namespace cddl = do
+  roundtrip namespace (kSize, cddl) = do
     case buildMonoCTree =<< buildResolvedCTree (buildRefCTree $ asMap cddl) of
       Left err -> expectationFailure $ "Failed to build CTree: " ++ show err
       Right mt -> withSystemTempDirectory "scls-format-test-XXXXXX" $ \fn -> do
         entries <-
-          replicateM 1024 $ do
-            utxoIn <-
-              UtxoIn
-                <$> (applyAtomicGen uniform globalStdGen)
-                <*> (applyAtomicGen uniform globalStdGen)
-            term <- (applyAtomicGen (generateCBORTerm' mt (Name (T.pack "record_entry") mempty)) globalStdGen)
-            let encoded_data = toStrictByteString (encodeTerm term)
-            pure $ ChunkEntry utxoIn (RawBytes encoded_data)
+          withSomeSNat kSize \(snat :: SNat n) -> do
+            withKnownNat snat do
+              replicateM 1024 $ do
+                key <- uniformByteStringM (fromIntegral kSize) globalStdGen
+                term <- applyAtomicGen (generateCBORTerm' mt (Name (T.pack "record_entry") mempty)) globalStdGen
+                Right (_, canonicalTerm) <- pure $ deserialiseFromBytes decodeTerm $ toLazyByteString (encodeTerm term)
+                pure $! SomeCBOREntry (GenericCBOREntry $ ChunkEntry (ByteStringSized @n key) (CBORTerm canonicalTerm))
         mEntries <-
           replicateM 1024 $ do
             MetadataEntry
@@ -111,20 +93,22 @@ mkRoundtripTestsFor groupName serialize =
                 $ hdr
                   `shouldBe` mkHdr Mainnet (SlotNo 1)
           )
-        withNamespacedData
-          fileName
-          namespace
-          ( \stream -> do
-              decoded_data <- S.toList_ stream
-              annotate
-                "Stream roundtrip successful"
-                $ [e | e@ChunkEntry{} <- decoded_data]
-                  `shouldBe` (sort entries)
-          )
+        withSomeSNat kSize \(snat :: SNat n) -> do
+          withKnownNat snat do
+            withNamespacedData
+              fileName
+              namespace
+              ( \stream -> do
+                  decoded_data <- S.toList_ stream
+                  annotate
+                    "Stream roundtrip successful"
+                    $ [SomeCBOREntry e | (e :: GenericCBOREntry n) <- decoded_data]
+                      `shouldBe` (sortByKey entries)
+              )
         -- Check roundtrip of root hash
         file_digest <- extractRootHash fileName
         expected_digest <-
-          S.each (fmap packByteString $ sort entries)
+          S.each (fmap packByteString $ sortByKey entries)
             & S.fold_ MT.add (MT.empty undefined) (Digest . MT.merkleRootHash . MT.finalize)
         annotate
           "Root hash roundtrip successful"
@@ -141,4 +125,4 @@ mkRoundtripTestsFor groupName serialize =
                   `shouldBe` mEntries
           )
 
-type SerializeF = FilePath -> NetworkId -> SlotNo -> SerializationPlan (ChunkEntry UtxoIn RawBytes) -> IO ()
+type SerializeF = FilePath -> NetworkId -> SlotNo -> SerializationPlan SomeCBOREntry -> IO ()

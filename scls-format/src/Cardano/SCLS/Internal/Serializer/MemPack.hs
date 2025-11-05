@@ -165,9 +165,9 @@ instance ByteArrayAccess CStringLenBuffer where
     f (ptr `plusPtr` 0)
 
 {- | An existential wrapper for the case when we need to compare
-fixes sizes bytestring to each other.
+fixed-size bytestrings to each other.
 
-When we compare then we do it in legth-first number, first we compare
+When we compare then we do it in length-first number, first we compare
 the sizes, and then the bytestring content. This approach matches
 the ordering required by the canonical CBOR.
 -}

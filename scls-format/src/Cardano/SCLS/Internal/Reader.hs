@@ -11,6 +11,9 @@ module Cardano.SCLS.Internal.Reader (
   extractRootHash,
   extractNamespaceList,
   extractNamespaceHash,
+
+  -- * Low-level functions
+  decodeChunkEntries,
 ) where
 
 import Cardano.SCLS.Internal.Frame
@@ -38,6 +41,21 @@ import Cardano.Types.Namespace (Namespace)
 import Streaming qualified as S
 import Streaming.Prelude qualified as S
 
+{- | Decode entries from chunk data into a stream.
+
+This function provides a stream of the Chunk entries
+stored in the data field of the 'Chunk'.
+-}
+decodeChunkEntries :: (Typeable u, MemPack u) => BS.ByteString -> S.Stream (S.Of u) IO ()
+decodeChunkEntries = go
+ where
+  go !bs
+    | BS.null bs = pure ()
+    | otherwise = do
+        let (Entry userData, off) = errorFail $ unpackLeftOver bs
+        S.yield userData
+        go (BS.drop off bs)
+
 -- | Stream all data chunks for the given namespace.
 withNamespacedData :: (MemPack u, Typeable u) => FilePath -> Namespace -> (S.Stream (S.Of u) IO () -> IO a) -> IO a
 withNamespacedData filePath namespace f =
@@ -52,14 +70,7 @@ withNamespacedData filePath namespace f =
           fetchOffsetFrame handle next_record
         for_ (decodeFrame dataRecord) \chunkRecord -> do
           when (chunkNamespace (frameViewContent (chunkRecord)) == namespace) do
-            flip fix (chunkData $ frameViewContent chunkRecord) \drain -> \case
-              bs
-                | BS.null bs -> pure ()
-                | otherwise -> do
-                    let (Entry userData, off) = errorFail $ unpackLeftOver bs
-                        rest = BS.drop off bs
-                    S.yield userData
-                    drain rest
+            decodeChunkEntries (chunkData $ frameViewContent chunkRecord)
         go next_record
 
 {- | Stream all records for a particular record type in the file.
