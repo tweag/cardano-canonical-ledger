@@ -73,7 +73,7 @@ library
     directory,
     filepath,
     memory,
-    mempack <0.2,
+    mempack >=0.2,
     merkle-tree-incremental,
     mtl,
     pqueue,

@@ -23,7 +23,7 @@ import GHC.TypeLits (KnownNat, Nat, natVal)
 class (Ord a) => IsKey a where
   keySize :: Int
   packKeyM :: a -> Pack b ()
-  unpackKeyM :: (Buffer s) => Unpack s a
+  unpackKeyM :: forall b s. (Buffer b) => Unpack s b a
 
 data ChunkEntry k v = ChunkEntry
   { chunkEntryKey :: k

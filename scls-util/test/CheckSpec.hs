@@ -6,14 +6,9 @@
 
 module CheckSpec (checkCommandTests) where
 
-import Cardano.SCLS.Internal.Reader (
-  extractNamespaceHash,
-  extractRootHash,
- )
-import Cardano.Types.Namespace qualified as Namespace
 import Common
-import Control.Monad (forM_)
 import System.Exit (ExitCode (..))
+import System.FilePath ((</>))
 import System.IO.Temp (withSystemTempDirectory)
 import Test.Hspec
 
@@ -22,11 +17,11 @@ checkCommandTests = describe "check command" do
   it "checkCommandTestsVerifies a valid SCLS file" do
     withSystemTempDirectory "scls-util-test-XXXXXX" \dir -> do
       -- arrange
-      (generateExitCode, _stdout, _) <- runSclsUtil ["debug", "output.scls", "--namespace", "utxo/v0:10"]
+      (generateExitCode, _stdout, _) <- runSclsUtil ["debug", dir </> "output.scls", "--namespace", "utxo/v0:10"]
       generateExitCode `shouldBe` ExitSuccess
       -- act
 
-      (checkExitCode, _stdout, _) <- runSclsUtil ["check", "output.scls"]
+      (checkExitCode, _stdout, _) <- runSclsUtil ["check", dir </> "output.scls"]
 
       -- assert
       checkExitCode `shouldBe` ExitSuccess

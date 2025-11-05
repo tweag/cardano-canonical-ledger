@@ -1,3 +1,4 @@
+{-# LANGUAGE MagicHash #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module Cardano.SCLS.Internal.Frame (
@@ -30,6 +31,7 @@ import Data.ByteString.Char8 qualified as BS8
 import Data.MemPack.Buffer
 import Data.Proxy
 import Data.Word (Word32, Word64, Word8)
+import GHC.Exts
 import GHC.ForeignPtr
 import GHC.Ptr
 
@@ -137,9 +139,9 @@ hWriteFrameBuffer handle record_type u = do
   Builder.hPutBuilder handle (Builder.word8 record_type)
   buffer
     u
-    ( \bytes -> do
+    ( \bytes off -> do
         withForeignPtr (pinnedByteArrayToForeignPtr bytes) $ \ptr -> do
-          hPutBuf handle ptr len
+          hPutBuf handle (ptr `plusPtr` (I# off)) (len - (I# off))
     )
     (\addr -> hPutBuf handle (Ptr addr) len) -- Write Ptr#
   hFlush handle

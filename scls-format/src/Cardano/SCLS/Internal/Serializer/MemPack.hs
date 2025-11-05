@@ -1,5 +1,6 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE MagicHash #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE TypeFamilies #-}
@@ -25,6 +26,7 @@ import Codec.CBOR.Read qualified as CBOR
 import Codec.CBOR.Term qualified as CBOR
 import Codec.CBOR.Write qualified as CBOR
 import Control.Monad.Reader
+import Control.Monad.ST (ST)
 import Control.Monad.State.Class
 import Control.Monad.Trans.Fail
 import Data.ByteArray (ByteArrayAccess, length, withByteArray)
@@ -40,6 +42,7 @@ import Data.Typeable
 import Data.Word
 import Foreign.C.String
 import Foreign.Ptr
+import GHC.Exts
 import GHC.Stack (HasCallStack)
 import GHC.TypeLits (KnownNat, Nat, natVal)
 import GHC.TypeNats (fromSNat, pattern SNat)
@@ -93,7 +96,7 @@ instance (Typeable u, MemPack u) => MemPack (Entry u) where
 were consumed, or more bytes were attempted to be consumed. If the given decoder fails,
 isolate will also fail.
 -}
-isolated :: forall a b. (Buffer b, MemPack a) => (HasCallStack) => Int -> Unpack b a
+isolated :: forall a b s. (Buffer b, MemPack a) => (HasCallStack) => Int -> Unpack s b a
 isolated len = do
   start <- get
   b' :: Isolate b <- asks (isolate start len)
@@ -104,13 +107,13 @@ isolated len = do
 
 Useful for reading isolated data.
 -}
-consumeBytes :: (Buffer b) => Unpack b ByteString
+consumeBytes :: forall b s. (Buffer b) => Unpack s b ByteString
 consumeBytes = do
   start <- get
   len <- asks bufferByteCount
   unpackByteStringM (len - start)
 
-unpackLeftOverOff :: forall a b. (MemPack a, Buffer b) => (HasCallStack) => b -> Int -> Unpack b a -> Fail SomeError (a, Int)
+unpackLeftOverOff :: forall a b s. (MemPack a, Buffer b) => (HasCallStack) => b -> Int -> Unpack s b a -> FailT SomeError (ST s) (a, Int)
 unpackLeftOverOff buf off action = do
   let len = bufferByteCount buf
   res@(_, consumedBytes) <- runStateT (runUnpack action buf) off
@@ -148,6 +151,8 @@ data Isolate b = Isolate
   deriving (Show)
 
 instance (Buffer b) => Buffer (Isolate b) where
+  bufferHasToBePinned = bufferHasToBePinned @b
+  mkBuffer ba# = Isolate (mkBuffer ba#) (I# (sizeofByteArray# ba#))
   bufferByteCount Isolate{isolatedLength = len} = len
   buffer Isolate{isolatedBuffer = b} f g = buffer b f g
 
@@ -155,6 +160,8 @@ instance (Buffer b) => Buffer (Isolate b) where
 newtype CStringLenBuffer = CStringLenBuffer CStringLen
 
 instance Buffer CStringLenBuffer where
+  mkBuffer ba# = CStringLenBuffer (Ptr (byteArrayContents# ba#), I# (sizeofByteArray# ba#))
+  bufferHasToBePinned = True
   bufferByteCount (CStringLenBuffer (_, l)) = l
   buffer (CStringLenBuffer (ptr, off)) _ withAddr =
     withAddr (case ptr `plusPtr` off of Ptr addr -> addr)
