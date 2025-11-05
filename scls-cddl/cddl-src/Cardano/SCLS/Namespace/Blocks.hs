@@ -10,8 +10,7 @@
 
 module Cardano.SCLS.Namespace.Blocks where
 
-import Cardano.SCLS.Common
 import Codec.CBOR.Cuddle.Huddle
 
 record_entry :: Rule
-record_entry = "record_entry" =:= generic_record hash32 VInt
+record_entry = "record_entry" =:= VInt

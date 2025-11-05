@@ -1,33 +1,48 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE UndecidableInstances #-}
 
 -- | Useful utilities for working with MemPack types.
 module Cardano.SCLS.Internal.Serializer.MemPack (
-  Entry (..),
-  RawBytes (..),
   CStringLenBuffer (..),
   isolate,
+  isolated,
   MemPackHeaderOffset (..),
+
+  -- * Type helpers
+  Entry (..),
+  ByteStringSized (..),
+  SomeByteStringSized (..),
+  CBORTerm (..),
+  RawBytes (..),
 ) where
 
 import Cardano.SCLS.Internal.Serializer.HasKey
+import Codec.CBOR.Read qualified as CBOR
+import Codec.CBOR.Term qualified as CBOR
+import Codec.CBOR.Write qualified as CBOR
 import Control.Monad.Reader
 import Control.Monad.State.Class
 import Control.Monad.Trans.Fail
 import Data.ByteArray (ByteArrayAccess, length, withByteArray)
 import Data.ByteString (ByteString)
 import Data.ByteString qualified as BS
+import Data.ByteString.Lazy qualified as BSL
 import Data.MemPack
 import Data.MemPack.Buffer
 import Data.MemPack.Error
 import Data.Primitive.Ptr
+import Data.Text qualified as T
 import Data.Typeable
 import Data.Word
 import Foreign.C.String
 import Foreign.Ptr
 import GHC.Stack (HasCallStack)
+import GHC.TypeLits (KnownNat, Nat, natVal)
+import GHC.TypeNats (fromSNat, pattern SNat)
 import System.ByteOrder
 
 -- | Typeclass for types that have a fixed header offset when serialized.
@@ -51,11 +66,7 @@ instance HasKey RawBytes where
 instance MemPack (RawBytes) where
   packedByteCount (RawBytes bs) = BS.length bs
   packM (RawBytes bs) = packByteStringM bs
-  unpackM = do
-    len <- Unpack $ \b ->
-      get >>= \s -> do
-        return (bufferByteCount b - s)
-    RawBytes <$> unpackByteStringM len
+  unpackM = RawBytes <$> consumeBytes
 
 instance MemPackHeaderOffset RawBytes where
   headerSizeOffset = 4
@@ -88,6 +99,16 @@ isolated len = do
   b' :: Isolate b <- asks (isolate start len)
   a <- Unpack $ \_ -> StateT (\_ -> unpackLeftOverOff b' start unpackM)
   return a
+
+{- | Consumes all remaining bytes in the current buffer.
+
+Useful for reading isolated data.
+-}
+consumeBytes :: (Buffer b) => Unpack b ByteString
+consumeBytes = do
+  start <- get
+  len <- asks bufferByteCount
+  unpackByteStringM (len - start)
 
 unpackLeftOverOff :: forall a b. (MemPack a, Buffer b) => (HasCallStack) => b -> Int -> Unpack b a -> Fail SomeError (a, Int)
 unpackLeftOverOff buf off action = do
@@ -142,3 +163,62 @@ instance ByteArrayAccess CStringLenBuffer where
   length (CStringLenBuffer (_, l)) = l
   withByteArray (CStringLenBuffer (ptr, _)) f =
     f (ptr `plusPtr` 0)
+
+{- | An existential wrapper for the case when we need to compare
+fixes sizes bytestring to each other.
+
+When we compare then we do it in legth-first number, first we compare
+the sizes, and then the bytestring content. This approach matches
+the ordering required by the canonical CBOR.
+-}
+data SomeByteStringSized where
+  SomeByteStringSized :: (KnownNat n) => ByteStringSized n -> SomeByteStringSized
+
+instance Eq SomeByteStringSized where
+  (SomeByteStringSized (ByteStringSized bs1)) == (SomeByteStringSized (ByteStringSized bs2)) = bs1 == bs2
+
+instance Ord SomeByteStringSized where
+  compare (SomeByteStringSized (ByteStringSized bs1 :: ByteStringSized n)) (SomeByteStringSized (ByteStringSized bs2 :: ByteStringSized m)) =
+    compare
+      (fromSNat @n SNat)
+      (fromSNat @m SNat)
+      <> compare bs1 bs2
+
+-- | A bytestring with the size known at compile time.
+newtype ByteStringSized (n :: Nat) = ByteStringSized ByteString
+  deriving (Eq, Ord, Show)
+
+instance (KnownNat n) => MemPack (ByteStringSized n) where
+  packedByteCount _ = fromInteger (natVal (Proxy :: Proxy n))
+
+  packM (ByteStringSized bs) = do
+    let expected = fromIntegral (natVal (Proxy :: Proxy n)) :: Int
+    let len = BS.length bs
+    if len /= expected
+      then error $! "ByteStringSized: expected " ++ show expected ++ " bytes, got " ++ show len
+      else packByteStringM bs
+
+  unpackM = do
+    let expected = fromIntegral (natVal (Proxy :: Proxy n)) :: Int
+    bs <- unpackByteStringM expected
+    pure (ByteStringSized bs)
+
+-- | Helper to store CBOR terms directly as entries.
+newtype CBORTerm = CBORTerm CBOR.Term
+  deriving (Eq, Ord, Show)
+
+instance MemPack CBORTerm where
+  packedByteCount (CBORTerm t) =
+    BS.length (CBOR.toStrictByteString (CBOR.encodeTerm t))
+
+  packM (CBORTerm t) =
+    packByteStringM (CBOR.toStrictByteString (CBOR.encodeTerm t))
+
+  unpackM = do
+    start <- gets fromIntegral
+    bytes <- consumeBytes
+    case CBOR.deserialiseFromBytesWithSize CBOR.decodeTerm (BSL.fromStrict bytes) of
+      Left err -> failUnpack $ TextError $ "CBOR term deserialisation failed: " <> T.pack (show err)
+      Right (_rest, bytesRead, term) -> do
+        put (start + fromIntegral bytesRead)
+        pure (CBORTerm term)

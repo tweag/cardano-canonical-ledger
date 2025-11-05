@@ -14,19 +14,10 @@ import Cardano.SCLS.Common
 import Codec.CBOR.Cuddle.Comments ((//-))
 import Codec.CBOR.Cuddle.Huddle
 import Data.Function (($))
-import Data.Word (Word)
 import Text.Heredoc (str)
 
 record_entry :: Rule
-record_entry = "record_entry" =:= generic_record tx_in tx_out
-
-tx_in :: Rule
-tx_in =
-  "tx_in"
-    =:= arr
-      [ a hash32
-      , a (VUInt `sized` (2 :: Word))
-      ]
+record_entry = "record_entry" =:= tx_out
 
 tx_out :: Rule
 tx_out = "tx_out" =:= arr [0, a shelley_tx_out] / arr [1, a babbage_tx_out]
