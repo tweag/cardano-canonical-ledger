@@ -7,8 +7,10 @@ module Cardano.SCLS.Internal.Record.Internal.Class (
   mkRecordType,
 ) where
 
-import Data.Binary -- TODO: I'd like to switch to the `mempack` library
+import Data.MemPack (Pack, Unpack)
+import Data.MemPack.Buffer (Buffer)
 import Data.Typeable
+import Data.Word (Word32, Word8)
 import GHC.TypeLits
 
 -- TODO: Update the CIP reference
@@ -20,8 +22,9 @@ around as required by CIP.
 `t` should correspond to the record type code as defined in CIP-???
 -}
 class (KnownNat t) => IsFrameRecord t a | a -> t where
-  decodeRecordContents :: Word32 -> Get a
-  encodeRecordContents :: a -> Put
+  frameRecordSize :: a -> Int
+  decodeRecordContents :: (Buffer b) => Word32 -> Unpack b a
+  encodeRecordContents :: a -> Pack s ()
 
 {- | Existential wrapper for any record that has an instance of
 `IsFrameRecord`. It's useful for passing records around without

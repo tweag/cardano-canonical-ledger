@@ -1,10 +1,13 @@
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE RecordWildCards #-}
 
 module Cardano.SCLS.Internal.Record.Hdr (
   Hdr (..),
   mkHdr,
 ) where
 
+import Control.Monad.State (MonadState (put))
+import Data.MemPack (MemPack (..))
 import Foreign
 
 import Cardano.SCLS.Internal.Record.Internal.Class
@@ -13,13 +16,6 @@ import Cardano.Types.Network
 import Cardano.Types.SlotNo
 
 -- TODO: switch to non-pure interface instead
-
-import Data.Binary (getWord8)
-import Data.Binary.Get.Internal (readN)
-import Data.Binary.Put (putBuilder)
-import Data.ByteString.Builder.Internal hiding (putBuilder)
-import Data.ByteString.Unsafe (unsafeUseAsCString)
-import System.IO.Unsafe (unsafePerformIO)
 
 -- | Header record.
 data Hdr = Hdr
@@ -33,15 +29,27 @@ data Hdr = Hdr
 -- deriving MemPack via (AsStorable Hdr)
 
 instance IsFrameRecord 0 Hdr where
-  encodeRecordContents a = putBuilder (ensureFree (sizeOf (undefined :: Hdr)) <> builder step)
-   where
-    step k (BufferRange op ope) = do
-      poke (castPtr op) a
-      k (BufferRange (op `advancePtr` sizeOf (undefined :: Hdr)) ope)
+  frameRecordSize Hdr{..} =
+    4
+      + packedByteCount version
+      + packedByteCount networkId
+      + packedByteCount slotNo
+
+  encodeRecordContents Hdr{..} = do
+    packM magic
+    put 4
+    packM version
+    packM networkId
+    packM slotNo
+
   decodeRecordContents _size = do
-    _ <- getWord8 -- type offset: TODO: it does not look sane to me!
-    readN (sizeOf (undefined :: Hdr)) $ \b ->
-      unsafePerformIO $ unsafeUseAsCString b (peek . castPtr)
+    magic_pre :: Word64 <- unpackM
+    let magic = magic_pre .&. 0xffffffff -- We are interested only in the first 4 bytes
+    put 5
+    version <- unpackM
+    networkId <- unpackM
+    slotNo <- unpackM
+    pure Hdr{..}
 
 -- | Storable instance for a Header record
 instance Storable Hdr where

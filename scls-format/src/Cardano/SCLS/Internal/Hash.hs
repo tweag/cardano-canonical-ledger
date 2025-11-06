@@ -6,10 +6,8 @@ module Cardano.SCLS.Internal.Hash (
 ) where
 
 import Crypto.Hash qualified as CH
-import Data.Binary (Binary, get, put)
-import Data.Binary.Get
-import Data.Binary.Put
 import Data.ByteArray qualified as BA
+import Data.MemPack
 
 type HashAlgorithm = CH.Blake2b_224
 
@@ -26,13 +24,15 @@ instance BA.ByteArrayAccess Digest where
   length (Digest h) = BA.length h
   withByteArray (Digest h) f = BA.withByteArray h f
 
-instance Binary Digest where
-  put (Digest h) = putByteString $ BA.convert h
+instance MemPack Digest where
+  packedByteCount _ = hashDigestSize
 
-  get = do
-    bs <- getByteString hashDigestSize
-    case CH.digestFromByteString bs of
-      Just h -> pure $ Digest h
+  packM (Digest h) = packByteStringM $ BA.convert h
+
+  unpackM = do
+    bs <- unpackByteStringM hashDigestSize
+    case digestFromByteString bs of
+      Just d -> pure d
       Nothing -> fail "Invalid digest"
 
 digest :: (BA.ByteArrayAccess ba) => ba -> Digest

@@ -22,14 +22,16 @@ module Cardano.SCLS.Internal.Frame (
 -- TODO: remove, it's for debug
 
 import Cardano.SCLS.Internal.Record.Internal.Class
-import Data.Binary.Get (getWord32be, runGet)
-import Data.Binary.Put (runPut)
+import Cardano.Types.ByteOrdered (BigEndian (BigEndian))
+import Control.Monad.Trans.Fail (errorFail)
 import Data.ByteString qualified as BS
 import Data.ByteString.Base16 qualified as Base16
 import Data.ByteString.Builder qualified as Builder
 import Data.ByteString.Char8 qualified as BS8
+import Data.MemPack (StateT (runStateT), Unpack (runUnpack), packWithByteArray, unpackError)
 import Data.MemPack.Buffer
 import Data.Proxy
+import Data.Typeable (Typeable, typeOf)
 import Data.Word (Word32, Word64, Word8)
 import GHC.Exts
 import GHC.ForeignPtr
@@ -95,9 +97,8 @@ record in advance.
 decodeFrame :: forall t b. (IsFrameRecord t b) => ByteArrayFrame -> Maybe (FrameView b)
 decodeFrame (FrameView size record_type contents) = do
   if natVal (Proxy :: Proxy t) == fromIntegral record_type
-    -- TODO this thing may fail, we need to be more careful here
     then
-      let decoded_record = runGet (decodeRecordContents size) (BS.fromStrict contents)
+      let (decoded_record, _) = errorFail $ runStateT (runUnpack (decodeRecordContents size) contents) 1
        in Just (FrameView size record_type decoded_record)
     else Nothing
 
@@ -117,17 +118,17 @@ fetchNextFrame handle (FrameView size _type offset) = do
     then return Nothing
     else do
       [record_type] <- BS.unpack <$> BS.hGet handle 1 -- TODO: handle eOF
-      let next_size = runGet getWord32be (BS.fromStrict bs) -- Write class for BE for mempack and use it!
+      let BigEndian next_size = unpackError bs
       return $ Just (FrameView next_size record_type (4 + next_offset))
  where
   next_offset = offset + fromIntegral size
 
 -- | Write a frame to the handle.
-hWriteFrame :: forall t b. (IsFrameRecord t b) => Handle -> b -> IO Int
+hWriteFrame :: forall t b. (Typeable b, IsFrameRecord t b) => Handle -> b -> IO Int
 hWriteFrame handle b =
-  let contents = runPut (encodeRecordContents b)
+  let contents = packWithByteArray True (show $ typeOf b) (frameRecordSize b) (encodeRecordContents b)
       record_type = fromIntegral (natVal (Proxy :: Proxy t))
-   in hWriteFrameBuffer handle record_type (BS.toStrict contents)
+   in hWriteFrameBuffer handle record_type contents
 
 {- | Write contents in the frame to the handle in the .
 

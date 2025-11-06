@@ -7,6 +7,7 @@ module Cardano.Types.Network (
   NetworkId (..),
 ) where
 
+import Data.MemPack (MemPack (..), packTagM, unpackTagM)
 import Data.Word (Word8)
 import Foreign (castPtr)
 import Foreign.Storable
@@ -19,8 +20,6 @@ data NetworkId
     Testnet
   deriving (Eq, Show)
 
--- TODO: define mempack or another class type for data serialisation
-
 instance Storable NetworkId where
   sizeOf _ = 1
   alignment _ = 1
@@ -32,3 +31,16 @@ instance Storable NetworkId where
       _ -> error "Unknown NetworkId"
   poke ptr Mainnet = poke (castPtr ptr) (0 :: Word8)
   poke ptr Testnet = poke (castPtr ptr) (1 :: Word8)
+
+instance MemPack NetworkId where
+  packedByteCount _ = 1
+
+  packM Mainnet = packTagM 0
+  packM Testnet = packTagM 1
+
+  unpackM = do
+    version <- unpackTagM
+    case version of
+      0 -> pure Mainnet
+      1 -> pure Testnet
+      _ -> fail "Unknown NetworkId"

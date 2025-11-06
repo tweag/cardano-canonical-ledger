@@ -25,18 +25,17 @@ import Cardano.SCLS.Internal.Serializer.MemPack
 import Control.Exception (Exception, throwIO)
 import Control.Monad (when)
 import Control.Monad.Trans.Fail
-import Data.Binary.Get
 import Data.ByteString qualified as BS
-import Data.ByteString.Lazy qualified as BSL
 import Data.Foldable (for_)
 import Data.Function (fix)
 import Data.Map.Strict qualified as Map
-import Data.MemPack (MemPack, unpackLeftOver)
+import Data.MemPack (MemPack, unpack, unpackLeftOver)
 import Data.Typeable
 import System.IO
 import System.IO qualified as IO
 
 import Cardano.SCLS.Internal.Record.Internal.Class (IsFrameRecord)
+import Cardano.Types.ByteOrdered (BigEndian (BigEndian))
 import Cardano.Types.Namespace (Namespace)
 import Streaming qualified as S
 import Streaming.Prelude qualified as S
@@ -112,9 +111,9 @@ withLatestManifestFrame f filePath = do
     h <- hFileSize handle
     hSeek handle AbsoluteSeek (h - 4)
     bs <- BS.hGet handle 4
-    offset <- case runGetOrFail getWord32be (BSL.fromStrict bs) of
-      Right (_, _, d) -> return d
-      Left{} -> throwIO NotSCLSFile
+    offset <- case unpack bs of
+      Right (BigEndian d) -> return d
+      Left _ -> throwIO NotSCLSFile
     frameData <- fetchOffsetFrame handle (FrameView (offset) (mkRecordType @Manifest) (fromIntegral h - fromIntegral offset))
     case decodeFrame frameData of
       Just FrameView{frameViewContent = m@Manifest{}} -> f m
@@ -129,9 +128,9 @@ withHeader filePath f = do
   IO.withBinaryFile filePath ReadMode \handle -> do
     hSeek handle AbsoluteSeek 0
     bs <- BS.hGet handle 4
-    offset <- case runGetOrFail getWord32be (BSL.fromStrict bs) of
-      Right (_, _, d) -> return d
-      Left{} -> throwIO NotSCLSFile
+    offset <- case unpack bs of
+      Right (BigEndian d) -> return d
+      Left _ -> throwIO NotSCLSFile
     frameData <- fetchOffsetFrame handle (FrameView offset (mkRecordType @Hdr) 4)
     case decodeFrame frameData of
       Just FrameView{frameViewContent = hdr@Hdr{}} -> f hdr
