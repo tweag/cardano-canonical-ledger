@@ -11,13 +11,11 @@ module Cardano.SCLS.Internal.Entry (
 ) where
 
 import Cardano.SCLS.Internal.Serializer.HasKey
-import Cardano.SCLS.Internal.Serializer.MemPack (ByteStringSized (..), CBORTerm (..), MemPackHeaderOffset (..), SomeByteStringSized (..), isolated)
-import Cardano.Types.ByteOrdered (BigEndian (..))
+import Cardano.SCLS.Internal.Serializer.MemPack (ByteStringSized (..), CBORTerm (..), MemPackHeaderOffset (..), SomeByteStringSized (..))
 import Data.List (sortOn)
 import Data.MemPack
 import Data.MemPack.Buffer
 import Data.Typeable
-import Data.Word (Word32)
 import GHC.TypeLits (KnownNat, Nat, natVal)
 
 class (Ord a) => IsKey a where
@@ -36,14 +34,11 @@ instance (Ord k) => HasKey (ChunkEntry k v) where
   getKey (ChunkEntry k _) = k
 
 instance (Typeable k, IsKey k, MemPack v, Typeable v) => MemPack (ChunkEntry k v) where
-  packedByteCount (ChunkEntry _ v) = 4 + keySize @k + packedByteCount v
+  packedByteCount (ChunkEntry _ v) = keySize @k + packedByteCount v
   packM (ChunkEntry k v) = do
-    let lenEntry = keySize @k + packedByteCount v
-    packM (BigEndian (fromIntegral lenEntry :: Word32))
     packKeyM k
     packM v
   unpackM = do
-    BigEndian (_lenEntry :: Word32) <- unpackM
     k <- unpackKeyM
     v <- unpackM
     return (ChunkEntry k v)
@@ -79,13 +74,12 @@ instance (KnownNat n, Typeable (ByteStringSized n)) => MemPack (GenericCBOREntry
   packM (GenericCBOREntry ce) = packM ce
   unpackM =
     GenericCBOREntry <$> do
-      BigEndian (lenEntry :: Word32) <- unpackM
       key <- unpackKeyM
-      value <- isolated (fromIntegral lenEntry - fromIntegral (keySize @(ByteStringSized n)))
+      value <- unpackM
       return (ChunkEntry key value)
 
 instance (KnownNat n) => MemPackHeaderOffset (GenericCBOREntry n) where
-  headerSizeOffset = 4
+  headerSizeOffset = headerSizeOffset @(ChunkEntry (ByteStringSized n) CBORTerm)
 
 {- | An existential wrapper that allows to store 'GenericCBOREntry' of any
 size in the same plan.
@@ -105,7 +99,7 @@ instance MemPack SomeCBOREntry where
   unpackM = error "unpackM SomeCBOREntry: cannot determine size n at runtime"
 
 instance MemPackHeaderOffset SomeCBOREntry where
-  headerSizeOffset = 4
+  headerSizeOffset = headerSizeOffset @(GenericCBOREntry 1) -- size does not matter here
 
 instance HasKey SomeCBOREntry where
   type Key SomeCBOREntry = SomeByteStringSized
