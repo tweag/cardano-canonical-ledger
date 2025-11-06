@@ -23,7 +23,7 @@ around as required by CIP.
 -}
 class (KnownNat t) => IsFrameRecord t a | a -> t where
   frameRecordSize :: a -> Int
-  decodeRecordContents :: (Buffer b) => Word32 -> Unpack b a
+  decodeRecordContents :: (Buffer b) => Word32 -> Unpack s b a
   encodeRecordContents :: a -> Pack s ()
 
 {- | Existential wrapper for any record that has an instance of

@@ -116,8 +116,8 @@ withLatestManifestFrame f filePath = do
       Left _ -> throwIO NotSCLSFile
     frameData <- fetchOffsetFrame handle (FrameView (offset) (mkRecordType @Manifest) (fromIntegral h - fromIntegral offset))
     case decodeFrame frameData of
-      Just FrameView{frameViewContent = m@Manifest{}} -> f m
-      Nothing -> throwIO NotSCLSFile
+      Right FrameView{frameViewContent = m@Manifest{}} -> f m
+      Left _ -> throwIO NotSCLSFile
 
 extractNamespaceList :: FilePath -> IO [Namespace]
 extractNamespaceList = withLatestManifestFrame \Manifest{..} ->
@@ -133,5 +133,5 @@ withHeader filePath f = do
       Left _ -> throwIO NotSCLSFile
     frameData <- fetchOffsetFrame handle (FrameView offset (mkRecordType @Hdr) 4)
     case decodeFrame frameData of
-      Just FrameView{frameViewContent = hdr@Hdr{}} -> f hdr
-      Nothing -> error "Failed to decode header"
+      Right FrameView{frameViewContent = hdr@Hdr{}} -> f hdr
+      Left _ -> error "Failed to decode header"

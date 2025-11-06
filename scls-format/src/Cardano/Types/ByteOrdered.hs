@@ -52,6 +52,6 @@ packWord32beM = packBigEndianM
 packWord64beM :: Word64 -> Pack s ()
 packWord64beM = packBigEndianM
 
-unpackBigEndianM :: (Bytes a, MemPack a, Buffer b) => Unpack b a
+unpackBigEndianM :: (Bytes a, MemPack a, Buffer b) => Unpack s b a
 unpackBigEndianM =
   unBigEndian <$> unpackM

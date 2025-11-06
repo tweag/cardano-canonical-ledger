@@ -23,7 +23,7 @@ module Cardano.SCLS.Internal.Frame (
 
 import Cardano.SCLS.Internal.Record.Internal.Class
 import Cardano.Types.ByteOrdered (BigEndian (BigEndian))
-import Control.Monad.Trans.Fail (errorFail)
+import Control.Monad.Trans.Fail (runFailLastT)
 import Data.ByteString qualified as BS
 import Data.ByteString.Base16 qualified as Base16
 import Data.ByteString.Builder qualified as Builder
@@ -38,6 +38,8 @@ import GHC.ForeignPtr
 import GHC.Ptr
 
 -- TODO: move to IO module?
+import Control.Monad.ST (runST)
+import Data.MemPack.Error (Error (toSomeError), SomeError, TextError (TextError))
 import GHC.TypeLits
 import System.IO
 
@@ -94,13 +96,16 @@ fetchOffsetFrame handle (FrameView size record_type offset) = do
 In order to use this method, the programmer should know the type to the
 record in advance.
 -}
-decodeFrame :: forall t b. (IsFrameRecord t b) => ByteArrayFrame -> Maybe (FrameView b)
+decodeFrame :: forall t b. (IsFrameRecord t b) => ByteArrayFrame -> Either SomeError (FrameView b)
 decodeFrame (FrameView size record_type contents) = do
   if natVal (Proxy :: Proxy t) == fromIntegral record_type
     then
-      let (decoded_record, _) = errorFail $ runStateT (runUnpack (decodeRecordContents size) contents) 1
-       in Just (FrameView size record_type decoded_record)
-    else Nothing
+      fmap
+        (FrameView size record_type . fst)
+        $ runST
+        $ runFailLastT
+        $ runStateT (runUnpack (decodeRecordContents size) contents) 1
+    else Left $ toSomeError $ TextError "Unknown record type"
 
 {- | /O(1)/ Read the next frame from the handle.
 
