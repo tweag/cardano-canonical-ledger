@@ -74,7 +74,6 @@ instance (KnownNat n, Typeable (ByteStringSized n)) => MemPack (GenericCBOREntry
   packM (GenericCBOREntry ce) = packM ce
   unpackM =
     GenericCBOREntry <$> do
-      -- BigEndian (lenEntry :: Word32) <- unpackM
       key <- unpackKeyM
       value <- unpackM
       return (ChunkEntry key value)
