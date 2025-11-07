@@ -24,6 +24,6 @@ data NamespaceInfo = NamespaceInfo
 namespaces :: Map.Map Text NamespaceInfo
 namespaces =
   Map.fromList
-    [ ("utxo/v0", NamespaceInfo (collectFromInit [HIRule UTxO.record_entry]) 38)
+    [ ("utxo/v0", NamespaceInfo (collectFromInit [HIRule UTxO.record_entry]) 34)
     , ("blocks/v0", NamespaceInfo (collectFromInit [HIRule Blocks.record_entry]) 32)
     ]
