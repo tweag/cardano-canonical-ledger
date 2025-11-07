@@ -39,7 +39,7 @@ babbage_tx_out =
         [ idx 0 ==> address
         , idx 1 ==> value
         , opt $ idx 2 ==> datum_option
-        , opt $ idx 3 ==> ("script_ref" =:= tag 24 (VBytes `cbor` script))
+        , opt $ idx 3 ==> ("script_ref" =:= script)
         ]
 
 plutus_data :: Rule
