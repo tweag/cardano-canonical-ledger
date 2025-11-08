@@ -16,6 +16,8 @@ import Codec.CBOR.Cuddle.Huddle
 import Data.Function (($))
 import Text.Heredoc (str)
 
+import Prelude (foldr, (++))
+
 record_entry :: Rule
 record_entry = "record_entry" =:= tx_out
 
@@ -49,7 +51,7 @@ plutus_data =
     / smp [0 <+ asKey plutus_data ==> plutus_data]
     / sarr [0 <+ a plutus_data]
     / big_int
-    / bounded_bytes
+    / VBytes
 
 data' :: Rule
 data' = "data" =:= tag 24 (VBytes `cbor` plutus_data)
@@ -64,14 +66,14 @@ constr = binding $ \x ->
         |  #6.102([uint, [* a]]): For tag range 6.1280 .. 6.1400 inclusive
         |]
     $ "constr"
-      =:= tag 121 (arr [0 <+ a x])
-      / tag 122 (arr [0 <+ a x])
-      / tag 123 (arr [0 <+ a x])
-      / tag 124 (arr [0 <+ a x])
-      / tag 125 (arr [0 <+ a x])
-      / tag 126 (arr [0 <+ a x])
-      / tag 127 (arr [0 <+ a x])
-      / tag 102 (arr [a VUInt, a $ arr [0 <+ a x]])
+      =:= foldr
+        (/)
+        ( tag 121 (arr [0 <+ a x])
+            / tag 102 (arr [a VUInt, a $ arr [0 <+ a x]])
+        )
+        ( [tag i (arr [0 <+ a x]) | i <- [122 .. 127]]
+            ++ [tag i (arr [0 <+ a x]) | i <- [1280 .. 1400]]
+        )
 
 script :: Rule
 script =
