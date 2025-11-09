@@ -43,6 +43,27 @@ library
 
   default-language: GHC2021
 
+library validate
+  import: warnings
+  visibility: public
+  exposed-modules:
+    Cardano.SCLS.CDDL.Validate
+
+  build-depends:
+    base >=4.18 && <5,
+    bytestring,
+    cborg,
+    containers,
+    cuddle >=0.5,
+    scls-cddl,
+    text,
+    transformers
+
+  hs-source-dirs:
+    cddl-validate
+
+  default-language: GHC2021
+
 executable gen-cddl
   import: warnings
   default-language: GHC2021
@@ -56,3 +77,15 @@ executable gen-cddl
     prettyprinter,
     scls-cddl,
     text
+
+test-suite scls-util-test
+  import: warnings
+  default-language: GHC2021
+  type: exitcode-stdio-1.0
+  hs-source-dirs: test
+  main-is: Main.hs
+  build-depends:
+    base >=4.18 && <5,
+    containers,
+    hspec,
+    scls-cddl:{validate},
