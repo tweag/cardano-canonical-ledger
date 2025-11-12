@@ -3,9 +3,14 @@ module Cardano.Types.ByteOrdered (
   BigEndian (..),
   MemPack (..),
   Storable (..),
+  packWord32beM,
+  packWord64beM,
+  unpackBigEndianM,
 ) where
 
-import Data.MemPack (MemPack (..))
+import Data.MemPack
+import Data.MemPack.Buffer (Buffer)
+import Data.Word
 import Foreign.Ptr (Ptr, castPtr)
 import Foreign.Storable (Storable (..))
 import System.ByteOrder (Bytes (..), fromBigEndian, toBigEndian)
@@ -37,3 +42,16 @@ instance (Bytes a, MemPack a) => MemPack (BigEndian a) where
   packedByteCount (BigEndian a) = packedByteCount a
   packM (BigEndian a) = packM (toBigEndian a)
   unpackM = BigEndian . fromBigEndian <$> unpackM
+
+packBigEndianM :: (Bytes a, MemPack a) => a -> Pack s ()
+packBigEndianM = packM . BigEndian
+
+packWord32beM :: Word32 -> Pack s ()
+packWord32beM = packBigEndianM
+
+packWord64beM :: Word64 -> Pack s ()
+packWord64beM = packBigEndianM
+
+unpackBigEndianM :: (Bytes a, MemPack a, Buffer b) => Unpack s b a
+unpackBigEndianM =
+  unBigEndian <$> unpackM

@@ -13,13 +13,11 @@ module Cardano.SCLS.Internal.Record.Manifest (
   NamespaceInfo (..),
 ) where
 
-import Data.Binary (get, put)
-import Data.Binary.Get (getByteString, getWord32be, getWord64be, getWord8)
-import Data.Binary.Put
 import Data.ByteString qualified as BS
 import Data.Function (fix)
 import Data.Map.Strict (Map)
 import Data.Map.Strict qualified as Map
+import Data.MemPack (MemPack (..), packByteStringM, unpackByteStringM)
 import Data.Text (Text)
 import Data.Text.Encoding qualified as T
 import Data.Word
@@ -27,6 +25,7 @@ import Data.Word
 import Cardano.SCLS.Internal.Frame (frameHeaderSize)
 import Cardano.SCLS.Internal.Hash
 import Cardano.SCLS.Internal.Record.Internal.Class
+import Cardano.Types.ByteOrdered (packWord32beM, packWord64beM, unpackBigEndianM)
 import Cardano.Types.Namespace (Namespace)
 import Cardano.Types.Namespace qualified as Namespace
 
@@ -40,6 +39,45 @@ data ManifestSummary = ManifestSummary
   -- ^ optional comment
   }
   deriving (Show)
+
+instance MemPack ManifestSummary where
+  packedByteCount ManifestSummary{..} =
+    let createdAtBytes = T.encodeUtf8 createdAt
+        toolBytes = T.encodeUtf8 tool
+        createdAtLength = BS.length createdAtBytes
+        toolBytesLength = BS.length toolBytes
+        cBytes = maybe BS.empty T.encodeUtf8 comment
+        cBytesLength = BS.length cBytes
+     in 4 + createdAtLength + 4 + toolBytesLength + 4 + cBytesLength
+
+  packM ManifestSummary{..} = do
+    let createdAtBytes = T.encodeUtf8 createdAt
+        toolBytes = T.encodeUtf8 tool
+        createdAtLength = BS.length createdAtBytes
+        toolBytesLength = BS.length toolBytes
+    packWord32beM (fromIntegral createdAtLength)
+    packByteStringM createdAtBytes
+    packWord32beM (fromIntegral toolBytesLength)
+    packByteStringM toolBytes
+    let cBytes = maybe BS.empty T.encodeUtf8 comment
+        cBytesLength = BS.length cBytes
+    packWord32beM (fromIntegral cBytesLength)
+    packByteStringM cBytes
+
+  unpackM = do
+    createdAtLen :: Word32 <- unpackBigEndianM
+    createdAt <- T.decodeUtf8 <$> unpackByteStringM (fromIntegral createdAtLen)
+    toolLen :: Word32 <- unpackBigEndianM
+    tool <- T.decodeUtf8 <$> unpackByteStringM (fromIntegral toolLen)
+    comment <-
+      do
+        comment_len :: Word32 <- unpackBigEndianM
+        if comment_len == 0
+          then return Nothing
+          else do
+            c <- T.decodeUtf8 <$> unpackByteStringM (fromIntegral comment_len)
+            pure (Just c)
+    pure ManifestSummary{..}
 
 data NamespaceInfo = NamespaceInfo
   { namespaceEntries :: {-# UNPACK #-} !Word64
@@ -69,75 +107,61 @@ data Manifest = Manifest
   deriving (Show)
 
 instance IsFrameRecord 0x01 Manifest where
-  encodeRecordContents Manifest{..} = do
-    putWord64be totalEntries
-    putWord64be totalChunks
-    summarySize <- encodeSummary summary
-    (sum -> nsSize) <- traverse putNsInfo (Map.toList nsInfo)
-    putWord32be 0
-    putWord64be prevManifestOffset
-    put rootHash
-    putWord32be (fromIntegral $ 8 + 8 + summarySize + nsSize + 4 + 8 + hashDigestSize + frameHeaderSize)
+  frameRecordSize Manifest{..} =
+    packedByteCount totalEntries
+      + packedByteCount totalChunks
+      + packedByteCount summary
+      + (sum $ map nsInfoSize $ Map.keys nsInfo)
+      + 4
+      + packedByteCount prevManifestOffset
+      + hashDigestSize
+      + 4
    where
-    putNsInfo (ns, h) = do
+    nsInfoSize ns =
       let nsBytes = Namespace.asBytes ns
           bytesLength = BS.length nsBytes
-      putWord32be (fromIntegral bytesLength)
-      putWord64be (namespaceEntries h)
-      putWord64be (namespaceChunks h)
-      putByteString nsBytes
-      put (namespaceHash h)
+       in 4 + 8 + 8 + bytesLength + hashDigestSize
+
+  encodeRecordContents Manifest{..} = do
+    packWord64beM totalEntries
+    packWord64beM totalChunks
+    packM summary
+    (sum -> nsSize) <- traverse packNsInfo (Map.toList nsInfo)
+    packWord32beM 0
+    packWord64beM prevManifestOffset
+    packM rootHash
+    packWord32beM (fromIntegral $ 8 + 8 + packedByteCount summary + nsSize + 4 + 8 + hashDigestSize + frameHeaderSize)
+   where
+    packNsInfo (ns, h) = do
+      let nsBytes = Namespace.asBytes ns
+          bytesLength = BS.length nsBytes
+      packWord32beM (fromIntegral bytesLength)
+      packWord64beM (namespaceEntries h)
+      packWord64beM (namespaceChunks h)
+      packByteStringM nsBytes
+      packM (namespaceHash h)
       return (4 + 8 + 8 + bytesLength + hashDigestSize)
-    encodeSummary ManifestSummary{..} = do
-      let createdAtBytes = T.encodeUtf8 createdAt
-          toolBytes = T.encodeUtf8 tool
-          createdAtLength = BS.length createdAtBytes
-          toolBytesLength = BS.length toolBytes
-      putWord32be (fromIntegral createdAtLength)
-      putByteString createdAtBytes
-      putWord32be (fromIntegral toolBytesLength)
-      putByteString toolBytes
-      let cBytes = maybe BS.empty T.encodeUtf8 comment
-          cBytesLength = BS.length cBytes
-      putWord32be (fromIntegral cBytesLength)
-      putByteString cBytes
-      return (4 + createdAtLength + 4 + toolBytesLength + 4 + cBytesLength)
 
   decodeRecordContents _size = do
-    _ <- getWord8
-    totalEntries <- getWord64be
-    totalChunks <- getWord64be
-    summary <- decodeSummary
+    totalEntries <- unpackBigEndianM
+    totalChunks <- unpackBigEndianM
+    summary <- unpackM
     (Map.fromList -> nsInfo) <-
       flip fix [] $ \next current -> do
         getNsRoot >>= \case
           Nothing -> pure current
           Just n -> next (n : current)
-    prevManifestOffset <- getWord64be
-    rootHash <- get
+    prevManifestOffset <- unpackBigEndianM
+    rootHash <- unpackM
     pure Manifest{..}
    where
     getNsRoot = do
-      nsLen <- getWord32be
+      nsLen :: Word32 <- unpackBigEndianM
       if nsLen == 0
         then return Nothing
         else do
-          namespaceEntries <- getWord64be
-          namespaceChunks <- getWord64be
-          ns <- T.decodeUtf8 <$> getByteString (fromIntegral nsLen)
-          namespaceHash <- get
+          namespaceEntries <- unpackBigEndianM
+          namespaceChunks <- unpackBigEndianM
+          ns <- T.decodeUtf8 <$> unpackByteStringM (fromIntegral nsLen)
+          namespaceHash <- unpackM
           pure (Just (Namespace.fromText ns, NamespaceInfo{..}))
-    decodeSummary = do
-      createdAtLen <- getWord32be
-      createdAt <- T.decodeUtf8 <$> getByteString (fromIntegral createdAtLen)
-      toolLen <- getWord32be
-      tool <- T.decodeUtf8 <$> getByteString (fromIntegral toolLen)
-      comment <-
-        do
-          comment_len <- getWord32be
-          if comment_len == 0
-            then return Nothing
-            else do
-              c <- T.decodeUtf8 <$> getByteString (fromIntegral comment_len)
-              pure (Just c)
-      pure ManifestSummary{..}

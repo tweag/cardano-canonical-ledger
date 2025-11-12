@@ -15,14 +15,13 @@ module Cardano.SCLS.Internal.Record.Chunk (
   mkChunk,
 ) where
 
-import Data.Binary (Binary (..))
-import Data.Binary.Get (getByteString, getWord32be, getWord64be, getWord8)
-import Data.Binary.Put
 import Data.ByteString qualified as BS
+import Data.MemPack (MemPack (..), packByteStringM, packTagM, unpackByteStringM, unpackTagM)
 import Data.Word (Word32, Word64)
 
 import Cardano.SCLS.Internal.Hash
 import Cardano.SCLS.Internal.Record.Internal.Class
+import Cardano.Types.ByteOrdered (packWord32beM, packWord64beM, unpackBigEndianM)
 import Cardano.Types.Namespace (Namespace (..))
 import Cardano.Types.Namespace qualified as Namespace
 
@@ -35,12 +34,14 @@ data ChunkFormat
     ChunkFormatZstdE
   deriving (Show, Eq)
 
-instance Binary ChunkFormat where
-  put ChunkFormatRaw = putWord8 0
-  put ChunkFormatZstd = putWord8 1
-  put ChunkFormatZstdE = putWord8 2
-  get = do
-    tag <- getWord8
+instance MemPack ChunkFormat where
+  packedByteCount _ = 1
+
+  packM ChunkFormatRaw = packTagM 0
+  packM ChunkFormatZstd = packTagM 1
+  packM ChunkFormatZstdE = packTagM 2
+  unpackM = do
+    tag <- unpackTagM
     case tag of
       0 -> pure ChunkFormatRaw
       1 -> pure ChunkFormatZstd
@@ -76,29 +77,38 @@ instance Show DebugChunk where
       ++ "}"
 
 instance IsFrameRecord 0x10 Chunk where
+  frameRecordSize Chunk{..} =
+    packedByteCount chunkSeq
+      + packedByteCount chunkFormat
+      + 4
+      + (BS.length $ Namespace.asBytes chunkNamespace)
+      + BS.length chunkData
+      + packedByteCount chunkEntriesCount
+      + hashDigestSize
+
   encodeRecordContents Chunk{..} = do
-    putWord64be chunkSeq
-    put chunkFormat
-    putWord32be (fromIntegral (BS.length namespace_bytes) :: Word32)
-    putByteString namespace_bytes
-    putByteString chunkData
-    putWord32be chunkEntriesCount
-    put chunkHash
+    packWord64beM chunkSeq
+    packM chunkFormat
+    packWord32beM (fromIntegral (BS.length namespace_bytes) :: Word32)
+    packByteStringM namespace_bytes
+    packByteStringM chunkData
+    packWord32beM chunkEntriesCount
+    packM chunkHash
    where
     namespace_bytes = Namespace.asBytes chunkNamespace
+
   decodeRecordContents size = do
-    _ <- getWord8 -- type offset: TODO: it does not look sane to me!
-    chunkSeq <- getWord64be
-    chunkFormat <- get
-    namespace_size <- getWord32be
+    chunkSeq <- unpackBigEndianM
+    chunkFormat <- unpackM
+    namespace_size :: Word32 <- unpackBigEndianM
     chunkNamespace <-
-      (Namespace.parseBytes <$> getByteString (fromIntegral namespace_size)) >>= \case
+      (Namespace.parseBytes <$> unpackByteStringM (fromIntegral namespace_size)) >>= \case
         Left e -> fail (show e)
         Right x -> pure x
     let chunkDataSize = fromIntegral size - 1 - 8 - 1 - 4 - fromIntegral namespace_size - 4 - hashDigestSize
-    chunkData <- getByteString chunkDataSize
-    chunkEntriesCount <- getWord32be
-    chunkHash <- get
+    chunkData <- unpackByteStringM chunkDataSize
+    chunkEntriesCount <- unpackBigEndianM
+    chunkHash <- unpackM
     pure Chunk{..}
 
 mkChunk :: Word64 -> ChunkFormat -> Namespace -> BS.ByteString -> Word32 -> Chunk

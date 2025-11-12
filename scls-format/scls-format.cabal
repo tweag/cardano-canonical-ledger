@@ -64,7 +64,6 @@ library
     FailT,
     base >=4.18 && <5,
     base16-bytestring,
-    binary,
     byte-order >=0.1.3.1,
     bytestring,
     cborg,
