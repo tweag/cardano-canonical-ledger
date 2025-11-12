@@ -23,11 +23,11 @@ module Cardano.SCLS.Internal.Serializer.Builder.InMemory (
 ) where
 
 import Cardano.SCLS.Internal.Hash
-import Cardano.SCLS.Internal.Serializer.MemPack
 import Control.Monad.Primitive
 import Crypto.Hash (Blake2b_224 (Blake2b_224))
 import Crypto.Hash.MerkleTree.Incremental qualified as MT
 import Data.MemPack
+import Data.MemPack.Extra
 
 import Data.Kind (Type)
 import Data.Primitive.ByteArray

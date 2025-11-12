@@ -7,8 +7,9 @@ module Cardano.SCLS.Internal.Record.Internal.Class (
   mkRecordType,
 ) where
 
-import Data.MemPack (Pack, Unpack)
+import Data.MemPack (Pack)
 import Data.MemPack.Buffer (Buffer)
+import Data.MemPack.Extra (Unpack')
 import Data.Typeable
 import Data.Word (Word32, Word8)
 import GHC.TypeLits
@@ -23,7 +24,7 @@ around as required by CIP.
 -}
 class (KnownNat t) => IsFrameRecord t a | a -> t where
   frameRecordSize :: a -> Int
-  decodeRecordContents :: (Buffer b) => Word32 -> Unpack s b a
+  decodeRecordContents :: (Buffer b) => Word32 -> Unpack' s b a
   encodeRecordContents :: a -> Pack s ()
 
 {- | Existential wrapper for any record that has an instance of

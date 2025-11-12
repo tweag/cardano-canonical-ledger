@@ -11,17 +11,12 @@ module Cardano.SCLS.Internal.Entry (
 ) where
 
 import Cardano.SCLS.Internal.Serializer.HasKey
-import Cardano.SCLS.Internal.Serializer.MemPack (ByteStringSized (..), CBORTerm (..), MemPackHeaderOffset (..), SomeByteStringSized (..))
 import Data.List (sortOn)
 import Data.MemPack
-import Data.MemPack.Buffer
+import Data.MemPack.Extra (ByteStringSized (..), CBORTerm (..), MemPackHeaderOffset (..), SomeByteStringSized (..))
+import Data.MemPack.IsKey
 import Data.Typeable
-import GHC.TypeLits (KnownNat, Nat, natVal)
-
-class (Ord a) => IsKey a where
-  keySize :: Int
-  packKeyM :: a -> Pack b ()
-  unpackKeyM :: forall b s. (Buffer b) => Unpack s b a
+import GHC.TypeLits (KnownNat, Nat)
 
 data ChunkEntry k v = ChunkEntry
   { chunkEntryKey :: k
@@ -63,11 +58,6 @@ newtype GenericCBOREntry (n :: Nat) = GenericCBOREntry
 instance HasKey (GenericCBOREntry n) where
   type Key (GenericCBOREntry n) = ByteStringSized n
   getKey (GenericCBOREntry (ChunkEntry k _)) = k
-
-instance (KnownNat n) => IsKey (ByteStringSized n) where
-  keySize = fromInteger (natVal (Proxy :: Proxy n))
-  packKeyM = packM
-  unpackKeyM = unpackM
 
 instance (KnownNat n, Typeable (ByteStringSized n)) => MemPack (GenericCBOREntry n) where
   packedByteCount (GenericCBOREntry ce) = packedByteCount ce

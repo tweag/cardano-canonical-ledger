@@ -27,7 +27,6 @@ import Cardano.SCLS.Internal.Record.Manifest
 import Cardano.SCLS.Internal.Record.Metadata
 import Cardano.SCLS.Internal.Serializer.ChunksBuilder.InMemory qualified as CB
 import Cardano.SCLS.Internal.Serializer.Dump.Plan
-import Cardano.SCLS.Internal.Serializer.MemPack
 import Cardano.SCLS.Internal.Serializer.MetadataBuilder.InMemory qualified as MB
 import Crypto.Hash.MerkleTree.Incremental qualified as MT
 
@@ -40,6 +39,7 @@ import Cardano.SCLS.Internal.Serializer.HasKey (HasKey (..))
 import Cardano.Types.Namespace (Namespace)
 import Data.MemPack
 import Data.MemPack.Buffer (pinnedByteArrayToByteString)
+import Data.MemPack.Extra
 import Data.Text qualified as T
 import Data.Typeable (Typeable)
 import Data.Word (Word64)

@@ -4,8 +4,8 @@ module Cardano.SCLS.Internal.Version (
   unpackVersion,
 ) where
 
-import Cardano.Types.ByteOrdered (BigEndian (..), packWord32beM, unpackBigEndianM)
 import Data.MemPack (MemPack (..))
+import Data.MemPack.ByteOrdered (BigEndian (..), packWord32beM, unpackBigEndianM)
 import Data.Word (Word32)
 
 -- | Version of the SCLS format.

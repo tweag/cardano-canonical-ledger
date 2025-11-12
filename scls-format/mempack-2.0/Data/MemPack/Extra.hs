@@ -7,7 +7,7 @@
 {-# LANGUAGE UndecidableInstances #-}
 
 -- | Useful utilities for working with MemPack types.
-module Cardano.SCLS.Internal.Serializer.MemPack (
+module Data.MemPack.Extra (
   CStringLenBuffer (..),
   isolate,
   isolated,
@@ -19,14 +19,16 @@ module Cardano.SCLS.Internal.Serializer.MemPack (
   SomeByteStringSized (..),
   CBORTerm (..),
   RawBytes (..),
+  Unpack',
+  hPutBuffer,
+  runDecode,
 ) where
 
-import Cardano.SCLS.Internal.Serializer.HasKey
 import Codec.CBOR.Read qualified as CBOR
 import Codec.CBOR.Term qualified as CBOR
 import Codec.CBOR.Write qualified as CBOR
 import Control.Monad.Reader
-import Control.Monad.ST (ST)
+import Control.Monad.ST (ST, runST)
 import Control.Monad.State.Class
 import Control.Monad.Trans.Fail
 import Data.ByteArray (ByteArrayAccess, length, withByteArray)
@@ -43,10 +45,14 @@ import Data.Word
 import Foreign.C.String
 import Foreign.Ptr
 import GHC.Exts
+import GHC.ForeignPtr
 import GHC.Stack (HasCallStack)
 import GHC.TypeLits (KnownNat, Nat, natVal)
 import GHC.TypeNats (fromSNat, pattern SNat)
 import System.ByteOrder
+import System.IO
+
+type Unpack' s b a = Unpack s b a
 
 -- | Typeclass for types that have a fixed header offset when serialized.
 class (MemPack a) => MemPackHeaderOffset a where
@@ -60,9 +66,9 @@ it does not provide a way to decode the data back.
 newtype RawBytes = RawBytes ByteString
   deriving (Eq, Ord, Show)
 
-instance HasKey RawBytes where
-  type Key RawBytes = ByteString
-  getKey (RawBytes bs) = bs
+-- instance HasKey RawBytes where
+--   type Key RawBytes = ByteString
+--   getKey (RawBytes bs) = bs
 
 -- Instance that reads all remaining bytes as a ByteString, relies
 -- on running in 'isolated' context.
@@ -229,3 +235,18 @@ instance MemPack CBORTerm where
       Right (_rest, bytesRead, term) -> do
         put (start + fromIntegral bytesRead)
         pure (CBORTerm term)
+
+hPutBuffer :: (Buffer u) => Handle -> u -> IO ()
+hPutBuffer handle u =
+  buffer
+    u
+    ( \bytes off -> do
+        withForeignPtr (pinnedByteArrayToForeignPtr bytes) $ \ptr -> do
+          hPutBuf handle (ptr `plusPtr` (I# off)) (len - (I# off))
+    )
+    (\addr -> hPutBuf handle (Ptr addr) len) -- Write Ptr#
+ where
+  len = bufferByteCount u
+
+runDecode :: (IsString e) => (forall s. FailT e (ST s) a) -> Either e a
+runDecode f = runST (runFailLastT f)

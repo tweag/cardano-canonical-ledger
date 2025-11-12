@@ -2,12 +2,12 @@ module MetadataBuilderSpec (metadataBuilderTests) where
 
 import Cardano.SCLS.Internal.Hash (Digest (..))
 import Cardano.SCLS.Internal.Record.Metadata
-import Cardano.SCLS.Internal.Serializer.MemPack (Entry (Entry))
 import Cardano.SCLS.Internal.Serializer.MetadataBuilder.InMemory
 import Control.Monad
 import Data.ByteString qualified as BS
 import Data.Maybe
 import Data.MemPack
+import Data.MemPack.Extra (Entry (Entry))
 import Data.Primitive.ByteArray
 import Test.HUnit
 import Test.Hspec
