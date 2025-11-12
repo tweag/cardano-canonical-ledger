@@ -22,24 +22,20 @@ module Cardano.SCLS.Internal.Frame (
 -- TODO: remove, it's for debug
 
 import Cardano.SCLS.Internal.Record.Internal.Class
-import Cardano.Types.ByteOrdered (BigEndian (BigEndian))
-import Control.Monad.Trans.Fail (runFailLastT)
 import Data.ByteString qualified as BS
 import Data.ByteString.Base16 qualified as Base16
 import Data.ByteString.Builder qualified as Builder
 import Data.ByteString.Char8 qualified as BS8
 import Data.MemPack (StateT (runStateT), Unpack (runUnpack), packWithByteArray, unpackError)
 import Data.MemPack.Buffer
+import Data.MemPack.ByteOrdered (BigEndian (BigEndian))
 import Data.Proxy
 import Data.Typeable (Typeable, typeOf)
 import Data.Word (Word32, Word64, Word8)
-import GHC.Exts
-import GHC.ForeignPtr
-import GHC.Ptr
 
 -- TODO: move to IO module?
-import Control.Monad.ST (runST)
 import Data.MemPack.Error (Error (toSomeError), SomeError, TextError (TextError))
+import Data.MemPack.Extra (hPutBuffer, runDecode)
 import GHC.TypeLits
 import System.IO
 
@@ -102,8 +98,7 @@ decodeFrame (FrameView size record_type contents) = do
     then
       fmap
         (FrameView size record_type . fst)
-        $ runST
-        $ runFailLastT
+        $ runDecode
         $ runStateT (runUnpack (decodeRecordContents size) contents) 1
     else Left $ toSomeError $ TextError "Unknown record type"
 
@@ -143,13 +138,7 @@ hWriteFrameBuffer :: (Buffer u) => Handle -> Word8 -> u -> IO Int
 hWriteFrameBuffer handle record_type u = do
   Builder.hPutBuilder handle (Builder.word32BE (fromIntegral len + 1))
   Builder.hPutBuilder handle (Builder.word8 record_type)
-  buffer
-    u
-    ( \bytes off -> do
-        withForeignPtr (pinnedByteArrayToForeignPtr bytes) $ \ptr -> do
-          hPutBuf handle (ptr `plusPtr` (I# off)) (len - (I# off))
-    )
-    (\addr -> hPutBuf handle (Ptr addr) len) -- Write Ptr#
+  hPutBuffer handle u
   hFlush handle
   return $! 5 + len
  where

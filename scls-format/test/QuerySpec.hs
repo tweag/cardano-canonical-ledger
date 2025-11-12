@@ -6,16 +6,16 @@ module QuerySpec (queryTests) where
 import Cardano.SCLS.Internal.Entry.ChunkEntry (ChunkEntry (..))
 import Cardano.SCLS.Internal.Entry.IsKey (IsKey (..))
 import Cardano.SCLS.Internal.Serializer.Dump.Plan (addChunks, defaultSerializationPlan)
-import Cardano.SCLS.Internal.Serializer.MemPack (RawBytes (..))
 import Cardano.SCLS.Internal.Serializer.Reference.Impl qualified as Reference (serialize)
 import Cardano.SCLS.Query (queryEntry)
-import Cardano.Types.ByteOrdered (BigEndian (..))
 import Cardano.Types.Namespace (Namespace)
 import Cardano.Types.Network (NetworkId (..))
 import Cardano.Types.SlotNo (SlotNo (..))
 import Data.ByteString qualified as BS
 import Data.Function ((&))
 import Data.MemPack (packM, unpackM)
+import Data.MemPack.ByteOrdered (BigEndian (..))
+import Data.MemPack.Extra (RawBytes (..))
 import Data.String (fromString)
 import Data.Word (Word32, Word64)
 import Streaming.Prelude qualified as S

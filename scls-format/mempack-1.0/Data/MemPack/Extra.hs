@@ -7,7 +7,7 @@
 {-# LANGUAGE UndecidableInstances #-}
 
 -- | Useful utilities for working with MemPack types.
-module Cardano.SCLS.Internal.Serializer.MemPack (
+module Data.MemPack.Extra (
   CStringLenBuffer (..),
   isolate,
   isolated,
@@ -19,14 +19,16 @@ module Cardano.SCLS.Internal.Serializer.MemPack (
   SomeByteStringSized (..),
   CBORTerm (..),
   RawBytes (..),
+  Unpack',
+  hPutBuffer,
+  runDecode,
 ) where
 
-import Cardano.SCLS.Internal.Serializer.HasKey
+-- import Cardano.SCLS.Internal.Serializer.HasKey
 import Codec.CBOR.Read qualified as CBOR
 import Codec.CBOR.Term qualified as CBOR
 import Codec.CBOR.Write qualified as CBOR
 import Control.Monad.Reader
-import Control.Monad.ST (ST)
 import Control.Monad.State.Class
 import Control.Monad.Trans.Fail
 import Data.ByteArray (ByteArrayAccess, length, withByteArray)
@@ -37,16 +39,20 @@ import Data.MemPack
 import Data.MemPack.Buffer
 import Data.MemPack.Error
 import Data.Primitive.Ptr
+import Data.String (IsString)
 import Data.Text qualified as T
 import Data.Typeable
 import Data.Word
 import Foreign.C.String
 import Foreign.Ptr
-import GHC.Exts
+import GHC.ForeignPtr
 import GHC.Stack (HasCallStack)
 import GHC.TypeLits (KnownNat, Nat, natVal)
 import GHC.TypeNats (fromSNat, pattern SNat)
 import System.ByteOrder
+import System.IO
+
+type Unpack' s b a = Unpack b a
 
 -- | Typeclass for types that have a fixed header offset when serialized.
 class (MemPack a) => MemPackHeaderOffset a where
@@ -60,13 +66,13 @@ it does not provide a way to decode the data back.
 newtype RawBytes = RawBytes ByteString
   deriving (Eq, Ord, Show)
 
-instance HasKey RawBytes where
-  type Key RawBytes = ByteString
-  getKey (RawBytes bs) = bs
+-- instance HasKey RawBytes where
+--   type Key RawBytes = ByteString
+--   getKey (RawBytes bs) = bs
 
 -- Instance that reads all remaining bytes as a ByteString, relies
 -- on running in 'isolated' context.
-instance MemPack RawBytes where
+instance MemPack (RawBytes) where
   packedByteCount (RawBytes bs) = BS.length bs
   packM (RawBytes bs) = packByteStringM bs
   unpackM = RawBytes <$> consumeBytes
@@ -96,7 +102,7 @@ instance (Typeable u, MemPack u) => MemPack (Entry u) where
 were consumed, or more bytes were attempted to be consumed. If the given decoder fails,
 isolate will also fail.
 -}
-isolated :: forall a b s. (Buffer b, MemPack a) => (HasCallStack) => Int -> Unpack s b a
+isolated :: forall a b. (Buffer b, MemPack a) => (HasCallStack) => Int -> Unpack b a
 isolated len = do
   start <- get
   b' :: Isolate b <- asks (isolate start len)
@@ -107,13 +113,13 @@ isolated len = do
 
 Useful for reading isolated data.
 -}
-consumeBytes :: forall b s. (Buffer b) => Unpack s b ByteString
+consumeBytes :: forall b. (Buffer b) => Unpack b ByteString
 consumeBytes = do
   start <- get
   len <- asks bufferByteCount
   unpackByteStringM (len - start)
 
-unpackLeftOverOff :: forall a b s. (MemPack a, Buffer b) => (HasCallStack) => b -> Int -> Unpack s b a -> FailT SomeError (ST s) (a, Int)
+unpackLeftOverOff :: forall a b. (MemPack a, Buffer b) => (HasCallStack) => b -> Int -> Unpack b a -> Fail SomeError (a, Int)
 unpackLeftOverOff buf off action = do
   let len = bufferByteCount buf
   res@(_, consumedBytes) <- runStateT (runUnpack action buf) off
@@ -151,8 +157,6 @@ data Isolate b = Isolate
   deriving (Show)
 
 instance (Buffer b) => Buffer (Isolate b) where
-  bufferHasToBePinned = bufferHasToBePinned @b
-  mkBuffer ba# = Isolate (mkBuffer ba#) (I# (sizeofByteArray# ba#))
   bufferByteCount Isolate{isolatedLength = len} = len
   buffer Isolate{isolatedBuffer = b} f g = buffer b f g
 
@@ -160,8 +164,6 @@ instance (Buffer b) => Buffer (Isolate b) where
 newtype CStringLenBuffer = CStringLenBuffer CStringLen
 
 instance Buffer CStringLenBuffer where
-  mkBuffer ba# = CStringLenBuffer (Ptr (byteArrayContents# ba#), I# (sizeofByteArray# ba#))
-  bufferHasToBePinned = True
   bufferByteCount (CStringLenBuffer (_, l)) = l
   buffer (CStringLenBuffer (ptr, off)) _ withAddr =
     withAddr (case ptr `plusPtr` off of Ptr addr -> addr)
@@ -196,17 +198,17 @@ newtype ByteStringSized (n :: Nat) = ByteStringSized ByteString
   deriving (Eq, Ord, Show)
 
 instance (KnownNat n) => MemPack (ByteStringSized n) where
-  packedByteCount _ = fromInteger (natVal (Proxy @n))
+  packedByteCount _ = fromInteger (natVal (Proxy :: Proxy n))
 
   packM (ByteStringSized bs) = do
-    let expected = fromIntegral (natVal (Proxy @n)) :: Int
+    let expected = fromIntegral (natVal (Proxy :: Proxy n)) :: Int
     let len = BS.length bs
     if len /= expected
       then error $! "ByteStringSized: expected " ++ show expected ++ " bytes, got " ++ show len
       else packByteStringM bs
 
   unpackM = do
-    let expected = fromIntegral (natVal (Proxy @n)) :: Int
+    let expected = fromIntegral (natVal (Proxy :: Proxy n)) :: Int
     bs <- unpackByteStringM expected
     pure (ByteStringSized bs)
 
@@ -229,3 +231,18 @@ instance MemPack CBORTerm where
       Right (_rest, bytesRead, term) -> do
         put (start + fromIntegral bytesRead)
         pure (CBORTerm term)
+
+hPutBuffer :: (Buffer u) => Handle -> u -> IO ()
+hPutBuffer handle u =
+  buffer
+    u
+    ( \bytes -> do
+        withForeignPtr (pinnedByteArrayToForeignPtr bytes) $ \ptr -> do
+          hPutBuf handle ptr len
+    )
+    (\addr -> hPutBuf handle (Ptr addr) len) -- Write Ptr#
+ where
+  len = bufferByteCount u
+
+runDecode :: (IsString e) => Fail e a -> Either e a
+runDecode f = runFailLast f

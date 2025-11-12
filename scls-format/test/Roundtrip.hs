@@ -17,7 +17,6 @@ import Cardano.SCLS.Internal.Record.Metadata (Metadata (..), MetadataEntry (Meta
 import Cardano.SCLS.Internal.Serializer.Dump.Plan (SerializationPlan, addChunks, addMetadata, defaultSerializationPlan, withManifestComment, withTimestamp)
 import Cardano.SCLS.Internal.Serializer.External.Impl qualified as External (serialize)
 import Cardano.SCLS.Internal.Serializer.HasKey (nubByKey, sortByKey)
-import Cardano.SCLS.Internal.Serializer.MemPack
 import Cardano.SCLS.Internal.Serializer.Reference.Impl qualified as Reference (serialize)
 import Cardano.Types.Namespace qualified as Namespace
 import Cardano.Types.Network (NetworkId (..))
@@ -39,6 +38,7 @@ import Crypto.Hash.MerkleTree.Incremental qualified as MT
 import Data.Function ((&))
 import Data.Map.Strict qualified as Map
 import Data.MemPack
+import Data.MemPack.Extra
 import Data.Text qualified as T
 import Data.Time (getCurrentTime)
 import Data.Time.Format.ISO8601 (ISO8601 (iso8601Format), formatParseM)

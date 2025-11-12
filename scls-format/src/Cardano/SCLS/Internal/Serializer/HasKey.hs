@@ -7,9 +7,11 @@ module Cardano.SCLS.Internal.Serializer.HasKey (
   nubByKey,
 ) where
 
+import Data.ByteString (ByteString)
 import Data.Function (on)
 import Data.Kind (Type)
 import Data.List (nubBy, sortOn)
+import Data.MemPack.Extra (RawBytes (..))
 
 -- | Class for types that have an associated key.
 class (Ord (Key a)) => HasKey a where
@@ -21,3 +23,7 @@ sortByKey = sortOn getKey
 
 nubByKey :: (HasKey a) => [a] -> [a]
 nubByKey = nubBy ((==) `on` getKey)
+
+instance HasKey RawBytes where
+  type Key RawBytes = ByteString
+  getKey (RawBytes bs) = bs

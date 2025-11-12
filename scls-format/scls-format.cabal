@@ -14,6 +14,11 @@ category: Codec
 build-type: Simple
 extra-doc-files: CHANGELOG.md
 
+flag use-mempack-1
+  description: Use the old mempack package
+  default: False
+  manual: False
+
 -- extra-source-files:
 common warnings
   ghc-options: -Wall
@@ -39,12 +44,10 @@ library
     Cardano.SCLS.Internal.Serializer.Dump.Plan
     Cardano.SCLS.Internal.Serializer.External.Impl
     Cardano.SCLS.Internal.Serializer.HasKey
-    Cardano.SCLS.Internal.Serializer.MemPack
     Cardano.SCLS.Internal.Serializer.MetadataBuilder.InMemory
     Cardano.SCLS.Internal.Serializer.Reference.Impl
     Cardano.SCLS.Internal.Version
     Cardano.SCLS.Query
-    Cardano.Types.ByteOrdered
     Cardano.Types.Namespace
     Cardano.Types.Network
     Cardano.Types.SlotNo
@@ -75,11 +78,11 @@ library
     directory,
     filepath,
     memory,
-    mempack >=0.2,
     merkle-tree-incremental,
     mtl,
     pqueue,
     primitive,
+    scls-format:{mempack},
     streaming,
     temporary,
     text,
@@ -90,6 +93,45 @@ library
 
   hs-source-dirs: src
   default-language: GHC2021
+
+library mempack
+  import: warnings
+  exposed-modules:
+    Data.MemPack.ByteOrdered
+    Data.MemPack.Extra
+    Data.MemPack.IsKey
+
+  reexported-modules:
+    Data.MemPack,
+    Data.MemPack.Buffer,
+    Data.MemPack.Error,
+
+  build-depends:
+    FailT,
+    base >=4.18 && <5,
+    byte-order >=0.1.3.1,
+    bytestring,
+    cborg,
+    memory,
+    mtl,
+    primitive,
+    text,
+
+  visibility: public
+  default-language: GHC2021
+
+  if flag(use-mempack-1)
+    hs-source-dirs:
+      mempack-1.0
+
+    build-depends:
+      mempack >=0.1 && <0.2
+  else
+    hs-source-dirs:
+      mempack-2.0
+
+    build-depends:
+      mempack >=0.2 && <0.3
 
 test-suite scls-format-test
   import: warnings
@@ -114,16 +156,16 @@ test-suite scls-format-test
     bytestring,
     cborg >=0.2,
     containers,
-    cuddle >=0.5,
+    cuddle >=0.3,
     filepath,
     hspec,
     hspec-expectations,
-    mempack,
     merkle-tree-incremental,
     primitive,
     random >=1.2,
     scls-cddl,
     scls-format,
+    scls-format:mempack,
     streaming >=0.2.4.0,
     temporary,
     text >=2.0,

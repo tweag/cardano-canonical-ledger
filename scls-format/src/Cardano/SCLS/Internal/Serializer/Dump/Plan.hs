@@ -30,10 +30,10 @@ import Cardano.SCLS.Internal.Entry.ChunkEntry (ChunkEntry, SomeChunkEntry (SomeC
 import Cardano.SCLS.Internal.NamespaceCodec (KnownNamespace (..))
 import Cardano.SCLS.Internal.Record.Chunk
 import Cardano.SCLS.Internal.Record.Metadata
-import Cardano.SCLS.Internal.Serializer.MemPack (RawBytes)
 import Cardano.Types.Namespace (Namespace, fromSymbol)
 
 import Data.MemPack (MemPack)
+import Data.MemPack.Extra (RawBytes)
 import Data.Text (Text)
 import Data.Time (UTCTime)
 import Data.Typeable (Proxy, Typeable)

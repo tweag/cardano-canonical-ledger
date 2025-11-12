@@ -14,12 +14,12 @@ module Cardano.SCLS.Internal.Entry.ChunkEntry (
 import Cardano.SCLS.Internal.Entry.IsKey (IsKey (..))
 import Cardano.SCLS.Internal.NamespaceCodec (CanonicalCBOREntryDecoder (decodeEntry), CanonicalCBOREntryEncoder (encodeEntry), KnownNamespace (..), NamespaceKeySize, VersionedNS (VersionedNS), decodeKeyFromBytes, encodeKeyToBytes)
 import Cardano.SCLS.Internal.Serializer.HasKey
-import Cardano.SCLS.Internal.Serializer.MemPack (ByteStringSized (..), MemPackHeaderOffset (..), RawBytes (RawBytes))
 import Codec.CBOR.Read (deserialiseFromBytes)
 import Codec.CBOR.Write (toStrictByteString)
 import Data.ByteString qualified as BS
 import Data.ByteString.Lazy qualified as BSL
 import Data.MemPack
+import Data.MemPack.Extra (ByteStringSized (..), MemPackHeaderOffset (..), RawBytes (RawBytes))
 import Data.Typeable (Proxy (Proxy), Typeable)
 import GHC.TypeLits (KnownNat)
 
