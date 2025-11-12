@@ -34,14 +34,14 @@ instance MemPack MetadataEntry where
         valueLen = BS.length value
 
     packWord32beM (fromIntegral subjectLen)
-    packWord32beM (fromIntegral valueLen)
     packByteStringM subject
+    packWord32beM (fromIntegral valueLen)
     packByteStringM value
 
   unpackM = do
     subjectLen :: Word32 <- unpackBigEndianM
-    valueLen :: Word32 <- unpackBigEndianM
     subject <- unpackByteStringM (fromIntegral subjectLen)
+    valueLen :: Word32 <- unpackBigEndianM
     value <- unpackByteStringM (fromIntegral valueLen)
     return MetadataEntry{..}
 
