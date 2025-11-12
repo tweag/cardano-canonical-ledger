@@ -13,7 +13,6 @@ import Cardano.SCLS.Internal.Record.Hdr (mkHdr)
 import Cardano.SCLS.Internal.Record.Metadata (Metadata (..), MetadataEntry (MetadataEntry))
 import Cardano.SCLS.Internal.Serializer.Dump (SerializationPlan, addChunks, addMetadata, defaultSerializationPlan)
 import Cardano.SCLS.Internal.Serializer.External.Impl qualified as External (serialize)
-import Cardano.SCLS.Internal.Serializer.MemPack
 import Cardano.SCLS.Internal.Serializer.Reference.Impl qualified as Reference (serialize)
 import Cardano.Types.Namespace qualified as Namespace
 import Cardano.Types.Network (NetworkId (..))
@@ -35,6 +34,7 @@ import Crypto.Hash.MerkleTree.Incremental qualified as MT
 import Data.Function ((&))
 import Data.Map.Strict qualified as Map
 import Data.MemPack
+import Data.MemPack.Extra
 import Data.Text qualified as T
 import GHC.TypeNats
 import Streaming.Prelude qualified as S

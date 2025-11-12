@@ -22,7 +22,6 @@ import Cardano.SCLS.Internal.Entry (ChunkEntry (..), GenericCBOREntry (..))
 import Cardano.SCLS.Internal.Hash (Digest (..), digest)
 import Cardano.SCLS.Internal.Reader (decodeChunkEntries, extractNamespaceList, withRecordData)
 import Cardano.SCLS.Internal.Record.Chunk (Chunk (..))
-import Cardano.SCLS.Internal.Serializer.MemPack (CBORTerm (..), Entry (..), RawBytes (..))
 import Cardano.SCLS.Util.Result
 import Cardano.Types.Namespace (Namespace)
 import Cardano.Types.Namespace qualified as Namespace
@@ -50,6 +49,7 @@ import Data.Functor.Identity
 import Data.List (intercalate)
 import Data.List.NonEmpty qualified as NE
 import Data.Map.Strict qualified as Map
+import Data.MemPack.Extra (CBORTerm (..), Entry (..), RawBytes (..))
 import Data.Text (Text)
 import Data.Text qualified as T
 import Data.Word (Word32, Word64)

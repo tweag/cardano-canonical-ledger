@@ -3,8 +3,8 @@
 -- | Slot number.
 module Cardano.Types.SlotNo (SlotNo (..)) where
 
-import Cardano.Types.ByteOrdered
 import Data.MemPack
+import Data.MemPack.ByteOrdered
 import Foreign
 
 -- TODO: define mempack or another class type for data serialisation

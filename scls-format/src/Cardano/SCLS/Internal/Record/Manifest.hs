@@ -18,6 +18,7 @@ import Data.Function (fix)
 import Data.Map.Strict (Map)
 import Data.Map.Strict qualified as Map
 import Data.MemPack (MemPack (..), packByteStringM, unpackByteStringM)
+import Data.MemPack.ByteOrdered (packWord32beM, packWord64beM, unpackBigEndianM)
 import Data.Text (Text)
 import Data.Text.Encoding qualified as T
 import Data.Word
@@ -25,7 +26,6 @@ import Data.Word
 import Cardano.SCLS.Internal.Frame (frameHeaderSize)
 import Cardano.SCLS.Internal.Hash
 import Cardano.SCLS.Internal.Record.Internal.Class
-import Cardano.Types.ByteOrdered (packWord32beM, packWord64beM, unpackBigEndianM)
 import Cardano.Types.Namespace (Namespace)
 import Cardano.Types.Namespace qualified as Namespace
 
