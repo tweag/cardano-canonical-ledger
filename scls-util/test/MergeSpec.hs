@@ -8,7 +8,6 @@ import Cardano.SCLS.Internal.Reader (
   extractRootHash,
  )
 import Cardano.SCLS.Internal.Serializer.Dump.Plan (addChunks, defaultSerializationPlan)
-import Cardano.SCLS.Internal.Serializer.MemPack (RawBytes (..))
 import Cardano.SCLS.Internal.Serializer.Reference.Impl qualified as Reference
 import Cardano.Types.Namespace (Namespace (..))
 import Cardano.Types.Namespace qualified as Namespace
@@ -18,6 +17,7 @@ import Common (generateTestFile, runSclsUtil)
 import Control.Monad (forM)
 import Data.ByteString.Char8 qualified as BS8
 import Data.Function ((&))
+import Data.MemPack.Extra (RawBytes (..))
 import Streaming qualified as S
 import Streaming.Prelude qualified as S
 import System.Exit (ExitCode (..))

@@ -22,7 +22,6 @@ import Cardano.SCLS.Internal.Hash (Digest)
 import Cardano.SCLS.Internal.Record.Chunk
 import Cardano.SCLS.Internal.Record.Hdr
 import Cardano.SCLS.Internal.Record.Manifest
-import Cardano.SCLS.Internal.Serializer.MemPack
 import Control.Exception (Exception, throwIO)
 import Control.Monad (when)
 import Control.Monad.Trans.Fail
@@ -31,6 +30,8 @@ import Data.Foldable (for_)
 import Data.Function (fix)
 import Data.Map.Strict qualified as Map
 import Data.MemPack (MemPack, unpack, unpackLeftOver)
+import Data.MemPack.ByteOrdered (BigEndian (BigEndian))
+import Data.MemPack.Extra
 import Data.Typeable
 import System.IO
 import System.IO qualified as IO
@@ -38,7 +39,6 @@ import System.IO qualified as IO
 import Cardano.SCLS.Internal.Entry.ChunkEntry (ChunkEntry, decodeChunkEntry)
 import Cardano.SCLS.Internal.NamespaceCodec (KnownNamespace (NamespaceEntry, NamespaceKey), NamespaceKeySize)
 import Cardano.SCLS.Internal.Record.Internal.Class (IsFrameRecord)
-import Cardano.Types.ByteOrdered (BigEndian (BigEndian))
 import Cardano.Types.Namespace (Namespace)
 import Cardano.Types.Namespace qualified as Namespace
 import Data.Maybe (fromJust)

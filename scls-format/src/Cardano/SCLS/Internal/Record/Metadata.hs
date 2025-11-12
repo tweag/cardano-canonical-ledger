@@ -9,14 +9,14 @@ module Cardano.SCLS.Internal.Record.Metadata (Metadata (..), MetadataEntry (..),
 
 import Cardano.SCLS.Internal.Hash (Digest, digest, hashDigestSize)
 import Cardano.SCLS.Internal.Record.Internal.Class
-import Cardano.SCLS.Internal.Serializer.MemPack
-import Cardano.Types.ByteOrdered (packWord32beM, packWord64beM, unpackBigEndianM)
 
 import Control.Monad.Fix (fix)
 import Control.Monad.Trans.Fail (errorFail)
 import Data.ByteString qualified as BS
 import Data.Foldable (for_)
 import Data.MemPack
+import Data.MemPack.ByteOrdered (packWord32beM, packWord64beM, unpackBigEndianM)
+import Data.MemPack.Extra
 import Data.Word (Word32, Word64)
 
 data MetadataEntry = MetadataEntry

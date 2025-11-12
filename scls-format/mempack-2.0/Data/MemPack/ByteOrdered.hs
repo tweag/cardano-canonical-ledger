@@ -1,6 +1,5 @@
 -- | Helpers for dealing with endianness in binary formats.
-module Cardano.Types.ByteOrdered (
-  MemPack (..),
+module Data.MemPack.ByteOrdered (
   Storable (..),
 
   -- * Big endian

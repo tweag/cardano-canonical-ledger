@@ -9,7 +9,6 @@ import Cardano.SCLS.Internal.Hash (Digest (..))
 import Cardano.SCLS.Internal.Reader (extractNamespaceHash, extractNamespaceList, extractRootHash, withNamespacedData)
 import Cardano.SCLS.Internal.Serializer.Dump.Plan (SerializationPlan, addChunks, defaultSerializationPlan)
 import Cardano.SCLS.Internal.Serializer.External.Impl qualified as External (serialize)
-import Cardano.SCLS.Internal.Serializer.MemPack
 import Cardano.SCLS.Internal.Serializer.Reference.Impl qualified as Reference (serialize)
 import Cardano.Types.Namespace (Namespace (..))
 import Cardano.Types.Namespace qualified as Namespace
@@ -21,6 +20,7 @@ import Data.ByteString.Char8 qualified as BS8
 import Data.Function ((&))
 import Data.List (sort)
 import Data.Map.Strict qualified as Map
+import Data.MemPack.Extra
 import Data.Traversable (for)
 import Streaming.Prelude qualified as S
 import System.FilePath ((</>))

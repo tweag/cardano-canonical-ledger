@@ -24,18 +24,16 @@ module Cardano.SCLS.Internal.NamespaceCodec (
 ) where
 
 import Cardano.SCLS.Internal.Entry.IsKey (IsKey (keySize, packKeyM, unpackKeyM))
-import Cardano.SCLS.Internal.Serializer.MemPack (ByteStringSized (..), RawBytes (RawBytes))
 import Codec.CBOR.Decoding (Decoder)
 import Codec.CBOR.Encoding (Encoding)
 import Codec.CBOR.Read (DeserialiseFailure, deserialiseFromBytes)
 import Codec.CBOR.Write (toStrictByteString)
-import Control.Monad.ST (runST)
-import Control.Monad.Trans.Fail (runFailLastT)
 import Data.ByteString (ByteString)
 import Data.ByteString.Lazy qualified as BSL
 import Data.Data (Proxy (Proxy), Typeable, typeRep)
 import Data.MemPack (StateT (runStateT), Unpack (runUnpack), packWithByteArray)
 import Data.MemPack.Buffer (pinnedByteArrayToByteString)
+import Data.MemPack.Extra (ByteStringSized (..), RawBytes (RawBytes), runDecode)
 import GHC.TypeLits (KnownNat, Nat, Symbol, fromSNat, pattern SNat)
 
 -- | A wrapper type that associates a decoded value with its namespace.
@@ -129,4 +127,4 @@ decodeKeyFromBytes ::
   Maybe (NamespaceKey ns)
 decodeKeyFromBytes _ bs = do
   let unpacker = unpackKeyM
-  either (const Nothing) (Just . fst) $ runST $ runFailLastT $ runStateT (runUnpack unpacker bs) 0
+  either (const Nothing) (Just . fst) $ runDecode $ runStateT (runUnpack unpacker bs) 0

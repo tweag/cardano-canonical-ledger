@@ -27,10 +27,10 @@ import Data.Function ((&))
 import Data.Map (Map)
 import Data.Map.Strict qualified as Map
 
-import Cardano.SCLS.Internal.Serializer.MemPack (MemPackHeaderOffset)
 import Data.Maybe (fromMaybe)
 import Data.MemPack
 import Data.MemPack.Buffer (pinnedByteArrayToByteString)
+import Data.MemPack.Extra
 import Data.Text qualified as T
 import Data.Time (getCurrentTime)
 import Data.Time.Format.ISO8601 (ISO8601 (iso8601Format), formatShow)

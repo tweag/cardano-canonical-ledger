@@ -8,7 +8,6 @@ import Cardano.SCLS.Internal.Record.Hdr (Hdr (..))
 import Cardano.SCLS.Internal.Serializer.Dump
 import Cardano.SCLS.Internal.Serializer.Dump.Plan (addChunks, defaultSerializationPlan, mkSortedSerializationPlan)
 import Cardano.SCLS.Internal.Serializer.External.Impl (serialize)
-import Cardano.SCLS.Internal.Serializer.MemPack
 import Cardano.SCLS.Util.Result
 import Cardano.Types.Namespace (Namespace (..))
 import Cardano.Types.Namespace qualified as Namespace
@@ -18,6 +17,7 @@ import Control.Exception (SomeException, catch)
 import Control.Monad (foldM)
 import Data.Function ((&))
 import Data.Map.Strict qualified as Map
+import Data.MemPack.Extra
 import Streaming qualified as S
 import Streaming.Prelude qualified as S
 import System.Directory (createDirectoryIfMissing)

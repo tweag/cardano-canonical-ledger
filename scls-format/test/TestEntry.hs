@@ -19,12 +19,12 @@ import Cardano.SCLS.Internal.Entry.ChunkEntry (ChunkEntry (ChunkEntry))
 import Cardano.SCLS.Internal.Entry.IsKey (IsKey (keySize, packKeyM, unpackKeyM))
 import Cardano.SCLS.Internal.NamespaceCodec (CanonicalCBOREntryDecoder (decodeEntry), CanonicalCBOREntryEncoder (encodeEntry), KnownNamespace (NamespaceEntry, NamespaceKey), NamespaceKeySize, VersionedNS (VersionedNS), namespaceKeySize)
 import Cardano.SCLS.Internal.Serializer.HasKey (HasKey (Key, getKey))
-import Cardano.SCLS.Internal.Serializer.MemPack (ByteStringSized (ByteStringSized))
 import Codec.CBOR.Decoding qualified as D
 import Codec.CBOR.Encoding qualified as E
 import Data.ByteString qualified as BS
 import Data.Data (Proxy (Proxy))
 import Data.MemPack (packByteStringM, unpackByteStringM)
+import Data.MemPack.Extra (ByteStringSized (ByteStringSized))
 import System.Random.Stateful (Uniform (uniformM), globalStdGen, uniformByteStringM)
 
 -- | Example data type for testing
