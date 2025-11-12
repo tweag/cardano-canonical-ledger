@@ -7,7 +7,6 @@
 module InfoSpec (infoCommandTests, listNsCommandTests) where
 
 import Cardano.SCLS.Internal.Serializer.Dump (addChunks, defaultSerializationPlan)
-import Cardano.SCLS.Internal.Serializer.MemPack (RawBytes (..))
 import Cardano.SCLS.Internal.Serializer.Reference.Impl qualified as Reference
 import Cardano.Types.Namespace qualified as Namespace
 import Cardano.Types.Network (NetworkId (Mainnet))
@@ -15,6 +14,7 @@ import Cardano.Types.SlotNo (SlotNo (SlotNo))
 import Common
 import Control.Monad (forM_)
 import Data.Function ((&))
+import Data.MemPack.Extra (RawBytes (..))
 import Streaming.Prelude qualified as S
 import System.Exit (ExitCode (..))
 import System.FilePath ((</>))

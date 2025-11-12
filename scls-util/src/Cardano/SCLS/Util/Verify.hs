@@ -5,7 +5,6 @@ module Cardano.SCLS.Util.Verify (verifyRoot, verifyNamespace) where
 
 import Cardano.SCLS.Internal.Hash (Digest (..))
 import Cardano.SCLS.Internal.Reader
-import Cardano.SCLS.Internal.Serializer.MemPack
 import Cardano.SCLS.Util.Result
 import Cardano.Types.Namespace (Namespace)
 import Cardano.Types.Namespace qualified as Namespace
@@ -13,6 +12,7 @@ import Control.Exception (SomeException, catch)
 import Crypto.Hash (Blake2b_224)
 import Crypto.Hash.MerkleTree.Incremental qualified as MT
 import Data.Function ((&))
+import Data.MemPack.Extra
 import Streaming.Prelude qualified as S
 
 verifyRoot :: FilePath -> IO Result

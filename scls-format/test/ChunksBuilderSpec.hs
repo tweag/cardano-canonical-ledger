@@ -3,10 +3,10 @@ module ChunksBuilderSpec (chunksBuilderTests) where
 import Cardano.SCLS.Internal.Hash (Digest (..))
 import Cardano.SCLS.Internal.Record.Chunk
 import Cardano.SCLS.Internal.Serializer.ChunksBuilder.InMemory
-import Cardano.SCLS.Internal.Serializer.MemPack
 import Control.Monad
 import Data.ByteString qualified as BS
 import Data.Maybe
+import Data.MemPack.Extra
 import Data.Primitive.ByteArray
 import Test.HUnit
 import Test.Hspec

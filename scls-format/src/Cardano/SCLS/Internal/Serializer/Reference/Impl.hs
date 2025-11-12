@@ -8,7 +8,6 @@ module Cardano.SCLS.Internal.Serializer.Reference.Impl (
 
 import Cardano.SCLS.Internal.Record.Hdr
 import Cardano.SCLS.Internal.Serializer.Dump
-import Cardano.SCLS.Internal.Serializer.MemPack
 import Cardano.Types.Namespace (Namespace (..))
 import Cardano.Types.Network
 import Cardano.Types.SlotNo
@@ -18,6 +17,7 @@ import Data.Function (on)
 import Data.Map.Strict (Map)
 import Data.Map.Strict qualified as Map
 import Data.MemPack
+import Data.MemPack.Extra
 import Data.Typeable (Typeable)
 import Data.Vector qualified as V
 import Data.Vector.Algorithms.Tim qualified as Tim

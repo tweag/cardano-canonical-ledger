@@ -7,12 +7,10 @@ module Cardano.SCLS.Util.Debug where
 
 import Cardano.SCLS.CDDL
 
--- import Cardano.SCLS.CDDL (NamespaceInfo (..), namespaces)
 import Cardano.SCLS.Internal.Entry
 import Cardano.SCLS.Internal.Reader
 import Cardano.SCLS.Internal.Serializer.Dump (addChunks, defaultSerializationPlan)
 import Cardano.SCLS.Internal.Serializer.External.Impl qualified as External (serialize)
-import Cardano.SCLS.Internal.Serializer.MemPack
 import Cardano.Types.Namespace (Namespace)
 import Cardano.Types.Namespace qualified as Namespace
 import Cardano.Types.Network (NetworkId (..))
@@ -37,6 +35,7 @@ import Data.Functor ((<&>))
 import Data.Functor.Identity (Identity (..))
 import Data.Map.Strict qualified as Map
 import Data.Maybe (fromMaybe)
+import Data.MemPack.Extra
 import Data.Text qualified as T
 import Streaming.Prelude qualified as S
 import System.Random.Stateful (applyAtomicGen, globalStdGen, uniformByteStringM)
