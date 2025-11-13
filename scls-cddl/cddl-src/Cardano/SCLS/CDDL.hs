@@ -25,5 +25,5 @@ namespaces :: Map.Map Text NamespaceInfo
 namespaces =
   Map.fromList
     [ ("utxo/v0", NamespaceInfo (collectFromInit [HIRule UTxO.record_entry]) 34)
-    , ("blocks/v0", NamespaceInfo (collectFromInit [HIRule Blocks.record_entry]) 32)
+    , ("blocks/v0", NamespaceInfo (collectFromInit [HIRule Blocks.record_entry]) 36) -- 28 bytes for key, and 8 for epoch in BE
     ]
