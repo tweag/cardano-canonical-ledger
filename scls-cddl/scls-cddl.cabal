@@ -73,6 +73,7 @@ executable gen-cddl
     base >=4.18 && <5,
     containers >=0.6,
     cuddle >=0.5,
+    directory >=1,
     filepath >=1.4,
     prettyprinter,
     scls-cddl,
