@@ -11,7 +11,7 @@ module Cardano.SCLS.Internal.Entry (
 ) where
 
 import Cardano.SCLS.Internal.Serializer.HasKey
-import Cardano.SCLS.Internal.Serializer.MemPack (ByteStringSized (..), CBORTerm (..), MemPackHeaderOffset (..), SomeByteStringSized (..))
+import Cardano.SCLS.Internal.Serializer.MemPack (ByteStringSized, CBORTerm (..), MemPackHeaderOffset (..), SomeByteStringSized (..))
 import Data.List (sortOn)
 import Data.MemPack
 import Data.MemPack.Buffer

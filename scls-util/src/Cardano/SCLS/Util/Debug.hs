@@ -71,4 +71,4 @@ generateNamespaceEntries count spec = replicateM_ count do
   let size = fromSNat @n SNat
   keyIn <- liftIO $ uniformByteStringM (fromIntegral size) globalStdGen
   term <- liftIO $ applyAtomicGen (generateCBORTerm' spec (Name (T.pack "record_entry") mempty)) globalStdGen
-  S.yield $ GenericCBOREntry $ ChunkEntry (ByteStringSized @n keyIn) (CBORTerm term)
+  S.yield $ GenericCBOREntry $ ChunkEntry (fromByteString @n keyIn) (CBORTerm term)
