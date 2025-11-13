@@ -222,10 +222,9 @@ instance MemPack CBORTerm where
     packByteStringM (CBOR.toStrictByteString (CBOR.encodeTerm t))
 
   unpackM = do
-    start <- gets fromIntegral
     bytes <- consumeBytes
     case CBOR.deserialiseFromBytesWithSize CBOR.decodeTerm (BSL.fromStrict bytes) of
-      Left err -> failUnpack $ TextError $ "CBOR term deserialisation failed: " <> T.pack (show err)
-      Right (_rest, bytesRead, term) -> do
-        put (start + fromIntegral bytesRead)
+      Left (CBOR.DeserialiseFailure offset err) ->
+        failUnpack $ TextError $ "CBOR term deserialisation failed at " <> T.pack (show offset) <> ": " <> T.pack err
+      Right (_rest, _bytesRead, term) -> do
         pure (CBORTerm term)
