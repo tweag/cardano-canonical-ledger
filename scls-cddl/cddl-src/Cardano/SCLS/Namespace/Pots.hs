@@ -26,11 +26,11 @@ pots_table =
     [str|Pots table containing the various accounting pots in Cardano
         |
         |Fields:
-        |  - Treasury: coins in the treasury
-        |  - Reserves: coins in the reserves
-        |  - Deposit: total deposits held
-        |  - Fee: accumulated fees
-        |  - Donation: donations pot
+        |  - treasury: coins in the treasury
+        |  - reserves: coins in the reserves
+        |  - deposit: total deposits held
+        |  - fee: accumulated fees
+        |  - donation: donations pot
         |]
     $ "pots_table"
       =:= mp
