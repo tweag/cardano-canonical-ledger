@@ -6,6 +6,7 @@ module Cardano.SCLS.CDDL (
 ) where
 
 import Cardano.SCLS.Namespace.Blocks qualified as Blocks
+import Cardano.SCLS.Namespace.Pots qualified as Pots
 import Cardano.SCLS.Namespace.UTxO qualified as UTxO
 import Codec.CBOR.Cuddle.Huddle (Huddle, HuddleItem (HIRule), collectFromInit)
 import Data.Map.Strict qualified as Map
@@ -26,4 +27,5 @@ namespaces =
   Map.fromList
     [ ("utxo/v0", NamespaceInfo (collectFromInit [HIRule UTxO.record_entry]) 34)
     , ("blocks/v0", NamespaceInfo (collectFromInit [HIRule Blocks.record_entry]) 36) -- 28 bytes for key, and 8 for epoch in BE
+    , ("pots/v0", NamespaceInfo (collectFromInit [HIRule Pots.record_entry]) 8) -- Key is epoch number
     ]
