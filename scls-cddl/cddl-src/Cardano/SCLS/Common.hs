@@ -145,7 +145,7 @@ port :: Rule
 port = "port" =:= VUInt `sized` (0 :: Word64, 65535 :: Word64)
 
 ipv4 :: Rule
-ipv4 = "ipv4" =:= VBytes `sized` (4 :: Word)
+ipv4 = "ipv4" =:= VBytes `sized` (4 :: Word64)
 
 ipv6 :: Rule
 ipv6 = "ipv6" =:= VBytes `sized` (16 :: Word)
