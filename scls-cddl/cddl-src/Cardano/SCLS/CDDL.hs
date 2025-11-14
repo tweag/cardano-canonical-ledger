@@ -6,6 +6,7 @@ module Cardano.SCLS.CDDL (
 ) where
 
 import Cardano.SCLS.Namespace.Blocks qualified as Blocks
+import Cardano.SCLS.Namespace.Snapshots qualified as Snapshots
 import Cardano.SCLS.Namespace.UTxO qualified as UTxO
 import Codec.CBOR.Cuddle.Huddle (Huddle, HuddleItem (HIRule), collectFromInit)
 import Data.Map.Strict qualified as Map
@@ -26,4 +27,5 @@ namespaces =
   Map.fromList
     [ ("utxo/v0", NamespaceInfo (collectFromInit [HIRule UTxO.record_entry]) 34)
     , ("blocks/v0", NamespaceInfo (collectFromInit [HIRule Blocks.record_entry]) 32)
+    , ("snapshots/v0", NamespaceInfo (collectFromInit [HIRule Snapshots.record_entry]) 30)
     ]
