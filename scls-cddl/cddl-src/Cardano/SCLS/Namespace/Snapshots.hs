@@ -123,7 +123,8 @@ single_host_name =
 
 multi_host_name :: Named Group
 multi_host_name =
-  "multi_host_name" =:~ grp [a (port / VNil), a dns_name]
+  comment [str| A multi-host name relay |] $
+    "multi_host_name" =:~ grp [a (port / VNil), a dns_name]
 
 pool_metadata :: Rule
 pool_metadata = "pool_metadata" =:= arr [a url, a pool_metadata_hash]
