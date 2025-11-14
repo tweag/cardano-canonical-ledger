@@ -79,6 +79,9 @@ vkey = "vkey" =:= VBytes `sized` (32 :: Word64)
 vrf_vkey :: Rule
 vrf_vkey = "vrf_vkey" =:= VBytes `sized` (32 :: Word64)
 
+vrf_keyhash :: Rule
+vrf_keyhash = "vrf_keyhash" =:= hash32
+
 vrf_cert :: Rule
 vrf_cert = "vrf_cert" =:= arr [a VBytes, a (VBytes `sized` (80 :: Word64))]
 
@@ -131,3 +134,40 @@ bounded_bytes =
     $ "bounded_bytes"
       =:= VBytes
       `sized` (0 :: Word64, 64 :: Word64)
+
+url :: Rule
+url = "url" =:= VText `sized` (0 :: Word64, 128 :: Word64)
+
+dns_name :: Rule
+dns_name = "dns_name" =:= VText `sized` (0 :: Word64, 128 :: Word64)
+
+port :: Rule
+port = "port" =:= VUInt `le` 65535
+
+ipv4 :: Rule
+ipv4 = "ipv4" =:= VBytes `sized` (4 :: Word64)
+
+ipv6 :: Rule
+ipv6 = "ipv6" =:= VBytes `sized` (16 :: Word64)
+
+unit_interval :: Rule
+unit_interval =
+  comment
+    [str|NOTE: The real unit_interval is: #6.30([uint, uint])
+        |
+        | A unit interval is a number in the range between 0 and 1, which
+        | means there are two extra constraints:
+        |    1. numerator <= denominator
+        |    2. denominator > 0
+        |]
+    $ "unit_interval"
+      =:= tag
+        30
+        ( arr
+            [ a (VUInt `le` (maxBound :: Word64))
+            , a (VUInt `le` (maxBound :: Word64))
+            ]
+        )
+
+set :: (IsType0 t0) => t0 -> GRuleCall
+set = binding $ \x -> "set" =:= arr [0 <+ a x]
