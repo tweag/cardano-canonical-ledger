@@ -1,6 +1,6 @@
 {-# LANGUAGE DataKinds #-}
 
-module TestEntry (TestEntry, genUTxO) where
+module TestEntry (TestEntry, genEntry) where
 
 import Cardano.SCLS.CBOR.Canonical.NamespacedEncoder (CanonicalDecoder (..), CanonicalEncoder (..), VersionedNS (VersionedNS))
 import Cardano.SCLS.Internal.Entry (ChunkEntry (ChunkEntry), GenericCBOREntry (GenericCBOREntry))
@@ -16,12 +16,10 @@ data TestEntry = TestEntry
   }
   deriving (Eq, Show)
 
--- | Instance for utxo/v0 namespace
 instance CanonicalEncoder "utxo/v0" TestEntry where
   encodeNamespaced TestEntry{key, value} =
     GenericCBOREntry $ ChunkEntry (ByteStringSized key) (CBORTerm $ TInt value)
 
--- | Instance for utxo/v0 namespace
 instance CanonicalEncoder "blocks/v0" TestEntry where
   encodeNamespaced TestEntry{key, value} =
     -- For this test, we reuse the same data type (TestEntry), but we encode it's value as `n+1`.
@@ -37,9 +35,27 @@ instance CanonicalDecoder "blocks/v0" TestEntry where
     Just $ VersionedNS $ (TestEntry key (n - 1))
   decodeNamespaced _ = Nothing
 
-genUTxO :: IO TestEntry
-genUTxO = do
-  -- Generate a 34-byte key, matching the NamespaceKeySize for "utxo/v0" and "utxo/v1"
-  key <- uniformByteStringM 34 globalStdGen
+genEntry :: Int -> IO TestEntry
+genEntry kSize = do
+  key <- uniformByteStringM kSize globalStdGen
   value <- uniformM globalStdGen
   pure $ TestEntry key value
+
+{- | Example usage:
+
+@
+  -- To encode
+  let x = "utxo/v0"
+  let v = TestEntry{key = BS.singleton 1, value = 2}
+  let encoded = encodeNamespaced @"utxo/v0" v
+
+  -- To decode
+  --
+  case x of
+    "utxo/v0" -> do
+      let decoded = decodeNamespaced @"utxo/v0" @TestEntry encoded
+      show decoded
+    _ -> do
+      error "Unknown namespace"
+@
+-}

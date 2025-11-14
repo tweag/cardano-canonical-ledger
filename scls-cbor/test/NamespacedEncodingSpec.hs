@@ -13,13 +13,17 @@ module NamespacedEncodingSpec where
 import Cardano.SCLS.CBOR.Canonical.NamespacedEncoder (
   CanonicalDecoder (decodeNamespaced),
   CanonicalEncoder (encodeNamespaced),
+  KnownNamespaceKeySize (namespaceKeySize),
   VersionedNS (VersionedNS),
  )
 import Cardano.SCLS.Internal.Entry (ChunkEntry (ChunkEntry), GenericCBOREntry (GenericCBOREntry))
+import GHC.TypeLits (fromSNat)
 import Test.Hspec (Spec, describe, it, shouldBe, shouldNotBe)
 import TestEntry
 
--- | Test suite
+genUTxO :: IO TestEntry
+genUTxO = genEntry (fromInteger $ fromSNat (namespaceKeySize @"utxo/v0"))
+
 spec :: Spec
 spec = do
   describe "CanonicalEncoder" $ do
@@ -32,8 +36,7 @@ spec = do
     it "should encode TestEntry differently in blocks/v0 namespace" $ do
       val <- genUTxO
 
-      -- Key sizes can be the same, but may not always be the case
-      -- Type check fails if key sizes are different and we try to compare them directly as `GenericCBOREntry`
+      -- Key sizes here are different, so the type-check would reject comparing the resulting `GenericCBOREntry` values
       -- Because of that, we compare the CBOR terms of each encoded value
       let GenericCBOREntry (ChunkEntry _key1 encoded0) = encodeNamespaced @"utxo/v0" val
       let GenericCBOREntry (ChunkEntry _key2 encoded1) = encodeNamespaced @"blocks/v0" val
@@ -44,6 +47,6 @@ spec = do
       val <- genUTxO
 
       let encoded = encodeNamespaced @"utxo/v0" val
-      let decoded = decodeNamespaced @"utxo/v0" encoded
+      let decoded = decodeNamespaced @"utxo/v0" @TestEntry encoded
 
       decoded `shouldBe` (Just (VersionedNS val))
