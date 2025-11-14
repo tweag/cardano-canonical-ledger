@@ -162,7 +162,7 @@ unit_interval =
         |]
     $ "unit_interval"
       =:= tag
-        2
+        30
         ( arr
             [ a (VUInt `sized` (0 :: Word64, maxBound :: Word64))
             , a (VUInt `sized` (0 :: Word64, maxBound :: Word64))
