@@ -30,6 +30,7 @@ library
     Cardano.SCLS.Common
     Cardano.SCLS.Namespace.Blocks
     Cardano.SCLS.Namespace.Pots
+    Cardano.SCLS.Namespace.Snapshots
     Cardano.SCLS.Namespace.UTxO
 
   build-depends:
