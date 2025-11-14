@@ -142,13 +142,13 @@ dns_name :: Rule
 dns_name = "dns_name" =:= VText `sized` (0 :: Word64, 128 :: Word64)
 
 port :: Rule
-port = "port" =:= VUInt `sized` (0 :: Word64, 65535 :: Word64)
+port = "port" =:= VUInt `le` 65535
 
 ipv4 :: Rule
 ipv4 = "ipv4" =:= VBytes `sized` (4 :: Word64)
 
 ipv6 :: Rule
-ipv6 = "ipv6" =:= VBytes `sized` (16 :: Word)
+ipv6 = "ipv6" =:= VBytes `sized` (16 :: Word64)
 
 unit_interval :: Rule
 unit_interval =
