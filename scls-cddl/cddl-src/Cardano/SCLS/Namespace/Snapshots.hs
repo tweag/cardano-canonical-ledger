@@ -118,8 +118,9 @@ single_host_addr =
 
 single_host_name :: Named Group
 single_host_name =
-  "single_host_name"
-    =:~ grp [a (port / VNil), a dns_name]
+  comment [str| A single host name relay |] $
+    "single_host_name"
+      =:~ grp [a (port / VNil), a dns_name]
 
 multi_host_name :: Named Group
 multi_host_name =
