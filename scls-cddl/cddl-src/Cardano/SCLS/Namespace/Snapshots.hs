@@ -66,10 +66,10 @@ credential =
 snapshot_out :: Rule
 snapshot_out =
   comment
-    [str| Value maybe be one of the following:
-         |  - Coin value
-         |  - Keyhash of an delegation address
-         |  - Pool parameters
+    [str| Value may be one of the following three possible snapshot output types, each encoded as a tagged array:
+         |  - [0, coin]: Coin value
+         |  - [1, keyhash32]: Keyhash of a delegation address
+         |  - [2, pool_params]: Pool parameters
          |]
     $ "snapshot_out"
       =:= arr [0, a coin]
