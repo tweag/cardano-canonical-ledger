@@ -1,5 +1,7 @@
 {-# LANGUAGE BlockArguments #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE ViewPatterns #-}
 
 module Cardano.SCLS.Util.Debug where
 
@@ -7,6 +9,7 @@ import Cardano.SCLS.CDDL
 
 -- import Cardano.SCLS.CDDL (NamespaceInfo (..), namespaces)
 import Cardano.SCLS.Internal.Entry
+import Cardano.SCLS.Internal.Reader
 import Cardano.SCLS.Internal.Serializer.Dump (addChunks, defaultSerializationPlan)
 import Cardano.SCLS.Internal.Serializer.External.Impl qualified as External (serialize)
 import Cardano.SCLS.Internal.Serializer.MemPack
@@ -27,6 +30,8 @@ import Codec.CBOR.Cuddle.CDDL.Resolve (
 import Codec.CBOR.Cuddle.Huddle
 import Control.Monad (replicateM_)
 import Control.Monad.IO.Class (liftIO)
+import Data.ByteString.Base16 qualified as Base16
+import Data.ByteString.Char8 qualified as B8
 import Data.Function ((&))
 import Data.Functor ((<&>))
 import Data.Functor.Identity (Identity (..))
@@ -72,3 +77,22 @@ generateNamespaceEntries count spec = replicateM_ count do
   keyIn <- liftIO $ uniformByteStringM (fromIntegral size) globalStdGen
   term <- liftIO $ applyAtomicGen (generateCBORTerm' spec (Name (T.pack "record_entry") mempty)) globalStdGen
   S.yield $ GenericCBOREntry $ ChunkEntry (ByteStringSized @n keyIn) (CBORTerm term)
+
+printHexEntries :: FilePath -> T.Text -> Int -> IO Result
+printHexEntries filePath ns_name@(Namespace.fromText -> ns) entryNo = do
+  case Map.lookup ns_name namespaces of
+    Nothing -> do
+      putStrLn "Can't decode namespace, I don't know its key size"
+      pure OtherError
+    Just (NamespaceInfo _spec ks) -> do
+      withSomeSNat ks \(snat :: SNat n) -> do
+        withKnownNat snat do
+          withNamespacedData @(ChunkEntry (ByteStringSized n) RawBytes) filePath ns $ \stream -> do
+            stream
+              & S.drop entryNo
+              & S.take 1
+              & S.mapM_ \ChunkEntry{chunkEntryKey = ByteStringSized k, chunkEntryValue = RawBytes b} -> do
+                B8.putStrLn $ "Key: " <> Base16.encode k
+                putStrLn "Data (hex):"
+                B8.putStrLn $ Base16.encode b
+      pure Ok
