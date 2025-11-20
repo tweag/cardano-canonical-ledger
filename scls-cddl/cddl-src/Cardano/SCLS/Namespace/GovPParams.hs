@@ -31,15 +31,15 @@ gov_pparams_out :: Rule
 gov_pparams_out =
   "gov_pparams_out"
     =:= mp
-      [ "max_block_size_words" ==> VUInt
-      , "max_header_size_words" ==> VUInt
-      , "max_tx_size_words" ==> VUInt
-      , "max_proposal_size_words" ==> VUInt
-      , "blocks_signing_fraction" ==> unit_interval
+      [ "factora" ==> (VUInt `sized` (8 :: Word64))
+      , "factorb" ==> (VUInt `sized` (8 :: Word64))
+      , "scriptversion" ==> VUInt
       , "slots_per_epoch" ==> VUInt
       , "update_ttl_slots" ==> VUInt
-      , "scriptversion" ==> VUInt
+      , "max_tx_size_words" ==> VUInt
+      , "max_block_size_words" ==> VUInt
+      , "max_header_size_words" ==> VUInt
       , "update_adapt_threshold" ==> unit_interval
-      , "factora" ==> (VUInt `sized` (8 :: Word64))
-      , "factorb" ==> (VUInt `sized` (8 :: Word64))
+      , "blocks_signing_fraction" ==> unit_interval
+      , "max_proposal_size_words" ==> VUInt
       ]
