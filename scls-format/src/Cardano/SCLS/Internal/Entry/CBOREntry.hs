@@ -7,7 +7,6 @@
 module Cardano.SCLS.Internal.Entry.CBOREntry (
   GenericCBOREntry (..),
   SomeCBOREntry (..),
-  sortByKey,
   toCBOREntry,
   KnownNamespace (..),
   NamespaceKeySize,
@@ -20,7 +19,6 @@ import Cardano.SCLS.Internal.Serializer.MemPack (ByteStringSized (..), CBORTerm 
 import Codec.CBOR.Read (deserialiseFromBytes)
 import Codec.CBOR.Term (decodeTerm)
 import Codec.CBOR.Write (toLazyByteString)
-import Data.List (sortOn)
 import Data.MemPack
 import Data.Typeable (Typeable)
 import GHC.TypeLits (KnownNat, Nat)
@@ -75,6 +73,3 @@ instance MemPackHeaderOffset SomeCBOREntry where
 instance HasKey SomeCBOREntry where
   type Key SomeCBOREntry = SomeByteStringSized
   getKey (SomeCBOREntry gce) = SomeByteStringSized (getKey gce)
-
-sortByKey :: (HasKey a) => [a] -> [a]
-sortByKey = sortOn getKey

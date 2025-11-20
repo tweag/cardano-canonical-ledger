@@ -6,7 +6,6 @@ module Roundtrip (
 ) where
 
 import Cardano.SCLS.CDDL (NamespaceInfo (..), namespaces)
-import Cardano.SCLS.Internal.Entry (sortByKey)
 import Cardano.SCLS.Internal.Entry.CBOREntry (GenericCBOREntry (GenericCBOREntry), SomeCBOREntry (SomeCBOREntry))
 import Cardano.SCLS.Internal.Entry.ChunkEntry (ChunkEntry (ChunkEntry))
 import Cardano.SCLS.Internal.Hash (Digest (..))
@@ -15,6 +14,7 @@ import Cardano.SCLS.Internal.Record.Hdr (mkHdr)
 import Cardano.SCLS.Internal.Record.Metadata (Metadata (..), MetadataEntry (MetadataEntry))
 import Cardano.SCLS.Internal.Serializer.Dump.Plan (SerializationPlan, addChunks, addMetadata, defaultSerializationPlan)
 import Cardano.SCLS.Internal.Serializer.External.Impl qualified as External (serialize)
+import Cardano.SCLS.Internal.Serializer.HasKey (sortByKey)
 import Cardano.SCLS.Internal.Serializer.MemPack
 import Cardano.SCLS.Internal.Serializer.Reference.Impl qualified as Reference (serialize)
 import Cardano.Types.Namespace qualified as Namespace

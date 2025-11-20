@@ -6,7 +6,6 @@
 
 module Cardano.SCLS.Internal.Entry.ChunkEntry (
   ChunkEntry (..),
-  sortByKey,
   KnownNamespace (..),
   NamespaceKeySize,
   SomeChunkEntry (..),
@@ -19,7 +18,6 @@ import Cardano.SCLS.Internal.Namespace (KnownNamespace (..), NamespaceKeySize)
 import Cardano.SCLS.Internal.Serializer.HasKey
 import Cardano.SCLS.Internal.Serializer.MemPack (ByteStringSized (..), MemPackHeaderOffset (..))
 import Data.ByteString qualified as BS
-import Data.List (sortOn)
 import Data.MemPack
 import Data.MemPack.Buffer
 import Data.Typeable (Typeable)
@@ -129,9 +127,6 @@ unpackSomeChunkEntry = do
 
 instance (MemPack a, Typeable a) => MemPackHeaderOffset (SomeChunkEntry a) where
   headerSizeOffset = 4
-
-sortByKey :: (HasKey a) => [a] -> [a]
-sortByKey = sortOn getKey
 
 instance HasKey (SomeChunkEntry a) where
   type Key (SomeChunkEntry a) = BS.ByteString
