@@ -7,7 +7,7 @@ module MultiNamespace (
 
 import Cardano.SCLS.Internal.Hash (Digest (..))
 import Cardano.SCLS.Internal.Reader (extractNamespaceHash, extractNamespaceList, extractRootHash, withNamespacedData)
-import Cardano.SCLS.Internal.Serializer.Dump.Plan (SerializationPlan', addChunks', defaultSerializationPlan')
+import Cardano.SCLS.Internal.Serializer.Dump.Plan (SerializationPlan, addChunks, defaultSerializationPlan)
 import Cardano.SCLS.Internal.Serializer.External.Impl qualified as External (serialize)
 import Cardano.SCLS.Internal.Serializer.MemPack
 import Cardano.SCLS.Internal.Serializer.Reference.Impl qualified as Reference (serialize)
@@ -72,7 +72,7 @@ mkTestsFor serialize = do
     let input = [("ns0", []), ("ns1", ["data"]), ("ns2", [])]
     roundtrip serialize input
 
-type SerializeF = FilePath -> NetworkId -> SlotNo -> SerializationPlan' RawBytes -> IO ()
+type SerializeF = FilePath -> NetworkId -> SlotNo -> SerializationPlan RawBytes -> IO ()
 
 roundtrip :: SerializeF -> [(Namespace, [ByteString])] -> IO ()
 roundtrip serialize input = do
@@ -118,8 +118,8 @@ roundtrip serialize input = do
       fileDigest `shouldBe` expectedDigest
  where
   mkPlan =
-    defaultSerializationPlan'
-      & ( addChunks' $
+    defaultSerializationPlan
+      & ( addChunks $
             S.each
               [ n S.:> (S.each q & S.map RawBytes)
               | (n, q) <- input

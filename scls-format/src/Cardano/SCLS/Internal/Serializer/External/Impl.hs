@@ -9,7 +9,7 @@ module Cardano.SCLS.Internal.Serializer.External.Impl (
 
 import Cardano.SCLS.Internal.Record.Hdr
 import Cardano.SCLS.Internal.Serializer.Dump (DataStream (DataStream, runDataStream), dumpToHandle)
-import Cardano.SCLS.Internal.Serializer.Dump.Plan (ChunkStream, InputChunk, SerializationPlan', mkSortedSerializationPlan)
+import Cardano.SCLS.Internal.Serializer.Dump.Plan (ChunkStream, InputChunk, SerializationPlan, mkSortedSerializationPlan)
 import Cardano.SCLS.Internal.Serializer.HasKey (HasKey (Key, getKey))
 import Cardano.SCLS.Internal.Serializer.MemPack
 import Cardano.Types.Namespace (Namespace)
@@ -38,10 +38,6 @@ import Streaming qualified as S
 import Streaming.Internal (Stream (..))
 import Streaming.Prelude qualified as S
 
-import Cardano.SCLS.Internal.Entry.ChunkEntry (ChunkEntry (ChunkEntry), SomeChunkEntry (..))
-import Cardano.SCLS.Internal.Namespace (KnownNamespaceKey (..), decodeKey)
-import Data.Text qualified as T
-import GHC.TypeLits (fromSNat)
 import System.ByteOrder
 import System.Directory (createDirectoryIfMissing, doesFileExist, listDirectory, removeFile, renameFile)
 import System.FilePath (takeDirectory, (<.>), (</>))
@@ -59,7 +55,7 @@ serialize ::
   -- | Slot of the current transaction
   SlotNo ->
   -- | Serialization plan to use
-  SerializationPlan' a ->
+  SerializationPlan a ->
   IO ()
 serialize resultFilePath network slotNo plan = do
   let !hdr = mkHdr network slotNo

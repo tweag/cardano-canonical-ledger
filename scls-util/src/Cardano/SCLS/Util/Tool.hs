@@ -6,7 +6,7 @@ module Cardano.SCLS.Util.Tool (splitFile, mergeFiles, extract, ExtractOptions (.
 import Cardano.SCLS.Internal.Reader
 import Cardano.SCLS.Internal.Record.Hdr (Hdr (..))
 import Cardano.SCLS.Internal.Serializer.Dump
-import Cardano.SCLS.Internal.Serializer.Dump.Plan (addChunks', defaultSerializationPlan', mkSortedSerializationPlan)
+import Cardano.SCLS.Internal.Serializer.Dump.Plan (addChunks, defaultSerializationPlan, mkSortedSerializationPlan)
 import Cardano.SCLS.Internal.Serializer.External.Impl (serialize)
 import Cardano.SCLS.Internal.Serializer.MemPack
 import Cardano.SCLS.Util.Result
@@ -43,7 +43,7 @@ splitFile sourceFile outputDir = do
               withNamespacedData @RawBytes sourceFile ns $ \stream -> do
                 let dataStream = S.yield (ns S.:> stream)
                 -- namespace-specific data should be sorted, so we can assume that and dump directly
-                dumpToHandle handle hdr (mkSortedSerializationPlan (defaultSerializationPlan' & addChunks' dataStream) id)
+                dumpToHandle handle hdr (mkSortedSerializationPlan (defaultSerializationPlan & addChunks dataStream) id)
         )
         namespaces
 
@@ -84,7 +84,7 @@ mergeFiles outputFile sourceFiles = do
         outputFile
         Mainnet
         (SlotNo 1)
-        (defaultSerializationPlan' & addChunks' stream)
+        (defaultSerializationPlan & addChunks stream)
 
       putStrLn "Merge complete"
       pure Ok
@@ -138,7 +138,7 @@ extract sourceFile outputFile ExtractOptions{..} = do
         outputFile
         networkId
         slotNo
-        (defaultSerializationPlan' & addChunks' chunks)
+        (defaultSerializationPlan & addChunks chunks)
 
       pure Ok
     \(e :: SomeException) -> do

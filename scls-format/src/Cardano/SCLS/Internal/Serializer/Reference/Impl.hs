@@ -9,7 +9,7 @@ module Cardano.SCLS.Internal.Serializer.Reference.Impl (
 
 import Cardano.SCLS.Internal.Record.Hdr
 import Cardano.SCLS.Internal.Serializer.Dump (dumpToHandle)
-import Cardano.SCLS.Internal.Serializer.Dump.Plan (InputChunk, SerializationPlan', mkSortedSerializationPlan)
+import Cardano.SCLS.Internal.Serializer.Dump.Plan (InputChunk, SerializationPlan, mkSortedSerializationPlan)
 import Cardano.SCLS.Internal.Serializer.HasKey (HasKey (getKey))
 import Cardano.SCLS.Internal.Serializer.MemPack (MemPackHeaderOffset)
 import Cardano.Types.Namespace (Namespace (..))
@@ -41,7 +41,7 @@ serialize ::
   NetworkId ->
   -- | Slot of the current transaction
   SlotNo ->
-  SerializationPlan' a ->
+  SerializationPlan a ->
   IO ()
 serialize resultFilePath network slotNo plan = do
   withBinaryFile resultFilePath WriteMode \handle -> do

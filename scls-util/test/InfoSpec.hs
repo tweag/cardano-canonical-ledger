@@ -6,7 +6,7 @@
 
 module InfoSpec (infoCommandTests, listNsCommandTests) where
 
-import Cardano.SCLS.Internal.Serializer.Dump.Plan (addChunks', defaultSerializationPlan')
+import Cardano.SCLS.Internal.Serializer.Dump.Plan (addChunks, defaultSerializationPlan)
 import Cardano.SCLS.Internal.Serializer.MemPack (RawBytes (..))
 import Cardano.SCLS.Internal.Serializer.Reference.Impl qualified as Reference
 import Cardano.Types.Namespace qualified as Namespace
@@ -76,7 +76,7 @@ listNsCommandTests = describe "list-ns command" do
           fileName
           Mainnet
           (SlotNo 1)
-          (defaultSerializationPlan' & addChunks' (S.each []))
+          (defaultSerializationPlan & addChunks (S.each []))
 
       (exitCode, stdout, _) <- runSclsUtil ["list-ns", fileName]
 
