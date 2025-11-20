@@ -38,12 +38,6 @@ record_key =
 pool_keyhash :: Rule
 pool_keyhash = "pool_keyhash" =:= hash28
 
-keyhash32 :: Rule
-keyhash32 = "keyhash" =:= hash32
-
-keyhash28 :: Rule
-keyhash28 = "keyhash" =:= hash28 -- Important: seems on the current chain it's 32
-
 addr_keyhash :: Rule
 addr_keyhash = "addr_keyhash" =:= hash28
 
