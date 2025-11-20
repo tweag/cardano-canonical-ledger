@@ -7,51 +7,127 @@ the dump file.
 -}
 module Cardano.SCLS.Internal.Serializer.Dump.Plan (
   -- * Plan
-  SerializationPlan (..),
+  SerializationPlan,
+  SerializationPlan' (pBufferSize, pChunkFormat, pChunkStream, pMetadataStream),
   InputChunk,
+  ChunkStream,
 
   -- ** Construction
   defaultSerializationPlan,
+  defaultSerializationPlan',
   addChunks,
+  addChunks',
   withChunkFormat,
   addMetadata,
   withBufferSize,
+  encodeChunkEntry,
+  PlanChunkEntry,
 
   -- * Sorted plan
-  SortedSerializationPlan,
-  getSerializationPlan,
+  SortedSerializationPlan (..),
   mkSortedSerializationPlan,
-  SortF,
 ) where
 
+import Cardano.SCLS.Internal.Entry.ChunkEntry (ChunkEntry (ChunkEntry), NamespaceChunkEntry, SomeChunkEntry (SomeChunkEntry))
+import Cardano.SCLS.Internal.Namespace (CanonicalCBOREntryEncoder (encodeEntry), KnownNamespace (encodeKey), NamespaceKeySize)
 import Cardano.SCLS.Internal.Record.Chunk
 import Cardano.SCLS.Internal.Record.Metadata
-
+import Cardano.SCLS.Internal.Serializer.MemPack (ByteStringSized, RawBytes (RawBytes))
 import Cardano.Types.Namespace (Namespace)
-import Data.MemPack
-import Data.Typeable (Typeable)
+
+import Codec.CBOR.Write (toStrictByteString)
+import Data.MemPack (MemPack)
+import Data.Typeable (Proxy, Typeable)
+import GHC.TypeLits (KnownNat, KnownSymbol)
 import Streaming (Of (..))
 import Streaming qualified as S
 import Streaming.Internal (Stream (..))
+import Streaming.Prelude qualified as S
 
 {- | Helper to define an input data.
 Each chunk is a stream of values that will be written under a given namespace.
 -}
 type InputChunk a = S.Of Namespace (S.Stream (S.Of a) IO ())
 
+type ChunkStream a = Stream (Of (InputChunk a)) IO ()
+
+type MetadataStream = Stream (Of MetadataEntry) IO ()
+
 -- | Serialization plan with data sources and configuration options.
-data SerializationPlan a = SerializationPlan
+data SerializationPlan' a = SerializationPlan
   -- Future fields for more dump configurations can be added here
   -- e.g. isToBuildIndex, deltaStream, etc.
   { pChunkFormat :: ChunkFormat
   -- ^ Compression format for chunks
   , pBufferSize :: Int
   -- ^ Buffer size for record building (in bytes)
-  , pChunkStream :: Stream (Of (InputChunk a)) IO ()
+  , pChunkStream :: ChunkStream a
   -- ^ Input stream of entries to serialize, can be unsorted
-  , pMetadataStream :: Maybe (Stream (Of MetadataEntry) IO ())
+  , pMetadataStream :: Maybe MetadataStream
   -- ^ Optional stream of metadata records to include in the dump
   }
+
+type SerializationPlan = SerializationPlan' (SomeChunkEntry RawBytes)
+
+-- | Create a serialization plan with default options and no data.
+defaultSerializationPlan :: SerializationPlan
+defaultSerializationPlan =
+  defaultSerializationPlan'
+
+defaultSerializationPlan' :: SerializationPlan' a
+defaultSerializationPlan' =
+  SerializationPlan
+    { pChunkFormat = ChunkFormatRaw
+    , pBufferSize = 16 * 1024 * 1024 -- 16 MB buffer size
+    , pChunkStream = mempty
+    , pMetadataStream = Nothing
+    }
+
+type PlanChunkEntry ns = ChunkEntry (ByteStringSized (NamespaceKeySize ns)) RawBytes
+
+encodeChunkEntry :: forall ns. (KnownSymbol ns, KnownNamespace ns) => Proxy ns -> NamespaceChunkEntry ns -> PlanChunkEntry ns
+encodeChunkEntry _ (ChunkEntry k v) =
+  let key = encodeKey @ns k
+      value = RawBytes $ toStrictByteString $ encodeEntry @ns v
+   in ChunkEntry key value
+
+-- | Add a chunked data stream to the dump configuration.
+addChunks :: forall ns. (KnownSymbol ns, KnownNamespace ns, KnownNat (NamespaceKeySize ns)) => Proxy ns -> Stream (Of (InputChunk (NamespaceChunkEntry ns))) IO () -> SerializationPlan -> SerializationPlan
+addChunks p stream =
+  addChunks' $
+    S.map
+      (\(ns :> inner) -> (ns :> S.map (SomeChunkEntry . encodeChunkEntry p) inner))
+      stream
+
+addChunks' :: (MemPack a, Typeable a) => ChunkStream a -> SerializationPlan' a -> SerializationPlan' a
+addChunks' stream plan@SerializationPlan{..} =
+  plan
+    { pChunkStream = pChunkStream <> stream
+    }
+
+-- | Set the chunk format in the serialization plan.
+withChunkFormat :: ChunkFormat -> SerializationPlan' a -> SerializationPlan' a
+withChunkFormat format plan =
+  plan
+    { pChunkFormat = format
+    }
+
+-- | Add a metadata stream to the serialization plan.
+addMetadata :: MetadataStream -> SerializationPlan' a -> SerializationPlan' a
+addMetadata stream plan =
+  plan
+    { pMetadataStream = Just stream
+    }
+
+-- | Set the buffer size in the serialization plan.
+withBufferSize :: Int -> SerializationPlan' a -> SerializationPlan' a
+withBufferSize size plan =
+  plan
+    { pBufferSize = size
+    }
+
+-- | A serialization plan with sorted streams.
+newtype SortedSerializationPlan a = SortedSerializationPlan {getSerializationPlan :: SerializationPlan' a}
 
 {- | A function type used to sort streams.
 This type alias represents a function that takes a stream and produces a sorted stream of elements.
@@ -61,50 +137,9 @@ type SortF a b =
   (Stream (Of a) IO ()) ->
   (Stream (Of b) IO ())
 
--- | Create a serialization plan with default options and no data.
-defaultSerializationPlan :: forall a. (MemPack a, Typeable a) => SerializationPlan a
-defaultSerializationPlan =
-  SerializationPlan
-    { pChunkFormat = ChunkFormatRaw
-    , pBufferSize = 16 * 1024 * 1024 -- 16 MB buffer size
-    , pChunkStream = mempty
-    , pMetadataStream = Nothing
-    }
-
--- | Add a chunked data stream to the dump configuration.
-addChunks :: (MemPack a, Typeable a) => Stream (Of (InputChunk a)) IO () -> SerializationPlan a -> SerializationPlan a
-addChunks stream plan@SerializationPlan{..} =
-  plan
-    { pChunkStream = pChunkStream <> stream
-    }
-
--- | Set the chunk format in the serialization plan.
-withChunkFormat :: ChunkFormat -> SerializationPlan a -> SerializationPlan a
-withChunkFormat format plan =
-  plan
-    { pChunkFormat = format
-    }
-
--- | Add a metadata stream to the serialization plan.
-addMetadata :: Stream (Of MetadataEntry) IO () -> SerializationPlan a -> SerializationPlan a
-addMetadata stream plan =
-  plan
-    { pMetadataStream = Just stream
-    }
-
--- | Set the buffer size in the serialization plan.
-withBufferSize :: Int -> SerializationPlan a -> SerializationPlan a
-withBufferSize size plan =
-  plan
-    { pBufferSize = size
-    }
-
--- | A serialization plan with sorted streams.
-newtype SortedSerializationPlan a = SortedSerializationPlan {getSerializationPlan :: SerializationPlan a}
-
 -- | Create a sorted serialization plan from an existing plan and sorter functions.
 mkSortedSerializationPlan ::
-  SerializationPlan a ->
+  SerializationPlan' a ->
   SortF (InputChunk a) (InputChunk b) ->
   SortedSerializationPlan b
 mkSortedSerializationPlan plan@SerializationPlan{..} sorter =

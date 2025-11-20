@@ -3,7 +3,7 @@
 module Cardano.SCLS.Query (queryEntry) where
 
 import Cardano.SCLS.Internal.Reader (withNamespacedData)
-import Cardano.SCLS.Internal.Serializer.Dump (HasKey (..))
+import Cardano.SCLS.Internal.Serializer.HasKey (HasKey (..))
 import Cardano.Types.Namespace (Namespace)
 import Data.MemPack (MemPack)
 import Data.Typeable (Typeable)

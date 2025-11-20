@@ -6,8 +6,7 @@ module Cardano.SCLS.Util.Debug where
 import Cardano.SCLS.CDDL
 
 -- import Cardano.SCLS.CDDL (NamespaceInfo (..), namespaces)
-import Cardano.SCLS.Internal.Entry
-import Cardano.SCLS.Internal.Serializer.Dump (addChunks, defaultSerializationPlan)
+import Cardano.SCLS.Internal.Serializer.Dump.Plan (addChunks', defaultSerializationPlan')
 import Cardano.SCLS.Internal.Serializer.External.Impl qualified as External (serialize)
 import Cardano.SCLS.Internal.Serializer.MemPack
 import Cardano.Types.Namespace (Namespace)
@@ -36,6 +35,8 @@ import Data.Text qualified as T
 import Streaming.Prelude qualified as S
 import System.Random.Stateful (applyAtomicGen, globalStdGen, uniformByteStringM)
 
+import Cardano.SCLS.Internal.Entry.CBOREntry (GenericCBOREntry (GenericCBOREntry), SomeCBOREntry (SomeCBOREntry))
+import Cardano.SCLS.Internal.Entry.ChunkEntry (ChunkEntry (ChunkEntry))
 import Cardano.SCLS.Util.Result
 import GHC.TypeNats
 
@@ -47,8 +48,8 @@ generateDebugFile outputFile namespaceEntries = do
       outputFile
       Mainnet
       (SlotNo 1)
-      ( defaultSerializationPlan
-          & addChunks do
+      ( defaultSerializationPlan'
+          & addChunks' do
             S.each
               ( namespaceEntries <&> \(namespace, mCount) ->
                   case Map.lookup (Namespace.asText namespace) namespaces of

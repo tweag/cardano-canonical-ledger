@@ -22,7 +22,6 @@ library
   exposed-modules:
     Cardano.SCLS.CBOR.Canonical.Decoder
     Cardano.SCLS.CBOR.Canonical.Encoder
-    Cardano.SCLS.CBOR.Canonical.NamespacedEncoder
 
   -- other-modules:
   -- other-extensions:
@@ -36,22 +35,3 @@ library
 
   hs-source-dirs: src
   default-language: GHC2021
-
-test-suite scls-cbor-test
-  import: warnings
-  default-language: GHC2021
-  type: exitcode-stdio-1.0
-  hs-source-dirs: test
-  main-is: Main.hs
-  other-modules:
-    NamespacedEncodingSpec
-    TestEntry
-
-  build-depends:
-    base >=4.18,
-    bytestring,
-    cborg,
-    hspec,
-    random,
-    scls-cbor,
-    scls-format,
