@@ -171,3 +171,13 @@ unit_interval =
 
 set :: (IsType0 t0) => t0 -> GRuleCall
 set = binding $ \x -> "set" =:= arr [0 <+ a x]
+
+-- | nonnegative_interval = tag 0 [uint, positive_int]
+nonnegative_interval :: Rule
+nonnegative_interval = "nonnegative_interval" =:= tag 30 (arr [a VUInt, a positive_int])
+
+positive_int :: Rule
+positive_int = "positive_int" =:= (1 :: Integer) ... maxWord64
+
+maxWord64 :: Integer
+maxWord64 = 18446744073709551615
