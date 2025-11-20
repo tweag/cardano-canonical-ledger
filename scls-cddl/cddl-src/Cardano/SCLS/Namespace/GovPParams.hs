@@ -1,0 +1,160 @@
+{-# LANGUAGE ImportQualifiedPost #-}
+{-# LANGUAGE OverloadedLists #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE QuasiQuotes #-}
+{-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE NoImplicitPrelude #-}
+{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
+{-# HLINT ignore "Use camelCase" #-}
+
+module Cardano.SCLS.Namespace.GovPParams where
+
+import Cardano.SCLS.Common
+import Codec.CBOR.Cuddle.Huddle
+import Data.Word (Word64)
+import Text.Heredoc (str)
+import Prelude (Integer, ($))
+
+record_entry :: Rule
+record_entry =
+  comment
+    [str| The key for the entry is one of the following:
+                |    prev / curr / fut1 / fut0
+                |      fut0 stands for possible future
+                |      fut1 stands for definite future
+                |
+                | fut0 + no pparams is not represented, key should be omitted in that case
+                |]
+    $ "record_entry" =:= gov_pparams_out
+
+gov_pparams_out :: Rule
+gov_pparams_out =
+  comment
+    [str| Governance protocol parameters
+              |   - min_fee_a: the linear factor for the minimum fee calculation
+              |   - min_fee_b: the constant factor for the minimum fee calculation
+              |   - max_block_size: maximal block body size in bytes
+              |   - max_block_header_size: maximal block header size in bytes
+              |   - max_tx_size: maximal transaction size in bytes
+              |   - key_deposit: The amount of a key registration deposit
+              |   - pool_deposit: The amount of a pool registration deposit
+              |   - epoch_max: epoch bound on pool retirement
+              |   - n_opt: desired number of pools
+              |   - a0: pool influence factor
+              |   - rho: monetary expansion
+              |   - tau: treasury expansion
+              |   - d: decentralisation parameter
+              |   - min_pool_cost: minimum pool cost
+              |   - min_utxo_value: Minimum Lovelace in a UTxO deprecated by AdaPerUTxOWord
+              |   - ada_per_utxo_byte: Cost in ada per 1 byte of UTxO storage instead of _coinsPerUTxOWord
+              |   - cost_models: Cost models for non-native script languages
+              |   - prices: Prices of execution units for non-native script languages
+              |   - max_tx_ex_units: Max total script execution resources units allowed per tx
+              |   - max_block_ex_units: Max total script execution resources units allowed per block
+              |   - max_value_size: Max size of a Value in an output
+              |   - collateral_percentage: The scaling percentage of the collateral relative to the fee
+              |   - max_collateral_inputs: Maximum number of collateral inputs allowed in a transaction
+              |]
+    $ "gov_pparams_out"
+      =:= mp
+        [ "a0" ==> nonnegative_interval
+        , "rho" ==> unit_interval
+        , "tau" ==> unit_interval
+        , "n_opt" ==> VUInt `sized` (2 :: Word64)
+        , "prices" ==> ex_unit_prices
+        , "epoch_max" ==> epoch_interval
+        , "min_fee_a" ==> coin
+        , "min_fee_b" ==> coin
+        , "cost_models" ==> cost_models
+        , "key_deposit" ==> coin
+        , "max_tx_size" ==> VUInt `sized` (4 :: Word64)
+        , "drep_deposit" ==> coin
+        , "pool_deposit" ==> coin
+        , "min_pool_cost" ==> coin
+        , "max_block_size" ==> VUInt `sized` (4 :: Word64)
+        , "max_val_size" ==> VUInt `sized` (4 :: Word64)
+        , "max_tx_ex_units" ==> ex_units
+        , "protocol_version" ==> protocol_version
+        , "coin_per_utxo_byte" ==> coin
+        , "gov_action_deposit" ==> coin
+        , "max_block_ex_units" ==> ex_units
+        , "min_committee_size" ==> VUInt `sized` (2 :: Word64)
+        , "committee_term_limit" ==> epoch_interval
+        , "collateral_percentage" ==> VUInt `sized` (2 :: Word64)
+        , "drep_voting_thresholds" ==> drep_voting_thresholds
+        , "gov_action_lifetime" ==> epoch_interval
+        , "max_block_header_size" ==> VUInt `sized` (2 :: Word64)
+        , "max_collateral_inputs" ==> VUInt `sized` (2 :: Word64)
+        , "pool_voting_thresholds" ==> pool_voting_thresholds
+        , "drep_activity" ==> epoch_interval
+        ]
+
+epoch_interval :: Rule
+epoch_interval = "epoch_interval" =:= VUInt `sized` (4 :: Word64)
+
+cost_models :: Rule
+cost_models =
+  comment
+    [str|The format for cost_models is flexible enough to allow adding
+        |Plutus built-ins and language versions in the future.
+        |
+        |Plutus v1: only 166 integers are used, but more are accepted (and ignored)
+        |Plutus v2: only 175 integers are used, but more are accepted (and ignored)
+        |Plutus v3: only 223 integers are used, but more are accepted (and ignored)
+        |
+        |Any 8-bit unsigned number can be used as a key.
+        |]
+    $ "cost_models"
+      =:= mp
+        [ opt $ idx 0 ==> arr [0 <+ a int64]
+        , opt $ idx 1 ==> arr [0 <+ a int64]
+        , opt $ idx 2 ==> arr [0 <+ a int64]
+        , 0 <+ asKey ((3 :: Integer) ... (255 :: Integer)) ==> arr [0 <+ a int64]
+        ]
+
+ex_unit_prices :: Rule
+ex_unit_prices =
+  "ex_unit_prices"
+    =:= arr
+      [ "mem_price" ==> nonnegative_interval
+      , "step_price" ==> nonnegative_interval
+      ]
+
+ex_units :: Rule
+ex_units = "ex_units" =:= arr ["mem" ==> VUInt, "steps" ==> VUInt]
+
+pool_voting_thresholds :: Rule
+pool_voting_thresholds =
+  "pool_voting_thresholds"
+    =:= arr
+      [ a unit_interval -- motion no confidence
+      , a unit_interval -- committee normal
+      , a unit_interval -- committee no confidence
+      , a unit_interval -- hard fork initiation
+      , a unit_interval -- security relevant parameter voting threshold
+      ]
+
+drep_voting_thresholds :: Rule
+drep_voting_thresholds =
+  "drep_voting_thresholds"
+    =:= arr
+      [ a unit_interval -- motion no confidence
+      , a unit_interval -- committee normal
+      , a unit_interval -- committee no confidence
+      , a unit_interval -- update constitution
+      , a unit_interval -- hard fork initiation
+      , a unit_interval -- PP network group
+      , a unit_interval -- PP economic group
+      , a unit_interval -- PP technical group
+      , a unit_interval -- PP governance group
+      , a unit_interval -- treasury withdrawal
+      ]
+
+protocol_version :: Rule
+protocol_version = "protocol_version" =:= arr [a major_protocol_version, a VUInt]
+
+major_protocol_version :: Rule
+major_protocol_version = "major_protocol_version" =:= (1 :: Integer) ... next_major_protocol_version
+
+next_major_protocol_version :: Integer
+next_major_protocol_version = 10

@@ -6,6 +6,7 @@ module Cardano.SCLS.CDDL (
 ) where
 
 import Cardano.SCLS.Namespace.Blocks qualified as Blocks
+import Cardano.SCLS.Namespace.GovPParams qualified as GovPParams
 import Cardano.SCLS.Namespace.Pots qualified as Pots
 import Cardano.SCLS.Namespace.Snapshots qualified as Snapshots
 import Cardano.SCLS.Namespace.UTxO qualified as UTxO
@@ -30,4 +31,5 @@ namespaces =
     , ("blocks/v0", NamespaceInfo (collectFromInit [HIRule Blocks.record_entry]) 36) -- 28 bytes for key, and 8 for epoch in BE
     , ("pots/v0", NamespaceInfo (collectFromInit [HIRule Pots.record_entry]) 8) -- Key is epoch number
     , ("snapshots/v0", NamespaceInfo (collectFromInit [HIRule Snapshots.record_entry]) 30)
+    , ("gov/pparams/v0", NamespaceInfo (collectFromInit [HIRule GovPParams.record_entry]) 4)
     ]
