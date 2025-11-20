@@ -24,8 +24,15 @@ record_entry =
 
 individual_pool_stake :: Rule
 individual_pool_stake =
-  "individual_pool_stake"
-    =:= mp
-      [ "vrf" ==> vrf_keyhash
-      , "total" ==> coin
-      ]
+  comment
+    [str|Individual pool stake information
+        |
+        |Fields:
+        |  - vrf: VRF verification key hash for the pool
+        |  - total: Total stake delegated to the pool
+        |]
+    $ "individual_pool_stake"
+      =:= mp
+        [ "vrf" ==> vrf_keyhash
+        , "total" ==> coin
+        ]
