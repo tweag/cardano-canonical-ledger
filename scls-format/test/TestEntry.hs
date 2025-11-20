@@ -14,8 +14,8 @@ module TestEntry (
   genBlock,
 ) where
 
-import Cardano.SCLS.Internal.Entry (IsKey (keySize, packKeyM, unpackKeyM))
 import Cardano.SCLS.Internal.Entry.ChunkEntry (ChunkEntry (ChunkEntry))
+import Cardano.SCLS.Internal.Entry.IsKey (IsKey (keySize, packKeyM, unpackKeyM))
 import Cardano.SCLS.Internal.Namespace (CanonicalCBOREntryDecoder (decodeEntry), CanonicalCBOREntryEncoder (encodeEntry), KnownNamespace (NamespaceEntry, NamespaceKey, encodeKey), KnownNamespaceKey, NamespaceKeySize, VersionedNS (VersionedNS))
 import Cardano.SCLS.Internal.Serializer.HasKey (HasKey (Key, getKey))
 import Cardano.SCLS.Internal.Serializer.MemPack (ByteStringSized (ByteStringSized))

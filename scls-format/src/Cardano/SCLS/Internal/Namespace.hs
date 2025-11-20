@@ -14,7 +14,7 @@ module Cardano.SCLS.Internal.Namespace (
   decodeKey,
 ) where
 
-import Cardano.SCLS.Internal.Entry (IsKey)
+import Cardano.SCLS.Internal.Entry.IsKey (IsKey)
 import Cardano.SCLS.Internal.Serializer.MemPack (ByteStringSized (..))
 import Codec.CBOR.Decoding (Decoder)
 import Codec.CBOR.Encoding (Encoding)

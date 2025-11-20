@@ -13,7 +13,7 @@ module Cardano.SCLS.Internal.Entry.ChunkEntry (
   unpackSomeChunkEntry,
 ) where
 
-import Cardano.SCLS.Internal.Entry (IsKey (..))
+import Cardano.SCLS.Internal.Entry.IsKey (IsKey (..))
 import Cardano.SCLS.Internal.Namespace (KnownNamespace (..), NamespaceKeySize)
 import Cardano.SCLS.Internal.Serializer.HasKey
 import Cardano.SCLS.Internal.Serializer.MemPack (ByteStringSized (..), MemPackHeaderOffset (..))

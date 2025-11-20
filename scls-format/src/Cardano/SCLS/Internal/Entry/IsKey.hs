@@ -4,14 +4,11 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TypeFamilies #-}
 
-module Cardano.SCLS.Internal.Entry (
+module Cardano.SCLS.Internal.Entry.IsKey (
   IsKey (..),
-  sortByKey,
 ) where
 
-import Cardano.SCLS.Internal.Serializer.HasKey
 import Cardano.SCLS.Internal.Serializer.MemPack (ByteStringSized (..))
-import Data.List (sortOn)
 import Data.MemPack
 import Data.MemPack.Buffer
 import Data.Proxy (Proxy (Proxy))
@@ -26,6 +23,3 @@ instance (KnownNat n) => IsKey (ByteStringSized n) where
   keySize = fromInteger (natVal (Proxy :: Proxy n))
   packKeyM = packM
   unpackKeyM = unpackM
-
-sortByKey :: (HasKey a) => [a] -> [a]
-sortByKey = sortOn getKey
