@@ -52,7 +52,7 @@ gov_pparams_out =
               |   - max_block_ex_units: Max total script execution resources units allowed per block
               |   - max_value_size: Max size of a Value in an output
               |   - collateral_percentage: The scaling percentage of the collateral relative to the fee
-              |   - Maximum number of collateral inputs allowed in a transaction
+              |   - max_collateral_inputs: Maximum number of collateral inputs allowed in a transaction
               |]
     $ "gov_pparams_out"
       =:= mp
