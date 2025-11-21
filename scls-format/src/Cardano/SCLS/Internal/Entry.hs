@@ -8,11 +8,13 @@ module Cardano.SCLS.Internal.Entry (
   GenericCBOREntry (..),
   SomeCBOREntry (..),
   sortByKey,
+  nubByKey,
 ) where
 
 import Cardano.SCLS.Internal.Serializer.HasKey
 import Cardano.SCLS.Internal.Serializer.MemPack (ByteStringSized (..), CBORTerm (..), MemPackHeaderOffset (..), SomeByteStringSized (..))
-import Data.List (sortOn)
+import Data.Function (on)
+import Data.List (nubBy, sortOn)
 import Data.MemPack
 import Data.MemPack.Buffer
 import Data.Typeable
@@ -107,3 +109,6 @@ instance HasKey SomeCBOREntry where
 
 sortByKey :: [SomeCBOREntry] -> [SomeCBOREntry]
 sortByKey = sortOn getKey
+
+nubByKey :: [SomeCBOREntry] -> [SomeCBOREntry]
+nubByKey = nubBy ((==) `on` getKey)

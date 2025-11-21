@@ -47,25 +47,11 @@ keyhash28 = "keyhash" =:= hash28 -- Important: seems on the current chain it's 3
 addr_keyhash :: Rule
 addr_keyhash = "addr_keyhash" =:= hash28
 
-scripthash :: Rule
-scripthash =
-  comment
-    [str| To compute a script hash, note that you must prepend
-        | a tag to the bytes of the script before hashing.
-        | The tag is determined by the language.
-        | The tags in the Conway era are:
-        |  - "\x00" for multisig scripts
-        |  - "\x01" for Plutus V1 scripts
-        |  - "\x02" for Plutus V2 scripts
-        |  - "\x03" for Plutus V3 scripts
-    |]
-    $ "scripthash" =:= hash28
-
 credential :: Rule
 credential =
   "credential"
     =:= arr [0, a addr_keyhash]
-    / arr [1, a scripthash]
+    / arr [1, a script_hash]
 
 snapshot_out :: Rule
 snapshot_out =
