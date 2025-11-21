@@ -171,3 +171,32 @@ unit_interval =
 
 set :: (IsType0 t0) => t0 -> GRuleCall
 set = binding $ \x -> "set" =:= arr [0 <+ a x]
+
+credential :: Rule
+credential =
+  "credential"
+    =:= arr [0, a addr_keyhash]
+    / arr [1, a script_hash]
+
+addr_keyhash :: Rule
+addr_keyhash = "addr_keyhash" =:= hash28
+
+script_hash :: Rule
+script_hash =
+  comment
+    [str| To compute a script hash, note that you must prepend
+        | a tag to the bytes of the script before hashing.
+        | The tag is determined by the language.
+        | The tags in the Conway era are:
+        |  - "\x00" for multisig scripts
+        |  - "\x01" for Plutus V1 scripts
+        |  - "\x02" for Plutus V2 scripts
+        |  - "\x03" for Plutus V3 scripts
+    |]
+    $ "script_hash" =:= hash28
+
+keyhash32 :: Rule
+keyhash32 = "keyhash" =:= hash32
+
+keyhash28 :: Rule
+keyhash28 = "keyhash" =:= hash28 -- Important: seems on the current chain it's 32
