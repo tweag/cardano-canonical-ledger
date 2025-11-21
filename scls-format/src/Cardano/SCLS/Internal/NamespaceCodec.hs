@@ -19,15 +19,20 @@ module Cardano.SCLS.Internal.NamespaceCodec (
   namespaceKeySize,
   encodeKeyToBytes,
   decodeKeyFromBytes,
+  encodeEntryToBytes,
+  decodeEntryFromBytes,
 ) where
 
 import Cardano.SCLS.Internal.Entry.IsKey (IsKey (keySize, packKeyM, unpackKeyM))
-import Cardano.SCLS.Internal.Serializer.MemPack (ByteStringSized (..))
+import Cardano.SCLS.Internal.Serializer.MemPack (ByteStringSized (..), RawBytes (RawBytes))
 import Codec.CBOR.Decoding (Decoder)
 import Codec.CBOR.Encoding (Encoding)
+import Codec.CBOR.Read (DeserialiseFailure, deserialiseFromBytes)
+import Codec.CBOR.Write (toStrictByteString)
 import Control.Monad.ST (runST)
 import Control.Monad.Trans.Fail (runFailLastT)
 import Data.ByteString (ByteString)
+import Data.ByteString.Lazy qualified as BSL
 import Data.Data (Proxy (Proxy), Typeable, typeRep)
 import Data.MemPack (StateT (runStateT), Unpack (runUnpack), packWithByteArray)
 import Data.MemPack.Buffer (pinnedByteArrayToByteString)
@@ -59,6 +64,14 @@ wrapper that tracks the namespace information.
 class CanonicalCBOREntryDecoder ns a where
   -- | Decode a value from canonical CBOR with a specific namespace.
   decodeEntry :: Decoder s (VersionedNS ns a)
+
+encodeEntryToBytes :: forall ns a. (CanonicalCBOREntryEncoder ns a) => a -> RawBytes
+encodeEntryToBytes a =
+  RawBytes $ toStrictByteString $ encodeEntry @ns a
+
+decodeEntryFromBytes :: forall ns a. (CanonicalCBOREntryDecoder ns a) => RawBytes -> Either DeserialiseFailure (VersionedNS ns a)
+decodeEntryFromBytes (RawBytes bs) =
+  fmap snd $ deserialiseFromBytes (decodeEntry @ns) $ BSL.fromStrict bs
 
 {- | Maps a namespace (represented as a type-level string/Symbol) to its expected key size.
 
