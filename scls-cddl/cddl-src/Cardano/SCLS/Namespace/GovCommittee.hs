@@ -12,6 +12,7 @@ module Cardano.SCLS.Namespace.GovCommittee where
 import Cardano.SCLS.Common
 import Codec.CBOR.Cuddle.Huddle
 import Data.Function (($))
+import Data.Word (Word64)
 import Text.Heredoc (str)
 
 record_entry :: Rule
@@ -30,3 +31,6 @@ committee =
       [ a (mp [0 <+ asKey committee_cold_credential ==> epoch_no])
       , a unit_interval
       ]
+
+epoch_no :: Rule
+epoch_no = "epoch_no" =:= VUInt `sized` (8 :: Word64)
