@@ -17,8 +17,8 @@ record_entry :: Rule
 record_entry =
   comment
     [str| Constinution record entry
-                | The key for the entry is always 0
-                |]
+        | Key is the epoch number (8 bytes)
+        |]
     $ "record_entry" =:= constitution
 
 anchor :: Rule
