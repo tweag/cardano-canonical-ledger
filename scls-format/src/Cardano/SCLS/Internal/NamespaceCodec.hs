@@ -72,6 +72,17 @@ namespaceKeySize :: forall ns. (KnownNat (NamespaceKeySize ns)) => Int
 namespaceKeySize =
   fromInteger $ fromSNat $ SNat @(NamespaceKeySize ns)
 
+{- | A type class that associates a namespace with its key and entry types.
+This type class acts as a bridge between the namespace/version, its key type,
+its entry type, and the encoding/decoding mechanisms.
+
+Defining an instance of 'KnownNamespace' for a specific namespace requires specifying:
+  - 'NamespaceKey': The type used as the key for entries in this namespace.
+  - 'NamespaceEntry': The type of the entries stored in this namespace.
+  - 'CanonicalCBOREntryEncoder' and 'CanonicalCBOREntryDecoder' instances for the entry type.
+  - 'NamespaceKeySize' type family instance for the namespace.
+  - 'IsKey' instance for the key type.
+-}
 class
   ( IsKey (NamespaceKey ns)
   , KnownNat (NamespaceKeySize ns) -- ensures type family NamespaceKeySize is defined for this namespace
@@ -83,6 +94,7 @@ class
   type NamespaceKey ns
   type NamespaceEntry ns
 
+-- | Encode a namespace key to a 'ByteStringSized' of the appropriate size.
 encodeKey :: forall ns. (KnownNamespace ns, Typeable (NamespaceKey ns)) => NamespaceKey ns -> ByteStringSized (NamespaceKeySize ns)
 encodeKey key =
   ByteStringSized . pinnedByteArrayToByteString $ packWithByteArray True (show (typeRep (Proxy @(NamespaceKey ns)))) (keySize @(NamespaceKey ns)) (packKeyM key)
