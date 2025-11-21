@@ -15,6 +15,7 @@ module Cardano.Types.Namespace (
   parseBytes,
   asString,
   humanFileNameFor,
+  fromSymbol,
 ) where
 
 import Control.Exception
@@ -28,6 +29,7 @@ import Data.Text qualified as T
 import Data.Text.Encoding qualified as T
 import Data.Text.Encoding.Error (UnicodeException)
 import Data.Typeable
+import GHC.TypeLits (KnownSymbol, symbolVal)
 
 -- | Simple newtype wrapper around Text for namespaces.
 newtype Namespace = Namespace {asText :: Text}
@@ -49,6 +51,10 @@ an input cleanup.
 -}
 unsafeFromText :: Text -> Namespace
 unsafeFromText = Namespace
+
+-- | Construct a 'Namespace' from a type-level symbol.
+fromSymbol :: (KnownSymbol n) => Proxy n -> Namespace
+fromSymbol = fromText . T.pack . symbolVal
 
 {- | Convert Namespace to a safe 'FilePath' by base16 encoding
 the content.

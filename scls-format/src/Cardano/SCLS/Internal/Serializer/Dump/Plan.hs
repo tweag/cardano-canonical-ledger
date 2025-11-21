@@ -30,7 +30,7 @@ import Cardano.SCLS.Internal.NamespaceCodec (CanonicalCBOREntryEncoder (..), Kno
 import Cardano.SCLS.Internal.Record.Chunk
 import Cardano.SCLS.Internal.Record.Metadata
 import Cardano.SCLS.Internal.Serializer.MemPack (ByteStringSized, RawBytes (RawBytes))
-import Cardano.Types.Namespace (Namespace, fromText)
+import Cardano.Types.Namespace (Namespace, fromSymbol)
 
 import Codec.CBOR.Write (toStrictByteString)
 import Data.MemPack (MemPack)
@@ -86,7 +86,7 @@ addNamespacedChunks :: forall ns. (KnownSymbol ns, KnownNamespace ns) => Proxy n
 addNamespacedChunks p stream =
   addChunks $
     S.yield
-      ((fromText $ T.pack $ symbolVal (Proxy @ns)) :> S.map (SomeChunkEntry . encodeChunkEntry p) stream)
+      ((fromSymbol p) :> S.map (SomeChunkEntry . encodeChunkEntry p) stream)
 
 addChunks :: (MemPack a, Typeable a) => ChunkStream a -> SerializationPlan a -> SerializationPlan a
 addChunks stream plan@SerializationPlan{..} =
