@@ -7,7 +7,7 @@
 module Cardano.SCLS.Internal.Entry.ChunkEntry (
   ChunkEntry (..),
   SomeChunkEntry (..),
-  unpackSomeChunkEntry,
+  unpackNamespaceChunkEntry,
 ) where
 
 import Cardano.SCLS.Internal.Entry.IsKey (IsKey (..))
@@ -78,14 +78,15 @@ instance (MemPack a, Typeable a) => MemPack (SomeChunkEntry a) where
 
   unpackM = error "unpackM SomeChunkEntry: cannot determine size at runtime"
 
-unpackSomeChunkEntry ::
+-- | Unpack a `ChunkEntry` with a known namespace.
+unpackNamespaceChunkEntry ::
   ( KnownNamespace ns
   , MemPack a
   , Typeable a
   , Buffer b
   ) =>
   Unpack s b (ChunkEntry (ByteStringSized (NamespaceKeySize ns)) a)
-unpackSomeChunkEntry = do
+unpackNamespaceChunkEntry = do
   e <- unpackM
   pure e
 
