@@ -188,6 +188,15 @@ positive_int = "positive_int" =:= (1 :: Integer) ... maxWord64
 maxWord64 :: Integer
 maxWord64 = 18446744073709551615
 
+credential :: Rule
+credential =
+  "credential"
+    =:= arr [0, a addr_keyhash]
+    / arr [1, a script_hash]
+
+addr_keyhash :: Rule
+addr_keyhash = "addr_keyhash" =:= hash28
+
 script_hash :: Rule
 script_hash =
   comment
@@ -201,3 +210,14 @@ script_hash =
         |  - "\x03" for Plutus V3 scripts
     |]
     $ "script_hash" =:= hash28
+
+anchor :: Rule
+anchor =
+  "anchor"
+    =:= arr
+      [ "anchor_url" ==> url
+      , "anchor_data_hash" ==> hash32
+      ]
+
+epoch_no :: Rule
+epoch_no = "epoch_no" =:= VUInt `sized` (8 :: Word64)

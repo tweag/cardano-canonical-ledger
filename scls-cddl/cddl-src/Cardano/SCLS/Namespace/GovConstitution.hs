@@ -21,14 +21,6 @@ record_entry =
         |]
     $ "record_entry" =:= constitution
 
-anchor :: Rule
-anchor =
-  "anchor"
-    =:= arr
-      [ "anchor_url" ==> url
-      , "anchor_data_hash" ==> hash32
-      ]
-
 constitution :: Rule
 constitution =
   "constitution"
