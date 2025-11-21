@@ -6,8 +6,6 @@
 
 module Cardano.SCLS.Internal.Entry.ChunkEntry (
   ChunkEntry (..),
-  KnownNamespace (..),
-  NamespaceKeySize,
   SomeChunkEntry (..),
   unpackSomeChunkEntry,
 ) where

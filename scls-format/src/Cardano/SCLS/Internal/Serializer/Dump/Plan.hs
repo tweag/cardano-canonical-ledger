@@ -25,8 +25,8 @@ module Cardano.SCLS.Internal.Serializer.Dump.Plan (
   mkSortedSerializationPlan,
 ) where
 
-import Cardano.SCLS.Internal.Entry.ChunkEntry (ChunkEntry (ChunkEntry), KnownNamespace (NamespaceEntry, NamespaceKey), SomeChunkEntry (SomeChunkEntry))
-import Cardano.SCLS.Internal.NamespaceCodec (CanonicalCBOREntryEncoder (encodeEntry), NamespaceKeySize, encodeKey)
+import Cardano.SCLS.Internal.Entry.ChunkEntry (ChunkEntry (ChunkEntry), SomeChunkEntry (SomeChunkEntry))
+import Cardano.SCLS.Internal.NamespaceCodec (CanonicalCBOREntryEncoder (..), KnownNamespace (..), NamespaceKeySize, encodeKey)
 import Cardano.SCLS.Internal.Record.Chunk
 import Cardano.SCLS.Internal.Record.Metadata
 import Cardano.SCLS.Internal.Serializer.MemPack (ByteStringSized, RawBytes (RawBytes))
