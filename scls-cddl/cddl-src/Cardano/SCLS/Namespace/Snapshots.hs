@@ -38,15 +38,6 @@ record_key =
 pool_keyhash :: Rule
 pool_keyhash = "pool_keyhash" =:= hash28
 
-addr_keyhash :: Rule
-addr_keyhash = "addr_keyhash" =:= hash28
-
-credential :: Rule
-credential =
-  "credential"
-    =:= arr [0, a addr_keyhash]
-    / arr [1, a script_hash]
-
 snapshot_out :: Rule
 snapshot_out =
   comment

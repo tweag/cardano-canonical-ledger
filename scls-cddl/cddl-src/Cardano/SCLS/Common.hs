@@ -201,3 +201,12 @@ script_hash =
         |  - "\x03" for Plutus V3 scripts
     |]
     $ "script_hash" =:= hash28
+
+credential :: Rule
+credential =
+  "credential"
+    =:= arr [0, a addr_keyhash]
+    / arr [1, a script_hash]
+
+addr_keyhash :: Rule
+addr_keyhash = "addr_keyhash" =:= hash28
