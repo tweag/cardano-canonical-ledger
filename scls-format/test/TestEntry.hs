@@ -51,6 +51,9 @@ newtype TestUTxO = TestUTxO TestEntry
 newtype TestUTxOKey = TestUTxOKey BS.ByteString
   deriving (Eq, Ord)
 
+type instance NamespaceKeySize "utxo/v0" = 34
+type instance NamespaceKeySize "blocks/v0" = 32
+
 instance IsKey TestUTxOKey where
   keySize = namespaceKeySize @"utxo/v0"
 

@@ -27,7 +27,7 @@ import Codec.CBOR.Encoding (Encoding)
 import Data.Data (Proxy (Proxy), Typeable, typeRep)
 import Data.MemPack (packWithByteArray)
 import Data.MemPack.Buffer (pinnedByteArrayToByteString)
-import GHC.TypeLits (KnownNat, Nat, fromSNat, pattern SNat)
+import GHC.TypeLits (KnownNat, Nat, Symbol, fromSNat, pattern SNat)
 
 -- | A wrapper type that associates a decoded value with its namespace.
 newtype VersionedNS ns a = VersionedNS {unVersionedNS :: a}
@@ -58,12 +58,14 @@ class CanonicalCBOREntryDecoder ns a where
 
 {- | Maps a namespace (represented as a type-level string/Symbol) to its expected key size.
 
-This type family should be updated whenever new namespaces are added to the system,
-and should remain in sync with the runtime namespace registry in Cardano.SCLS.CDDL.
+Instances for this type family should be created for each namespace/version.
+
+For example:
+@
+type instance NamespaceKeySize "utxo/v0" = 34
+@
 -}
-type family NamespaceKeySize ns :: Nat where
-  NamespaceKeySize "utxo/v0" = 34
-  NamespaceKeySize "blocks/v0" = 32
+type family NamespaceKeySize (ns :: Symbol) :: Nat
 
 -- | Get the namespace key size at runtime.
 namespaceKeySize :: forall ns. (KnownNat (NamespaceKeySize ns)) => Int
