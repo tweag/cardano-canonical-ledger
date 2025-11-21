@@ -9,19 +9,18 @@ module Cardano.SCLS.Internal.Entry.ChunkEntry (
   KnownNamespace (..),
   NamespaceKeySize,
   SomeChunkEntry (..),
-  NamespaceChunkEntry,
   unpackSomeChunkEntry,
 ) where
 
 import Cardano.SCLS.Internal.Entry.IsKey (IsKey (..))
-import Cardano.SCLS.Internal.Namespace (KnownNamespace (..), NamespaceKeySize)
+import Cardano.SCLS.Internal.NamespaceCodec (KnownNamespace (..), NamespaceKeySize)
 import Cardano.SCLS.Internal.Serializer.HasKey
 import Cardano.SCLS.Internal.Serializer.MemPack (ByteStringSized (..), MemPackHeaderOffset (..))
 import Data.ByteString qualified as BS
 import Data.MemPack
 import Data.MemPack.Buffer
 import Data.Typeable (Typeable)
-import GHC.TypeLits (KnownNat, KnownSymbol)
+import GHC.TypeLits (KnownNat)
 
 data ChunkEntry k v = ChunkEntry
   { chunkEntryKey :: k
@@ -51,8 +50,6 @@ instance (Typeable k, IsKey k, MemPack v, Typeable v) => MemPack (ChunkEntry k v
 
 instance (Typeable k, IsKey k, Typeable v, MemPack v) => MemPackHeaderOffset (ChunkEntry k v) where
   headerSizeOffset = 4
-
-type NamespaceChunkEntry ns = ChunkEntry (NamespaceKey ns) (NamespaceEntry ns)
 
 data SomeChunkEntry a = forall n. (KnownNat n) => SomeChunkEntry (ChunkEntry (ByteStringSized n) a)
 
@@ -84,8 +81,7 @@ instance (MemPack a, Typeable a) => MemPack (SomeChunkEntry a) where
   unpackM = error "unpackM SomeChunkEntry: cannot determine size at runtime"
 
 unpackSomeChunkEntry ::
-  ( KnownSymbol ns
-  , KnownNamespace ns
+  ( KnownNamespace ns
   , MemPack a
   , Typeable a
   , Buffer b
@@ -94,36 +90,6 @@ unpackSomeChunkEntry ::
 unpackSomeChunkEntry = do
   e <- unpackM
   pure e
-
--- instance (KnownNamespace ns) => MemPack (ChunkEntry ns) where
---   typeName :: (KnownNamespace ns) => String
---   typeName = "GenericEntry"
-
---   packedByteCount ChunkEntry{..} =
---     keySize @(NamespaceKey ns)
---       + (BS.length $ toStrictByteString $ encodeEntry @ns chunkEntryValue)
-
---   packM ChunkEntry{..} = do
---     packKeyM chunkEntryKey
---     packNamespaceEntryM @ns chunkEntryValue
-
---   unpackM = do
---     chunkEntryKey <- unpackKeyM
---     valueBytes <- unpackM
---     case deserialiseFromBytes (decodeEntry @ns) valueBytes of
---       Right (_, VersionedNS chunkEntryValue) ->
---         pure $ ChunkEntry{..}
---       Left _err -> fail "CBOR decoding error"
-
--- instance (Typeable k, IsKey k, MemPack v, Typeable v) => MemPack (ChunkEntry k v) where
---   packedByteCount (ChunkEntry _ v) = keySize @k + packedByteCount v
---   packM (ChunkEntry k v) = do
---     packKeyM k
---     packM v
---   unpackM = do
---     k <- unpackKeyM
---     v <- unpackM
---     return (ChunkEntry k v)
 
 instance (MemPack a, Typeable a) => MemPackHeaderOffset (SomeChunkEntry a) where
   headerSizeOffset = 4

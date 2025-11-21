@@ -10,32 +10,41 @@ associates data types with specific namespaces and versions.
 -}
 module NamespacedEncodingSpec where
 
-import Cardano.SCLS.Internal.Namespace (CanonicalCBOREntryDecoder (decodeEntry), CanonicalCBOREntryEncoder (encodeEntry), VersionedNS (VersionedNS))
+import Cardano.SCLS.Internal.NamespaceCodec (CanonicalCBOREntryDecoder (decodeEntry), CanonicalCBOREntryEncoder (encodeEntry), VersionedNS (VersionedNS))
+import Cardano.SCLS.Internal.Serializer.Dump.Plan (addNamespacedChunks, defaultSerializationPlan)
 import Codec.CBOR.Read (deserialiseFromBytes)
 import Codec.CBOR.Write
-import Test.Hspec (Spec, describe, it, shouldBe, shouldNotBe)
+import Control.Monad (replicateM)
+import Data.Function ((&))
+import Data.Proxy (Proxy (Proxy))
+import Streaming.Prelude qualified as S
+import Test.Hspec (Spec, describe, it, shouldBe)
 import TestEntry
 
 spec :: Spec
 spec = do
-  describe "CanonicalEncoder" $ do
+  describe "CanonicalCBOREncoder" $ do
     it "should encode TestEntry in utxo/v0 namespace" $ do
-      NamespacedTestEntry val <- genUTxO
+      val <- genUTxO
       let _ = encodeEntry @"utxo/v0" val
       -- Just checking if the compiler and type-checker are fine
       pure ()
 
-    it "should encode TestEntry differently in blocks/v0 namespace" $ do
-      NamespacedTestEntry val <- genUTxO
-
-      let encodedUTxO = toStrictByteString $ encodeEntry @"utxo/v0" val
-      let encodedBlocks = toStrictByteString $ encodeEntry @"blocks/v0" val
-
-      encodedUTxO `shouldNotBe` encodedBlocks
-
     it "should roundtrip encode/decode TestEntry successfully" $ do
-      NamespacedTestEntry val <- genUTxO
+      val <- genUTxO
 
-      Right (_, decoded) <- pure $ deserialiseFromBytes (decodeEntry @"utxo/v0" @TestEntry) $ toLazyByteString $ encodeEntry @"utxo/v0" val
+      Right (_, decoded) <- pure $ deserialiseFromBytes (decodeEntry @"utxo/v0") $ toLazyByteString $ encodeEntry @"utxo/v0" val
 
       decoded `shouldBe` (VersionedNS val)
+
+  describe "SerializationPlan" $ do
+    it "should accepts chunks of different namespaces" $ do
+      utxos <- replicateM 10 (chunkEntryFromUTxO <$> genUTxO)
+      blocks <- replicateM 10 (chunkEntryFromBlock <$> genBlock)
+      let _plan =
+            defaultSerializationPlan
+              & addNamespacedChunks (Proxy @"utxo/v0") (S.each utxos)
+              -- type error: & addNamespacedChunks (Proxy @"utxo/v0") (S.each blocks)
+              & addNamespacedChunks (Proxy @"blocks/v0") (S.each blocks)
+      -- Just checking if the type-checker is happy
+      pure ()

@@ -9,12 +9,13 @@ module Cardano.SCLS.Internal.Entry.IsKey (
 ) where
 
 import Cardano.SCLS.Internal.Serializer.MemPack (ByteStringSized (..))
+import Data.Data (Typeable)
 import Data.MemPack
 import Data.MemPack.Buffer
 import Data.Proxy (Proxy (Proxy))
 import GHC.TypeLits (KnownNat, natVal)
 
-class (Ord a) => IsKey a where
+class (Ord a, Typeable a) => IsKey a where
   keySize :: Int
   packKeyM :: a -> Pack b ()
   unpackKeyM :: forall b s. (Buffer b) => Unpack s b a

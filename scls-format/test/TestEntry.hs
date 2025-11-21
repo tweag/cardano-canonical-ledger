@@ -7,24 +7,24 @@ module TestEntry (
   TestEntry (..),
   TestEntryKey (..),
   NamespacedTestEntry (..),
-  toChunkEntry,
   genKey,
   genEntry,
   genUTxO,
   genBlock,
+  chunkEntryFromBlock,
+  chunkEntryFromUTxO,
 ) where
 
 import Cardano.SCLS.Internal.Entry.ChunkEntry (ChunkEntry (ChunkEntry))
 import Cardano.SCLS.Internal.Entry.IsKey (IsKey (keySize, packKeyM, unpackKeyM))
-import Cardano.SCLS.Internal.Namespace (CanonicalCBOREntryDecoder (decodeEntry), CanonicalCBOREntryEncoder (encodeEntry), KnownNamespace (NamespaceEntry, NamespaceKey, encodeKey), KnownNamespaceKey, NamespaceKeySize, VersionedNS (VersionedNS))
+import Cardano.SCLS.Internal.NamespaceCodec (CanonicalCBOREntryDecoder (decodeEntry), CanonicalCBOREntryEncoder (encodeEntry), KnownNamespace (NamespaceEntry, NamespaceKey), NamespaceKeySize, VersionedNS (VersionedNS), namespaceKeySize)
 import Cardano.SCLS.Internal.Serializer.HasKey (HasKey (Key, getKey))
 import Cardano.SCLS.Internal.Serializer.MemPack (ByteStringSized (ByteStringSized))
 import Codec.CBOR.Decoding qualified as D
 import Codec.CBOR.Encoding qualified as E
 import Data.ByteString qualified as BS
 import Data.Data (Proxy (Proxy))
-import Data.MemPack (packByteStringM, unpackByteStringM)
-import GHC.TypeLits (KnownNat, natVal)
+import Data.MemPack (MemPack (packM, unpackM), packByteStringM, unpackByteStringM)
 import System.Random.Stateful (Uniform (uniformM), globalStdGen, uniformByteStringM)
 
 -- | Example data type for testing
@@ -45,65 +45,101 @@ data TestEntry = TestEntry
   }
   deriving (Eq, Show)
 
-instance HasKey TestEntry where
-  type Key TestEntry = TestEntryKey
+newtype TestUTxO = TestUTxO TestEntry
+  deriving (Eq, Show)
 
-  getKey (TestEntry k _) = TestEntryKey k
+newtype TestUTxOKey = TestUTxOKey BS.ByteString
+  deriving (Eq, Ord)
 
-toChunkEntry :: TestEntry -> ChunkEntry TestEntryKey TestEntry
-toChunkEntry e = ChunkEntry (TestEntryKey $ key e) e
+instance IsKey TestUTxOKey where
+  keySize = namespaceKeySize @"utxo/v0"
 
-instance CanonicalCBOREntryEncoder "utxo/v0" TestEntry where
-  encodeEntry TestEntry{key, value} =
+  packKeyM (TestUTxOKey bs) = packM bs
+
+  unpackKeyM = do
+    bs <- unpackM
+    pure $ TestUTxOKey bs
+
+newtype TestBlock = TestBlock TestEntry
+  deriving (Eq, Show)
+
+newtype TestBlockKey = TestBlockKey BS.ByteString
+  deriving (Eq, Ord)
+
+instance IsKey TestBlockKey where
+  keySize = namespaceKeySize @"blocks/v0"
+
+  packKeyM (TestBlockKey bs) = packM bs
+
+  unpackKeyM = do
+    bs <- unpackM
+    pure $ TestBlockKey bs
+
+instance HasKey TestUTxO where
+  type Key TestUTxO = TestUTxOKey
+
+  getKey (TestUTxO (TestEntry k _)) = TestUTxOKey k
+
+instance HasKey TestBlock where
+  type Key TestBlock = TestBlockKey
+
+  getKey (TestBlock (TestEntry k _)) = TestBlockKey k
+
+instance CanonicalCBOREntryEncoder "utxo/v0" TestUTxO where
+  encodeEntry (TestUTxO TestEntry{key, value}) =
     E.encodeListLen 2 <> E.encodeBytes key <> E.encodeInt value
 
-instance CanonicalCBOREntryDecoder "utxo/v0" TestEntry where
+instance CanonicalCBOREntryDecoder "utxo/v0" TestUTxO where
   decodeEntry = do
     D.decodeListLenOf 2
     key <- D.decodeBytes
     value <- D.decodeInt
-    pure $ VersionedNS $ TestEntry key value
+    pure $ VersionedNS $ TestUTxO $ TestEntry key value
 
-instance CanonicalCBOREntryEncoder "blocks/v0" TestEntry where
+instance CanonicalCBOREntryEncoder "blocks/v0" TestBlock where
   -- For this test, we reuse the same data type (TestEntry), but we encode it's value as `n+1`.
-  encodeEntry TestEntry{key, value} =
+  encodeEntry (TestBlock TestEntry{key, value}) =
     E.encodeListLen 2 <> E.encodeBytes key <> E.encodeInt (value + 1)
 
-instance CanonicalCBOREntryDecoder "blocks/v0" TestEntry where
+instance CanonicalCBOREntryDecoder "blocks/v0" TestBlock where
   decodeEntry = do
     D.decodeListLenOf 2
     key <- D.decodeBytes
     value <- D.decodeInt
-    pure $ VersionedNS $ TestEntry key (value - 1)
+    pure $ VersionedNS $ TestBlock $ TestEntry key (value - 1)
 
 instance KnownNamespace "utxo/v0" where
-  type NamespaceKey "utxo/v0" = TestEntryKey
-  type NamespaceEntry "utxo/v0" = TestEntry
-
-  encodeKey (TestEntryKey k) = ByteStringSized k
+  type NamespaceKey "utxo/v0" = TestUTxOKey
+  type NamespaceEntry "utxo/v0" = TestUTxO
 
 instance KnownNamespace "blocks/v0" where
-  type NamespaceKey "blocks/v0" = TestEntryKey
-  type NamespaceEntry "blocks/v0" = TestEntry
+  type NamespaceKey "blocks/v0" = TestBlockKey
+  type NamespaceEntry "blocks/v0" = TestBlock
 
-  encodeKey (TestEntryKey k) = ByteStringSized k
-
-genKey :: forall ns. (KnownNamespaceKey ns, KnownNat (NamespaceKeySize ns)) => Proxy ns -> IO (ByteStringSized (NamespaceKeySize ns))
+genKey :: forall ns. (KnownNamespace ns) => Proxy ns -> IO (ByteStringSized (NamespaceKeySize ns))
 genKey _ =
-  ByteStringSized <$> uniformByteStringM (fromInteger $ natVal (Proxy :: Proxy (NamespaceKeySize ns))) globalStdGen
+  ByteStringSized <$> uniformByteStringM (namespaceKeySize @ns) globalStdGen
 
 newtype NamespacedTestEntry ns = NamespacedTestEntry {unNamespacedTestEntry :: TestEntry}
 
-genEntry :: forall ns. (KnownNamespaceKey ns, KnownNat (NamespaceKeySize ns)) => Proxy ns -> IO (NamespacedTestEntry ns)
+genEntry :: forall ns. (KnownNamespace ns) => Proxy ns -> IO (NamespacedTestEntry ns)
 genEntry p = do
   (ByteStringSized key) <- genKey p
   value <- uniformM globalStdGen
   pure $ NamespacedTestEntry $ TestEntry key value
 
-genUTxO :: IO (NamespacedTestEntry "utxo/v0")
+genUTxO :: IO TestUTxO
 genUTxO =
-  genEntry (Proxy :: Proxy "utxo/v0")
+  TestUTxO . unNamespacedTestEntry <$> genEntry (Proxy @"utxo/v0")
 
-genBlock :: IO (NamespacedTestEntry "blocks/v0")
+genBlock :: IO TestBlock
 genBlock =
-  genEntry (Proxy :: Proxy "blocks/v0")
+  TestBlock . unNamespacedTestEntry <$> genEntry (Proxy @"blocks/v0")
+
+chunkEntryFromUTxO :: TestUTxO -> ChunkEntry TestUTxOKey TestUTxO
+chunkEntryFromUTxO (e@(TestUTxO (TestEntry k _))) =
+  ChunkEntry (TestUTxOKey k) e
+
+chunkEntryFromBlock :: TestBlock -> ChunkEntry TestBlockKey TestBlock
+chunkEntryFromBlock (e@(TestBlock (TestEntry k _))) =
+  ChunkEntry (TestBlockKey k) e

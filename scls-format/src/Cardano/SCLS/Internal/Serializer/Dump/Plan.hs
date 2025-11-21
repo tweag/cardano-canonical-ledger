@@ -26,16 +26,18 @@ module Cardano.SCLS.Internal.Serializer.Dump.Plan (
   mkSortedSerializationPlan,
 ) where
 
-import Cardano.SCLS.Internal.Entry.ChunkEntry (ChunkEntry (ChunkEntry), NamespaceChunkEntry, SomeChunkEntry (SomeChunkEntry))
-import Cardano.SCLS.Internal.Namespace (CanonicalCBOREntryEncoder (encodeEntry), KnownNamespace (encodeKey), NamespaceKeySize)
+import Cardano.SCLS.Internal.Entry.ChunkEntry (ChunkEntry (ChunkEntry), KnownNamespace (NamespaceEntry, NamespaceKey), SomeChunkEntry (SomeChunkEntry))
+import Cardano.SCLS.Internal.NamespaceCodec (CanonicalCBOREntryEncoder (encodeEntry), KnownNamespace, NamespaceKeySize, encodeKey)
 import Cardano.SCLS.Internal.Record.Chunk
 import Cardano.SCLS.Internal.Record.Metadata
 import Cardano.SCLS.Internal.Serializer.MemPack (ByteStringSized, RawBytes (RawBytes))
-import Cardano.Types.Namespace (Namespace)
+import Cardano.Types.Namespace (Namespace, fromText)
 
 import Codec.CBOR.Write (toStrictByteString)
 import Data.MemPack (MemPack)
-import Data.Typeable (Proxy, Typeable)
+import Data.Text qualified as T
+import Data.Typeable (Proxy (Proxy), Typeable)
+import GHC.TypeLits (KnownSymbol, symbolVal)
 import Streaming (Of (..))
 import Streaming qualified as S
 import Streaming.Internal (Stream (..))
@@ -76,19 +78,18 @@ defaultSerializationPlan =
 
 type PlanChunkEntry ns = ChunkEntry (ByteStringSized (NamespaceKeySize ns)) RawBytes
 
-encodeChunkEntry :: forall ns. (KnownNamespace ns) => Proxy ns -> NamespaceChunkEntry ns -> PlanChunkEntry ns
+encodeChunkEntry :: forall ns. (KnownNamespace ns) => Proxy ns -> ChunkEntry (NamespaceKey ns) (NamespaceEntry ns) -> PlanChunkEntry ns
 encodeChunkEntry _ (ChunkEntry k v) =
   let key = encodeKey @ns k
       value = RawBytes $ toStrictByteString $ encodeEntry @ns v
    in ChunkEntry key value
 
 -- | Add a chunked data stream to the dump configuration.
-addNamespacedChunks :: forall ns. (KnownNamespace ns) => Proxy ns -> Stream (Of (InputChunk (NamespaceChunkEntry ns))) IO () -> SerializationPlan (SomeChunkEntry RawBytes) -> SerializationPlan (SomeChunkEntry RawBytes)
+addNamespacedChunks :: forall ns. (KnownSymbol ns, KnownNamespace ns) => Proxy ns -> Stream (Of (ChunkEntry (NamespaceKey ns) (NamespaceEntry ns))) IO () -> SerializationPlan (SomeChunkEntry RawBytes) -> SerializationPlan (SomeChunkEntry RawBytes)
 addNamespacedChunks p stream =
   addChunks $
-    S.map
-      (\(ns :> inner) -> (ns :> S.map (SomeChunkEntry . encodeChunkEntry p) inner))
-      stream
+    S.yield
+      ((fromText $ T.pack $ symbolVal (Proxy @ns)) :> S.map (SomeChunkEntry . encodeChunkEntry p) stream)
 
 addChunks :: (MemPack a, Typeable a) => ChunkStream a -> SerializationPlan a -> SerializationPlan a
 addChunks stream plan@SerializationPlan{..} =
