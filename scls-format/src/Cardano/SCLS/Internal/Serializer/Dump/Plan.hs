@@ -19,7 +19,6 @@ module Cardano.SCLS.Internal.Serializer.Dump.Plan (
   addMetadata,
   withBufferSize,
   encodeChunkEntry,
-  PlanChunkEntry,
 
   -- * Sorted plan
   SortedSerializationPlan (..),
@@ -76,9 +75,7 @@ defaultSerializationPlan =
     , pMetadataStream = Nothing
     }
 
-type PlanChunkEntry ns = ChunkEntry (ByteStringSized (NamespaceKeySize ns)) RawBytes
-
-encodeChunkEntry :: forall ns. (KnownNamespace ns) => Proxy ns -> ChunkEntry (NamespaceKey ns) (NamespaceEntry ns) -> PlanChunkEntry ns
+encodeChunkEntry :: forall ns. (KnownNamespace ns) => Proxy ns -> ChunkEntry (NamespaceKey ns) (NamespaceEntry ns) -> ChunkEntry (ByteStringSized (NamespaceKeySize ns)) RawBytes
 encodeChunkEntry _ (ChunkEntry k v) =
   let key = encodeKey @ns k
       value = RawBytes $ toStrictByteString $ encodeEntry @ns v
