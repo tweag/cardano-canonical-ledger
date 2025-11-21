@@ -49,7 +49,7 @@ class CanonicalCBOREntryEncoder ns a where
 
 {- | Decode a value from canonical CBOR with a specific namespace.
 
-Complements 'CanonicalEncoder' for deserialization. Returns a 'VersionedNS'
+Complements 'CanonicalCBOREntryEncoder' for deserialization . Returns a 'VersionedNS'
 wrapper that tracks the namespace information.
 -}
 class CanonicalCBOREntryDecoder ns a where

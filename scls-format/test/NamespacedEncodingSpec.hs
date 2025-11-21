@@ -38,7 +38,7 @@ spec = do
       decoded `shouldBe` (VersionedNS val)
 
   describe "SerializationPlan" $ do
-    it "should accepts chunks of different namespaces" $ do
+    it "should accept chunks of different namespaces" $ do
       utxos <- replicateM 10 (chunkEntryFromUTxO <$> genUTxO)
       blocks <- replicateM 10 (chunkEntryFromBlock <$> genBlock)
       let _plan =

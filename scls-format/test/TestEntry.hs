@@ -97,7 +97,7 @@ instance CanonicalCBOREntryDecoder "utxo/v0" TestUTxO where
     pure $ VersionedNS $ TestUTxO $ TestEntry key value
 
 instance CanonicalCBOREntryEncoder "blocks/v0" TestBlock where
-  -- For this test, we reuse the same data type (TestEntry), but we encode it's value as `n+1`.
+  -- For this test, we reuse the same data type (TestEntry), but we encode its value as `n+1`.
   encodeEntry (TestBlock TestEntry{key, value}) =
     E.encodeListLen 2 <> E.encodeBytes key <> E.encodeInt (value + 1)
 
