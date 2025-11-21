@@ -7,7 +7,7 @@ the dump file.
 -}
 module Cardano.SCLS.Internal.Serializer.Dump.Plan (
   -- * Plan
-  SerializationPlan (pBufferSize, pChunkFormat, pChunkStream, pMetadataStream),
+  SerializationPlan (..),
   InputChunk,
   ChunkStream,
 
@@ -26,7 +26,7 @@ module Cardano.SCLS.Internal.Serializer.Dump.Plan (
 ) where
 
 import Cardano.SCLS.Internal.Entry.ChunkEntry (ChunkEntry (ChunkEntry), KnownNamespace (NamespaceEntry, NamespaceKey), SomeChunkEntry (SomeChunkEntry))
-import Cardano.SCLS.Internal.NamespaceCodec (CanonicalCBOREntryEncoder (encodeEntry), KnownNamespace, NamespaceKeySize, encodeKey)
+import Cardano.SCLS.Internal.NamespaceCodec (CanonicalCBOREntryEncoder (encodeEntry), NamespaceKeySize, encodeKey)
 import Cardano.SCLS.Internal.Record.Chunk
 import Cardano.SCLS.Internal.Record.Metadata
 import Cardano.SCLS.Internal.Serializer.MemPack (ByteStringSized, RawBytes (RawBytes))

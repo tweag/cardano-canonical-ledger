@@ -60,15 +60,15 @@ newtype DataStream a = DataStream {runDataStream :: Stream (Of (InputChunk a)) I
 -- proper working with the hardware, i.e. flushing and calling fsync
 -- at the right moments.
 dumpToHandle :: (HasKey a, MemPack a, Typeable a, MemPackHeaderOffset a) => Handle -> Hdr -> SortedSerializationPlan a -> IO ()
-dumpToHandle handle hdr (SortedSerializationPlan plan) = do
+dumpToHandle handle hdr (SortedSerializationPlan (SerializationPlan{..})) = do
   _ <- hWriteFrame handle hdr
   manifestData <-
-    pChunkStream plan -- output our sorted stream
+    pChunkStream -- output our sorted stream
       & S.mapM
         ( \(namespace :> inner) -> do
             inner
               & dedup
-              & constructChunks_ (pChunkFormat plan) (pBufferSize plan) -- compose entries into data for chunks records, returns digest of entries
+              & constructChunks_ pChunkFormat pBufferSize -- compose entries into data for chunks records, returns digest of entries
               & S.copy
               & storeToHandle namespace -- stores data to handle,passes digest of entries
               & S.map CB.chunkItemEntriesCount -- keep only number of entries (other things are not needed)
@@ -90,12 +90,12 @@ dumpToHandle handle hdr (SortedSerializationPlan plan) = do
         mempty
         ManifestInfo
 
-  case pMetadataStream plan of
+  case pMetadataStream of
     Nothing -> pure ()
     Just s -> do
       _rootHash <- -- TODO: parametrize builder machine to customize accumulator operation (replace hash computation with something else)
         s
-          & constructMetadata_ (pBufferSize plan) -- compose entries into data for metadata records, returns digest of entries
+          & constructMetadata_ pBufferSize -- compose entries into data for metadata records, returns digest of entries
           & S.map metadataToRecord
           & S.mapM_ (liftIO . hWriteFrame handle)
       pure ()
