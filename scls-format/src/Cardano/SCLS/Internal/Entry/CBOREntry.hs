@@ -7,12 +7,9 @@
 module Cardano.SCLS.Internal.Entry.CBOREntry (
   GenericCBOREntry (..),
   SomeCBOREntry (..),
-  KnownNamespace (..),
-  NamespaceKeySize,
 ) where
 
 import Cardano.SCLS.Internal.Entry.ChunkEntry (ChunkEntry (..))
-import Cardano.SCLS.Internal.NamespaceCodec (KnownNamespace (NamespaceEntry, NamespaceKey), NamespaceKeySize)
 import Cardano.SCLS.Internal.Serializer.HasKey
 import Cardano.SCLS.Internal.Serializer.MemPack (ByteStringSized (..), CBORTerm (..), MemPackHeaderOffset (..), SomeByteStringSized (..))
 import Data.MemPack
