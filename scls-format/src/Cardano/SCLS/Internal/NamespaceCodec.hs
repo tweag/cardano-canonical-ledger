@@ -17,8 +17,8 @@ module Cardano.SCLS.Internal.NamespaceCodec (
   VersionedNS (..),
   NamespaceKeySize,
   namespaceKeySize,
-  encodeKeyToByteStringSized,
-  decodeKeyFromByteString,
+  encodeKeyToBytes,
+  decodeKeyFromBytes,
 ) where
 
 import Cardano.SCLS.Internal.Entry.IsKey (IsKey (keySize, packKeyM, unpackKeyM))
@@ -99,14 +99,14 @@ class
   type NamespaceEntry ns
 
 -- | Encode a namespace key to a 'ByteStringSized' of the appropriate size.
-encodeKeyToByteStringSized :: forall ns. (KnownNamespace ns, Typeable (NamespaceKey ns)) => NamespaceKey ns -> ByteStringSized (NamespaceKeySize ns)
-encodeKeyToByteStringSized key =
+encodeKeyToBytes :: forall ns. (KnownNamespace ns, Typeable (NamespaceKey ns)) => NamespaceKey ns -> ByteStringSized (NamespaceKeySize ns)
+encodeKeyToBytes key =
   ByteStringSized . pinnedByteArrayToByteString $ packWithByteArray True (show (typeRep (Proxy @(NamespaceKey ns)))) (keySize @(NamespaceKey ns)) (packKeyM key)
 
 {- | Decode a namespace key from a 'ByteString'.
 Returns 'Nothing' if decoding fails.
 -}
-decodeKeyFromByteString ::
+decodeKeyFromBytes ::
   forall ns.
   ( KnownNamespace ns
   , Typeable (NamespaceKey ns)
@@ -114,6 +114,6 @@ decodeKeyFromByteString ::
   Proxy ns ->
   ByteString ->
   Maybe (NamespaceKey ns)
-decodeKeyFromByteString _ bs = do
+decodeKeyFromBytes _ bs = do
   let unpacker = unpackKeyM
   either (const Nothing) (Just . fst) $ runST $ runFailLastT $ runStateT (runUnpack unpacker bs) 0
