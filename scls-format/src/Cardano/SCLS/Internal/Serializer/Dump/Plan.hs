@@ -18,25 +18,22 @@ module Cardano.SCLS.Internal.Serializer.Dump.Plan (
   withChunkFormat,
   addMetadata,
   withBufferSize,
-  encodeChunkEntry,
 
   -- * Sorted plan
   SortedSerializationPlan (..),
   mkSortedSerializationPlan,
 ) where
 
-import Cardano.SCLS.Internal.Entry.ChunkEntry (ChunkEntry (ChunkEntry), SomeChunkEntry (SomeChunkEntry))
-import Cardano.SCLS.Internal.NamespaceCodec (CanonicalCBOREntryEncoder (..), KnownNamespace (..), NamespaceKeySize, encodeKeyToByteStringSized)
+import Cardano.SCLS.Internal.Entry.ChunkEntry (ChunkEntry, SomeChunkEntry (SomeChunkEntry), encodeChunkEntry)
+import Cardano.SCLS.Internal.NamespaceCodec (KnownNamespace (..))
 import Cardano.SCLS.Internal.Record.Chunk
 import Cardano.SCLS.Internal.Record.Metadata
-import Cardano.SCLS.Internal.Serializer.MemPack (ByteStringSized, RawBytes (RawBytes))
+import Cardano.SCLS.Internal.Serializer.MemPack (RawBytes)
 import Cardano.Types.Namespace (Namespace, fromSymbol)
 
-import Codec.CBOR.Write (toStrictByteString)
 import Data.MemPack (MemPack)
-import Data.Text qualified as T
-import Data.Typeable (Proxy (Proxy), Typeable)
-import GHC.TypeLits (KnownSymbol, symbolVal)
+import Data.Typeable (Proxy, Typeable)
+import GHC.TypeLits (KnownSymbol)
 import Streaming (Of (..))
 import Streaming qualified as S
 import Streaming.Internal (Stream (..))
@@ -74,12 +71,6 @@ defaultSerializationPlan =
     , pChunkStream = mempty
     , pMetadataStream = Nothing
     }
-
-encodeChunkEntry :: forall ns. (KnownNamespace ns) => Proxy ns -> ChunkEntry (NamespaceKey ns) (NamespaceEntry ns) -> ChunkEntry (ByteStringSized (NamespaceKeySize ns)) RawBytes
-encodeChunkEntry _ (ChunkEntry k v) =
-  let key = encodeKeyToByteStringSized @ns k
-      value = RawBytes $ toStrictByteString $ encodeEntry @ns v
-   in ChunkEntry key value
 
 -- | Add a chunked data stream to the dump configuration.
 addNamespacedChunks :: forall ns. (KnownSymbol ns, KnownNamespace ns) => Proxy ns -> Stream (Of (ChunkEntry (NamespaceKey ns) (NamespaceEntry ns))) IO () -> SerializationPlan (SomeChunkEntry RawBytes) -> SerializationPlan (SomeChunkEntry RawBytes)

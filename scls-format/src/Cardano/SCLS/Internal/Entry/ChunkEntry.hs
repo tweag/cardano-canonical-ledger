@@ -8,16 +8,21 @@ module Cardano.SCLS.Internal.Entry.ChunkEntry (
   ChunkEntry (..),
   SomeChunkEntry (..),
   unpackNamespaceChunkEntry,
+  encodeChunkEntry,
+  decodeChunkEntry,
 ) where
 
 import Cardano.SCLS.Internal.Entry.IsKey (IsKey (..))
-import Cardano.SCLS.Internal.NamespaceCodec (KnownNamespace (..), NamespaceKeySize)
+import Cardano.SCLS.Internal.NamespaceCodec (CanonicalCBOREntryDecoder (decodeEntry), CanonicalCBOREntryEncoder (encodeEntry), KnownNamespace (..), NamespaceKeySize, VersionedNS (VersionedNS), decodeKeyFromBytes, encodeKeyToBytes)
 import Cardano.SCLS.Internal.Serializer.HasKey
-import Cardano.SCLS.Internal.Serializer.MemPack (ByteStringSized (..), MemPackHeaderOffset (..))
+import Cardano.SCLS.Internal.Serializer.MemPack (ByteStringSized (..), MemPackHeaderOffset (..), RawBytes (RawBytes))
+import Codec.CBOR.Read (deserialiseFromBytes)
+import Codec.CBOR.Write (toStrictByteString)
 import Data.ByteString qualified as BS
+import Data.ByteString.Lazy qualified as BSL
 import Data.MemPack
 import Data.MemPack.Buffer
-import Data.Typeable (Typeable)
+import Data.Typeable (Proxy (Proxy), Typeable)
 import GHC.TypeLits (KnownNat)
 
 data ChunkEntry k v = ChunkEntry
@@ -97,3 +102,21 @@ instance HasKey (SomeChunkEntry a) where
   type Key (SomeChunkEntry a) = BS.ByteString
 
   getKey (SomeChunkEntry (ChunkEntry (ByteStringSized bs) _)) = bs
+
+-- | Encode a chunk entry from namespace-specific types to a bytes-only chunk entry.
+encodeChunkEntry :: forall ns. (KnownNamespace ns) => Proxy ns -> ChunkEntry (NamespaceKey ns) (NamespaceEntry ns) -> ChunkEntry (ByteStringSized (NamespaceKeySize ns)) RawBytes
+encodeChunkEntry _ (ChunkEntry k v) =
+  let key = encodeKeyToBytes @ns k
+      value = RawBytes $ toStrictByteString $ encodeEntry @ns v
+   in ChunkEntry key value
+
+-- | Decode a chunk entry from raw bytes to namespace-specific types.
+decodeChunkEntry :: forall ns. (KnownNamespace ns) => Proxy ns -> ChunkEntry (ByteStringSized (NamespaceKeySize ns)) RawBytes -> Maybe (ChunkEntry (NamespaceKey ns) (NamespaceEntry ns))
+decodeChunkEntry _ (ChunkEntry (ByteStringSized k) (RawBytes v)) = do
+  let keyMaybe = decodeKeyFromBytes (Proxy @ns) k
+  let valueEither = deserialiseFromBytes (decodeEntry @ns) $ BSL.fromStrict v
+  case (keyMaybe, valueEither) of
+    (Nothing, _) -> Nothing
+    (_, Left _) -> Nothing
+    (Just key, Right (_, VersionedNS value)) ->
+      Just $ ChunkEntry key value
