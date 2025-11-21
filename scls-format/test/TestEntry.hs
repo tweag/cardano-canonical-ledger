@@ -24,7 +24,7 @@ import Codec.CBOR.Decoding qualified as D
 import Codec.CBOR.Encoding qualified as E
 import Data.ByteString qualified as BS
 import Data.Data (Proxy (Proxy))
-import Data.MemPack (MemPack (packM, unpackM), packByteStringM, unpackByteStringM)
+import Data.MemPack (packByteStringM, unpackByteStringM)
 import System.Random.Stateful (Uniform (uniformM), globalStdGen, uniformByteStringM)
 
 -- | Example data type for testing
@@ -57,10 +57,10 @@ type instance NamespaceKeySize "blocks/v0" = 32
 instance IsKey TestUTxOKey where
   keySize = namespaceKeySize @"utxo/v0"
 
-  packKeyM (TestUTxOKey bs) = packM bs
+  packKeyM (TestUTxOKey bs) = packByteStringM bs
 
   unpackKeyM = do
-    bs <- unpackM
+    bs <- unpackByteStringM (keySize @TestUTxOKey)
     pure $ TestUTxOKey bs
 
 newtype TestBlock = TestBlock TestEntry
@@ -72,10 +72,10 @@ newtype TestBlockKey = TestBlockKey BS.ByteString
 instance IsKey TestBlockKey where
   keySize = namespaceKeySize @"blocks/v0"
 
-  packKeyM (TestBlockKey bs) = packM bs
+  packKeyM (TestBlockKey bs) = packByteStringM bs
 
   unpackKeyM = do
-    bs <- unpackM
+    bs <- unpackByteStringM (keySize @TestBlockKey)
     pure $ TestBlockKey bs
 
 instance HasKey TestUTxO where
