@@ -196,17 +196,17 @@ newtype ByteStringSized (n :: Nat) = ByteStringSized ByteString
   deriving (Eq, Ord, Show)
 
 instance (KnownNat n) => MemPack (ByteStringSized n) where
-  packedByteCount _ = fromInteger (natVal (Proxy :: Proxy n))
+  packedByteCount _ = fromInteger (natVal (Proxy @n))
 
   packM (ByteStringSized bs) = do
-    let expected = fromIntegral (natVal (Proxy :: Proxy n)) :: Int
+    let expected = fromIntegral (natVal (Proxy @n)) :: Int
     let len = BS.length bs
     if len /= expected
       then error $! "ByteStringSized: expected " ++ show expected ++ " bytes, got " ++ show len
       else packByteStringM bs
 
   unpackM = do
-    let expected = fromIntegral (natVal (Proxy :: Proxy n)) :: Int
+    let expected = fromIntegral (natVal (Proxy @n)) :: Int
     bs <- unpackByteStringM expected
     pure (ByteStringSized bs)
 

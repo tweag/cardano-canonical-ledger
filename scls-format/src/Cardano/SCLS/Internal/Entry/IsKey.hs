@@ -21,6 +21,6 @@ class (Ord a, Typeable a) => IsKey a where
   unpackKeyM :: forall b s. (Buffer b) => Unpack s b a
 
 instance (KnownNat n) => IsKey (ByteStringSized n) where
-  keySize = fromInteger (natVal (Proxy :: Proxy n))
+  keySize = fromInteger (natVal (Proxy @n))
   packKeyM = packM
   unpackKeyM = unpackM
