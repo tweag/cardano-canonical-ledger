@@ -18,7 +18,8 @@ module Cardano.SCLS.Util.Check (
 ) where
 
 import Cardano.SCLS.CDDL (NamespaceInfo (..), namespaces)
-import Cardano.SCLS.Internal.Entry (ChunkEntry (..), GenericCBOREntry (..))
+import Cardano.SCLS.Internal.Entry.CBOREntry (GenericCBOREntry (..))
+import Cardano.SCLS.Internal.Entry.ChunkEntry (ChunkEntry (..))
 import Cardano.SCLS.Internal.Hash (Digest (..), digest)
 import Cardano.SCLS.Internal.Reader (decodeChunkEntries, extractNamespaceList, withRecordData)
 import Cardano.SCLS.Internal.Record.Chunk (Chunk (..))

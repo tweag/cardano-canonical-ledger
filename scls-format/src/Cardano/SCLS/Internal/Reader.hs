@@ -11,6 +11,7 @@ module Cardano.SCLS.Internal.Reader (
   extractRootHash,
   extractNamespaceList,
   extractNamespaceHash,
+  withKnownNamespacedData,
 
   -- * Low-level functions
   decodeChunkEntries,
@@ -34,9 +35,14 @@ import Data.Typeable
 import System.IO
 import System.IO qualified as IO
 
+import Cardano.SCLS.Internal.Entry.ChunkEntry (ChunkEntry, decodeChunkEntry)
+import Cardano.SCLS.Internal.NamespaceCodec (KnownNamespace (NamespaceEntry, NamespaceKey), NamespaceKeySize)
 import Cardano.SCLS.Internal.Record.Internal.Class (IsFrameRecord)
 import Cardano.Types.ByteOrdered (BigEndian (BigEndian))
 import Cardano.Types.Namespace (Namespace)
+import Cardano.Types.Namespace qualified as Namespace
+import Data.Maybe (fromJust)
+import GHC.TypeLits (KnownSymbol)
 import Streaming qualified as S
 import Streaming.Prelude qualified as S
 
@@ -71,6 +77,16 @@ withNamespacedData filePath namespace f =
           when (chunkNamespace (frameViewContent (chunkRecord)) == namespace) do
             decodeChunkEntries (chunkData $ frameViewContent chunkRecord)
         go next_record
+
+withKnownNamespacedData :: forall ns r. (KnownSymbol ns, KnownNamespace ns) => FilePath -> Proxy ns -> (S.Stream (S.Of (ChunkEntry (NamespaceKey ns) (NamespaceEntry ns))) IO () -> IO r) -> IO r
+withKnownNamespacedData filePath p f =
+  withNamespacedData
+    @(ChunkEntry (ByteStringSized (NamespaceKeySize ns)) RawBytes)
+    filePath
+    namespace
+    $ f . S.map (fromJust . decodeChunkEntry p)
+ where
+  namespace = Namespace.fromSymbol p
 
 {- | Stream all records for a particular record type in the file.
 No optimized access, just a full scan of the file.

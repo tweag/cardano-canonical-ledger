@@ -7,7 +7,7 @@ module MultiNamespace (
 
 import Cardano.SCLS.Internal.Hash (Digest (..))
 import Cardano.SCLS.Internal.Reader (extractNamespaceHash, extractNamespaceList, extractRootHash, withNamespacedData)
-import Cardano.SCLS.Internal.Serializer.Dump (SerializationPlan, addChunks, defaultSerializationPlan)
+import Cardano.SCLS.Internal.Serializer.Dump.Plan (SerializationPlan, addChunks, defaultSerializationPlan)
 import Cardano.SCLS.Internal.Serializer.External.Impl qualified as External (serialize)
 import Cardano.SCLS.Internal.Serializer.MemPack
 import Cardano.SCLS.Internal.Serializer.Reference.Impl qualified as Reference (serialize)
@@ -63,8 +63,8 @@ mkTestsFor serialize = do
   it "works for unordered streams" do
     roundtrip
       serialize
-      [ ("ns0", ["d", "a", "c", "b"])
-      , ("ns1", ["3", "1", "4", "2"])
+      [ ("utxo/v0", ["d", "a", "c", "b"])
+      , ("blocks/v0", ["3", "1", "4", "2"])
       , ("ns2", ["z", "x", "y"])
       ]
 

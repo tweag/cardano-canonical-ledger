@@ -3,6 +3,7 @@ module Main (main) where
 import ChunksBuilderSpec (chunksBuilderTests)
 import MetadataBuilderSpec (metadataBuilderTests)
 import MultiNamespace qualified (tests)
+import NamespacedEncodingSpec qualified (spec)
 import QuerySpec (queryTests)
 import Roundtrip qualified (tests)
 
@@ -16,3 +17,4 @@ main =
     metadataBuilderTests
     MultiNamespace.tests
     queryTests
+    NamespacedEncodingSpec.spec

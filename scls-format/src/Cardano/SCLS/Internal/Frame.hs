@@ -98,7 +98,7 @@ record in advance.
 -}
 decodeFrame :: forall t b. (IsFrameRecord t b) => ByteArrayFrame -> Either SomeError (FrameView b)
 decodeFrame (FrameView size record_type contents) = do
-  if natVal (Proxy :: Proxy t) == fromIntegral record_type
+  if natVal (Proxy @t) == fromIntegral record_type
     then
       fmap
         (FrameView size record_type . fst)
@@ -132,7 +132,7 @@ fetchNextFrame handle (FrameView size _type offset) = do
 hWriteFrame :: forall t b. (Typeable b, IsFrameRecord t b) => Handle -> b -> IO Int
 hWriteFrame handle b =
   let contents = packWithByteArray True (show $ typeOf b) (frameRecordSize b) (encodeRecordContents b)
-      record_type = fromIntegral (natVal (Proxy :: Proxy t))
+      record_type = fromIntegral (natVal (Proxy @t))
    in hWriteFrameBuffer handle record_type contents
 
 {- | Write contents in the frame to the handle in the .

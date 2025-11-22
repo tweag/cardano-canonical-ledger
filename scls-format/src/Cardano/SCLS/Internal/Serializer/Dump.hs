@@ -1,22 +1,12 @@
 {-# LANGUAGE BlockArguments #-}
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ViewPatterns #-}
 
--- | Functions to dump SCLS stream to a handle in a chunked format.
 module Cardano.SCLS.Internal.Serializer.Dump (
   DataStream (..),
-  HasKey (..),
-  InputChunk,
-  SerializationPlan,
-  mkSortedSerializationPlan,
-  defaultSerializationPlan,
-  addChunks,
-  addMetadata,
-  withChunkFormat,
   dumpToHandle,
-  constructChunks_,
-  withBufferSize,
 ) where
 
 import Cardano.SCLS.Internal.Frame
@@ -27,8 +17,9 @@ import Cardano.SCLS.Internal.Record.Manifest
 import Cardano.SCLS.Internal.Record.Metadata
 import Cardano.SCLS.Internal.Serializer.ChunksBuilder.InMemory qualified as CB
 import Cardano.SCLS.Internal.Serializer.Dump.Plan
-import Cardano.SCLS.Internal.Serializer.MemPack
+import Cardano.SCLS.Internal.Serializer.HasKey (HasKey (..))
 import Cardano.SCLS.Internal.Serializer.MetadataBuilder.InMemory qualified as MB
+import Cardano.Types.Namespace (Namespace)
 import Crypto.Hash.MerkleTree.Incremental qualified as MT
 
 import Data.Foldable qualified as F
@@ -36,8 +27,7 @@ import Data.Function ((&))
 import Data.Map (Map)
 import Data.Map.Strict qualified as Map
 
-import Cardano.SCLS.Internal.Serializer.HasKey (HasKey (..))
-import Cardano.Types.Namespace (Namespace)
+import Cardano.SCLS.Internal.Serializer.MemPack (MemPackHeaderOffset)
 import Data.MemPack
 import Data.MemPack.Buffer (pinnedByteArrayToByteString)
 import Data.Text qualified as T
@@ -70,8 +60,7 @@ newtype DataStream a = DataStream {runDataStream :: Stream (Of (InputChunk a)) I
 -- proper working with the hardware, i.e. flushing and calling fsync
 -- at the right moments.
 dumpToHandle :: (HasKey a, MemPack a, Typeable a, MemPackHeaderOffset a) => Handle -> Hdr -> SortedSerializationPlan a -> IO ()
-dumpToHandle handle hdr plan = do
-  let SerializationPlan{..} = getSerializationPlan plan
+dumpToHandle handle hdr (SortedSerializationPlan (SerializationPlan{..})) = do
   _ <- hWriteFrame handle hdr
   manifestData <-
     pChunkStream -- output our sorted stream
@@ -138,7 +127,7 @@ dumpToHandle handle hdr plan = do
       (fromIntegral metadataItemEntriesCount)
 
 dedup ::
-  (HasKey a, MemPack a, S.MonadIO io) =>
+  (HasKey a, S.MonadIO io) =>
   Stream (Of a) io r ->
   Stream (Of a) io r
 dedup s0 = initialize s0

@@ -6,6 +6,7 @@ import Cardano.SCLS.Internal.Serializer.MemPack (Entry (Entry))
 import Cardano.SCLS.Internal.Serializer.MetadataBuilder.InMemory
 import Control.Monad
 import Data.ByteString qualified as BS
+import Data.List (uncons)
 import Data.Maybe
 import Data.MemPack
 import Data.Primitive.ByteArray
@@ -79,7 +80,7 @@ bufferBoundaryTests =
           (machine', emittedMetadata) <-
             foldAppendMetadata machine entries
           annotate "after appending exact fit data should not emit" $ length emittedMetadata `shouldBe` 0
-          (_machine, metadata') <- interpretCommand machine' (Append $ head entries)
+          (_machine, metadata') <- interpretCommand machine' (Append $ fst . fromJust $ uncons entries)
           case metadata' of
             [m] -> do
               annotate "number of entries should match" $ metadataItemEntriesCount m `shouldBe` length entries

@@ -6,6 +6,7 @@ module Cardano.SCLS.Util.Tool (splitFile, mergeFiles, extract, ExtractOptions (.
 import Cardano.SCLS.Internal.Reader
 import Cardano.SCLS.Internal.Record.Hdr (Hdr (..))
 import Cardano.SCLS.Internal.Serializer.Dump
+import Cardano.SCLS.Internal.Serializer.Dump.Plan (addChunks, defaultSerializationPlan, mkSortedSerializationPlan)
 import Cardano.SCLS.Internal.Serializer.External.Impl (serialize)
 import Cardano.SCLS.Internal.Serializer.MemPack
 import Cardano.SCLS.Util.Result
