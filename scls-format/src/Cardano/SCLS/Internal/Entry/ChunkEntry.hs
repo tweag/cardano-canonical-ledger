@@ -20,7 +20,6 @@ import Codec.CBOR.Write (toStrictByteString)
 import Data.ByteString qualified as BS
 import Data.ByteString.Lazy qualified as BSL
 import Data.MemPack
-import Data.MemPack.Buffer
 import Data.Typeable (Proxy (Proxy), Typeable)
 import GHC.TypeLits (KnownNat)
 
