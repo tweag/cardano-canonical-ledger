@@ -35,6 +35,7 @@ data Command
 
 data CommandDebug
   = GenerateDebugFile FilePath [(Namespace, Maybe Int)]
+  | PrintHex FilePath Text Int
 
 parseOptions :: Parser Options
 parseOptions =
@@ -128,6 +129,22 @@ parseOptions =
               (GenerateDebugFile <$> fileArg <*> namespaceEntriesOption)
               (progDesc "Generate a debug SCLS file with random data")
           )
+          <> command
+            "print-hex"
+            ( info
+                ( PrintHex
+                    <$> fileArg
+                    <*> namespaceArg
+                    <*> option
+                      auto
+                      ( long "entry"
+                          <> short 'e'
+                          <> metavar "ENTRY_NO"
+                          <> help "Entry number to print in hex"
+                      )
+                )
+                (progDesc "Print a specific entry in hex format")
+            )
       )
    where
     namespaceEntriesOption :: Parser [(Namespace, Maybe Int)]
@@ -174,3 +191,4 @@ runCommand = \case
   Check file -> check file
   Debug debugCmd -> case debugCmd of
     GenerateDebugFile outputFile namespaceEntries -> generateDebugFile outputFile namespaceEntries
+    PrintHex file chunkNo entryNo -> printHexEntries file chunkNo entryNo
