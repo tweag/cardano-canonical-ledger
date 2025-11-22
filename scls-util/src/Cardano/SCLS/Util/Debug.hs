@@ -41,7 +41,7 @@ import Streaming.Prelude qualified as S
 import System.Random.Stateful (applyAtomicGen, globalStdGen, uniformByteStringM)
 
 import Cardano.SCLS.Internal.Entry.CBOREntry (GenericCBOREntry (GenericCBOREntry), SomeCBOREntry (SomeCBOREntry))
-import Cardano.SCLS.Internal.Entry.ChunkEntry (ChunkEntry (ChunkEntry))
+import Cardano.SCLS.Internal.Entry.ChunkEntry (ChunkEntry (..))
 import Cardano.SCLS.Util.Result
 import GHC.TypeNats
 
