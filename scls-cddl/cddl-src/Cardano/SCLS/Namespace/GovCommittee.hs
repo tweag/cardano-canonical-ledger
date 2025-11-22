@@ -18,7 +18,7 @@ import Text.Heredoc (str)
 record_entry :: Rule
 record_entry =
   comment
-    [str| The key for the entry is  epoch number (8 bytes) |]
+    [str| The key for the entry is epoch number (8 bytes) |]
     $ "record_entry" =:= committee
 
 committee_cold_credential :: Rule
