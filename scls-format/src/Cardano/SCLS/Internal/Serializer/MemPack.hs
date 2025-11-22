@@ -66,7 +66,7 @@ instance HasKey RawBytes where
 
 -- Instance that reads all remaining bytes as a ByteString, relies
 -- on running in 'isolated' context.
-instance MemPack (RawBytes) where
+instance MemPack RawBytes where
   packedByteCount (RawBytes bs) = BS.length bs
   packM (RawBytes bs) = packByteStringM bs
   unpackM = RawBytes <$> consumeBytes
