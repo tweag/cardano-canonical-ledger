@@ -7,7 +7,6 @@
 module Cardano.SCLS.Internal.Entry.ChunkEntry (
   ChunkEntry (..),
   SomeChunkEntry (..),
-  unpackNamespaceChunkEntry,
   encodeChunkEntry,
   decodeChunkEntry,
 ) where
@@ -61,19 +60,13 @@ instance (Show a) => Show (SomeChunkEntry a) where
 
 instance (Eq a) => Eq (SomeChunkEntry a) where
   (==) (SomeChunkEntry (ChunkEntry (ByteStringSized k1) v1)) (SomeChunkEntry (ChunkEntry (ByteStringSized k2) v2)) =
-    if k1 == k2
-      then
-        v1 == v2
-      else False
+    k1 == k2 && v1 == v2
 
 instance (Ord a) => Ord (SomeChunkEntry a) where
   compare
     (SomeChunkEntry (ChunkEntry (ByteStringSized k1) v1))
     (SomeChunkEntry (ChunkEntry (ByteStringSized k2) v2)) =
-      if k1 == k2
-        then
-          compare v1 v2
-        else compare k1 k2
+      k1 `compare` k2 <> v1 `compare` v2
 
 instance (MemPack a, Typeable a) => MemPack (SomeChunkEntry a) where
   packedByteCount (SomeChunkEntry e) = packedByteCount e
@@ -82,18 +75,6 @@ instance (MemPack a, Typeable a) => MemPack (SomeChunkEntry a) where
   packM (SomeChunkEntry e) = packM e
 
   unpackM = error "unpackM SomeChunkEntry: cannot determine size at runtime"
-
--- | Unpack a `ChunkEntry` with a known namespace.
-unpackNamespaceChunkEntry ::
-  ( KnownNamespace ns
-  , MemPack a
-  , Typeable a
-  , Buffer b
-  ) =>
-  Unpack s b (ChunkEntry (ByteStringSized (NamespaceKeySize ns)) a)
-unpackNamespaceChunkEntry = do
-  e <- unpackM
-  pure e
 
 instance (MemPack a, Typeable a) => MemPackHeaderOffset (SomeChunkEntry a) where
   headerSizeOffset = 4
