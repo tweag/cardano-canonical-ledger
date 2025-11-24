@@ -210,3 +210,11 @@ credential =
 
 addr_keyhash :: Rule
 addr_keyhash = "addr_keyhash" =:= hash28
+
+anchor :: Rule
+anchor =
+  "anchor"
+    =:= arr
+      [ "anchor_url" ==> url
+      , "anchor_data_hash" ==> hash32
+      ]

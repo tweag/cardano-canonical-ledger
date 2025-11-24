@@ -21,16 +21,16 @@ record_entry =
     [str| The key for the entry is  epoch number (8 bytes) |]
     $ "record_entry" =:= committee
 
+committee_cold_credential :: Rule
+committee_cold_credential = "committee_cold_credential" =:= credential
+
 committee :: Rule
 committee =
   "committee"
-    =:= (mp [0 <+ asKey credential ==> committee_authorization])
-
-committee_authorization :: Rule
-committee_authorization =
-  "committee_authorization"
-    =:= arr [0, a credential]
-    / arr [1, a (anchor / VNil)]
+    =:= arr
+      [ a (mp [0 <+ asKey committee_cold_credential ==> epoch_no])
+      , a unit_interval
+      ]
 
 epoch_no :: Rule
 epoch_no = "epoch_no" =:= VUInt `sized` (8 :: Word64)
