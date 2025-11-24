@@ -16,6 +16,7 @@ module Cardano.SCLS.Internal.Serializer.Dump.Plan (
   withChunkFormat,
   addMetadata,
   withBufferSize,
+  withManifestComment,
 
   -- * Sorted plan
   SortedSerializationPlan,
@@ -29,6 +30,7 @@ import Cardano.SCLS.Internal.Record.Metadata
 
 import Cardano.Types.Namespace (Namespace)
 import Data.MemPack
+import Data.Text (Text)
 import Data.Typeable (Typeable)
 import Streaming (Of (..))
 import Streaming qualified as S
@@ -51,6 +53,8 @@ data SerializationPlan a = SerializationPlan
   -- ^ Input stream of entries to serialize, can be unsorted
   , pMetadataStream :: Maybe (Stream (Of MetadataEntry) IO ())
   -- ^ Optional stream of metadata records to include in the dump
+  , pManifestComment :: Maybe Text
+  -- ^ Optional comment to inlude in the file manifest
   }
 
 {- | A function type used to sort streams.
@@ -69,6 +73,7 @@ defaultSerializationPlan =
     , pBufferSize = 16 * 1024 * 1024 -- 16 MB buffer size
     , pChunkStream = mempty
     , pMetadataStream = Nothing
+    , pManifestComment = Nothing
     }
 
 -- | Add a chunked data stream to the dump configuration.
@@ -97,6 +102,13 @@ withBufferSize :: Int -> SerializationPlan a -> SerializationPlan a
 withBufferSize size plan =
   plan
     { pBufferSize = size
+    }
+
+-- | Set the manifest comment value in the serialization plan.
+withManifestComment :: Text -> SerializationPlan a -> SerializationPlan a
+withManifestComment comment plan =
+  plan
+    { pManifestComment = Just comment
     }
 
 -- | A serialization plan with sorted streams.

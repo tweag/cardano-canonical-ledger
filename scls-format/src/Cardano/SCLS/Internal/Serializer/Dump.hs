@@ -40,6 +40,7 @@ import Cardano.SCLS.Internal.Serializer.HasKey (HasKey (..))
 import Cardano.Types.Namespace (Namespace)
 import Data.MemPack
 import Data.MemPack.Buffer (pinnedByteArrayToByteString)
+import Data.Text (Text)
 import Data.Text qualified as T
 import Data.Typeable (Typeable)
 import Data.Word (Word64)
@@ -111,7 +112,7 @@ dumpToHandle handle hdr plan = do
           & S.mapM_ (liftIO . hWriteFrame handle)
       pure ()
 
-  manifest <- mkManifest manifestData
+  manifest <- mkManifest manifestData pManifestComment
   _ <- hWriteFrame handle manifest
   pure ()
  where
@@ -216,8 +217,8 @@ instance Semigroup ManifestInfo where
 instance Monoid ManifestInfo where
   mempty = ManifestInfo Map.empty
 
-mkManifest :: ManifestInfo -> IO Manifest
-mkManifest (ManifestInfo namespaceInfo) = do
+mkManifest :: ManifestInfo -> Maybe Text -> IO Manifest
+mkManifest (ManifestInfo namespaceInfo) comment = do
   let ns = Map.toList namespaceInfo
       totalEntries = F.foldl' (+) 0 (namespaceEntries . snd <$> ns)
       totalChunks = F.foldl' (+) 0 (namespaceChunks . snd <$> ns)
@@ -237,6 +238,6 @@ mkManifest (ManifestInfo namespaceInfo) = do
           ManifestSummary
             { createdAt = T.pack "2025-01-01T00:00:00Z" -- TODO: use current time
             , tool = T.pack "scls-tool:reference" -- TODO: add version (?)
-            , comment = Nothing -- TODO: allow configuration
+            , comment
             }
       }
