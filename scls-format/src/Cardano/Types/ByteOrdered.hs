@@ -39,6 +39,17 @@ newtype SlotNo = SlotNo { unSlotNo :: Word64 }
 newtype BigEndian a = BigEndian {unBigEndian :: a}
   deriving (Eq, Ord, Show, Read)
 
+{- | A wrapper type to indicate that a value is stored in little-endian format.
+
+Intended to be used with 'DerivingVia' to derive instances.
+
+Example:
+@
+newtype Foo = Foo { unFoo :: Word64 }
+  deriving (Eq, Ord, Show, Read)
+  deriving (Storable) via (LittleEndian Word64)
+@
+-}
 newtype LittleEndian a = LittleEndian {unLittleEndian :: a}
   deriving (Eq, Ord, Show, Read)
 
