@@ -104,6 +104,7 @@ withBufferSize size plan =
     { pBufferSize = size
     }
 
+-- | Set the manifest comment value in the serialization plan.
 withManifestComment :: Text -> SerializationPlan a -> SerializationPlan a
 withManifestComment comment plan =
   plan
