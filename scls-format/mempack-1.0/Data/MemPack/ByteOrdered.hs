@@ -22,7 +22,7 @@ import Data.MemPack.Buffer (Buffer)
 import Data.Word
 import Foreign.Ptr (Ptr, castPtr)
 import Foreign.Storable (Storable (..))
-import System.ByteOrder (Bytes (..), fromBigEndian, toBigEndian)
+import System.ByteOrder (Bytes (..), fromBigEndian, fromLittleEndian, toBigEndian, toLittleEndian)
 
 {- | A wrapper type to indicate that a value is stored in big-endian format.
 
