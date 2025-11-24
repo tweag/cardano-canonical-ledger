@@ -14,7 +14,7 @@ import Cardano.SCLS.Internal.Record.Hdr (mkHdr)
 import Cardano.SCLS.Internal.Record.Manifest (Manifest (..), ManifestSummary (..))
 import Cardano.SCLS.Internal.Record.Metadata (Metadata (..), MetadataEntry (MetadataEntry))
 import Cardano.SCLS.Internal.Serializer.Dump (SerializationPlan, addChunks, addMetadata, defaultSerializationPlan)
-import Cardano.SCLS.Internal.Serializer.Dump.Plan (withManifestComment)
+import Cardano.SCLS.Internal.Serializer.Dump.Plan (withManifestComment, withTimestamp)
 import Cardano.SCLS.Internal.Serializer.External.Impl qualified as External (serialize)
 import Cardano.SCLS.Internal.Serializer.MemPack
 import Cardano.SCLS.Internal.Serializer.Reference.Impl qualified as Reference (serialize)
@@ -39,6 +39,8 @@ import Data.Function ((&))
 import Data.Map.Strict qualified as Map
 import Data.MemPack
 import Data.Text qualified as T
+import Data.Time (getCurrentTime)
+import Data.Time.Format.ISO8601 (ISO8601 (iso8601Format), formatParseM)
 import GHC.TypeNats
 import Streaming.Prelude qualified as S
 import System.FilePath ((</>))
@@ -76,6 +78,24 @@ mkRoundtripTestsFor groupName serialize =
         withLatestManifestFrame
           ( \Manifest{summary = ManifestSummary{..}} ->
               comment `shouldBe` (Just testComment)
+          )
+          fileName
+    it "should write/read manifest timestamp" $ do
+      withSystemTempDirectory "scls-format-test-XXXXXX" $ \fn -> do
+        let fileName = (fn </> "data.scls")
+        timestamp <- getCurrentTime
+        _ <-
+          serialize
+            fileName
+            Mainnet
+            (SlotNo 1)
+            ( defaultSerializationPlan
+                & withTimestamp timestamp
+            )
+
+        withLatestManifestFrame
+          ( \Manifest{summary = ManifestSummary{..}} ->
+              formatParseM iso8601Format (T.unpack createdAt) `shouldReturn` timestamp
           )
           fileName
  where
