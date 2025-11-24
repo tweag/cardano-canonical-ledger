@@ -97,6 +97,6 @@ packWord32leM = packLittleEndianM
 packWord64leM :: Word64 -> Pack s ()
 packWord64leM = packLittleEndianM
 
-unpackLittleEndianM :: (Bytes a, MemPack a, Buffer b) => Unpack s b a
+unpackLittleEndianM :: (Bytes a, MemPack a, Buffer b) => Unpack b a
 unpackLittleEndianM =
   unLittleEndian <$> unpackM
