@@ -80,6 +80,7 @@ library
     streaming,
     temporary,
     text,
+    time,
     vector,
     vector-algorithms,
     vector-builder,
