@@ -16,8 +16,8 @@ extra-doc-files: CHANGELOG.md
 
 flag use-mempack-1
   description: Use the old mempack package
-  default: False
-  manual: False
+  default: True
+  manual: True
 
 -- extra-source-files:
 common warnings
