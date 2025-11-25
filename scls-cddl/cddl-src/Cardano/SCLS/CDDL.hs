@@ -9,6 +9,7 @@ import Cardano.SCLS.Namespace.Blocks qualified as Blocks
 import Cardano.SCLS.Namespace.GovCommittee qualified as GovCommittee
 import Cardano.SCLS.Namespace.GovConstitution qualified as GovConstitution
 import Cardano.SCLS.Namespace.GovPParams qualified as GovPParams
+import Cardano.SCLS.Namespace.GovProposals qualified as GovProposals
 import Cardano.SCLS.Namespace.PoolStake qualified as PoolStake
 import Cardano.SCLS.Namespace.Pots qualified as Pots
 import Cardano.SCLS.Namespace.Snapshots qualified as Snapshots
@@ -38,4 +39,5 @@ namespaces =
     , ("gov/committee/v0", NamespaceInfo (collectFromInit [HIRule GovCommittee.record_entry]) 8)
     , ("gov/constitution/v0", NamespaceInfo (collectFromInit [HIRule GovConstitution.record_entry]) 8)
     , ("gov/pparams/v0", NamespaceInfo (collectFromInit [HIRule GovPParams.record_entry]) 4)
+    , ("gov/proposals/v0", NamespaceInfo (collectFromInit [HIRule GovProposals.record_entry]) 34) -- 32 bytes txid+tx index + 2 bytes for proposal index
     ]
