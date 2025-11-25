@@ -29,7 +29,9 @@ library
   other-modules:
     Cardano.SCLS.Common
     Cardano.SCLS.Namespace.Blocks
+    Cardano.SCLS.Namespace.GovConstitution
     Cardano.SCLS.Namespace.GovPParams
+    Cardano.SCLS.Namespace.PoolStake
     Cardano.SCLS.Namespace.Pots
     Cardano.SCLS.Namespace.Snapshots
     Cardano.SCLS.Namespace.UTxO

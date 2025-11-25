@@ -19,6 +19,7 @@ module Cardano.SCLS.Internal.Serializer.Dump.Plan (
   addMetadata,
   withBufferSize,
   withManifestComment,
+  withTimestamp,
 
   -- * Sorted plan
   SortedSerializationPlan (..),
@@ -34,6 +35,7 @@ import Cardano.Types.Namespace (Namespace, fromSymbol)
 
 import Data.MemPack (MemPack)
 import Data.Text (Text)
+import Data.Time (UTCTime)
 import Data.Typeable (Proxy, Typeable)
 import GHC.TypeLits (KnownSymbol)
 import Streaming (Of (..))
@@ -64,6 +66,8 @@ data SerializationPlan a = SerializationPlan
   -- ^ Optional stream of metadata records to include in the dump
   , pManifestComment :: Maybe Text
   -- ^ Optional comment to inlude in the file manifest
+  , pTimestamp :: Maybe (UTCTime)
+  -- ^ Optional timestamp value to include in the manifest. Defaults to the timestamp at the time of serialization.
   }
 
 -- | Create a serialization plan with default options and no data.
@@ -75,6 +79,7 @@ defaultSerializationPlan =
     , pChunkStream = mempty
     , pMetadataStream = Nothing
     , pManifestComment = Nothing
+    , pTimestamp = Nothing
     }
 
 -- | Add a chunked data stream to the dump configuration.
@@ -122,6 +127,13 @@ withManifestComment :: Text -> SerializationPlan a -> SerializationPlan a
 withManifestComment comment plan =
   plan
     { pManifestComment = Just comment
+    }
+
+-- | Set the timestamp value in the serialization plan.
+withTimestamp :: UTCTime -> SerializationPlan a -> SerializationPlan a
+withTimestamp timestamp plan =
+  plan
+    { pTimestamp = Just timestamp
     }
 
 -- | A serialization plan with sorted streams.

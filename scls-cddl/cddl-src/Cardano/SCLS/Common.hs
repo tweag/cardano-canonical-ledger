@@ -67,6 +67,12 @@ address = "address" =:= VBytes
 -- Crypto
 --------------------------------------------------------------------------------
 
+keyhash32 :: Rule
+keyhash32 = "keyhash28" =:= hash32
+
+keyhash28 :: Rule
+keyhash28 = "keyhash32" =:= hash28 -- Important: seems on the current chain it's 32
+
 hash28 :: Rule
 hash28 = "hash28" =:= VBytes `sized` (28 :: Word64)
 
@@ -181,3 +187,17 @@ positive_int = "positive_int" =:= (1 :: Integer) ... maxWord64
 
 maxWord64 :: Integer
 maxWord64 = 18446744073709551615
+
+script_hash :: Rule
+script_hash =
+  comment
+    [str| To compute a script hash, note that you must prepend
+        | a tag to the bytes of the script before hashing.
+        | The tag is determined by the language.
+        | The tags in the Conway era are:
+        |  - "\x00" for multisig scripts
+        |  - "\x01" for Plutus V1 scripts
+        |  - "\x02" for Plutus V2 scripts
+        |  - "\x03" for Plutus V3 scripts
+    |]
+    $ "script_hash" =:= hash28

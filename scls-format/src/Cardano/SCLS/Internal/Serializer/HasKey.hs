@@ -4,10 +4,12 @@
 module Cardano.SCLS.Internal.Serializer.HasKey (
   HasKey (..),
   sortByKey,
+  nubByKey,
 ) where
 
+import Data.Function (on)
 import Data.Kind (Type)
-import Data.List (sortOn)
+import Data.List (nubBy, sortOn)
 
 -- | Class for types that have an associated key.
 class (Ord (Key a)) => HasKey a where
@@ -16,3 +18,6 @@ class (Ord (Key a)) => HasKey a where
 
 sortByKey :: (HasKey a) => [a] -> [a]
 sortByKey = sortOn getKey
+
+nubByKey :: (HasKey a) => [a] -> [a]
+nubByKey = nubBy ((==) `on` getKey)

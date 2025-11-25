@@ -14,9 +14,9 @@ import Cardano.SCLS.Internal.Reader (extractRootHash, withHeader, withLatestMani
 import Cardano.SCLS.Internal.Record.Hdr (mkHdr)
 import Cardano.SCLS.Internal.Record.Manifest (Manifest (..), ManifestSummary (..))
 import Cardano.SCLS.Internal.Record.Metadata (Metadata (..), MetadataEntry (MetadataEntry))
-import Cardano.SCLS.Internal.Serializer.Dump.Plan (SerializationPlan, addChunks, addMetadata, defaultSerializationPlan, withManifestComment)
+import Cardano.SCLS.Internal.Serializer.Dump.Plan (SerializationPlan, addChunks, addMetadata, defaultSerializationPlan, withManifestComment, withTimestamp)
 import Cardano.SCLS.Internal.Serializer.External.Impl qualified as External (serialize)
-import Cardano.SCLS.Internal.Serializer.HasKey (sortByKey)
+import Cardano.SCLS.Internal.Serializer.HasKey (nubByKey, sortByKey)
 import Cardano.SCLS.Internal.Serializer.MemPack
 import Cardano.SCLS.Internal.Serializer.Reference.Impl qualified as Reference (serialize)
 import Cardano.Types.Namespace qualified as Namespace
@@ -40,6 +40,8 @@ import Data.Function ((&))
 import Data.Map.Strict qualified as Map
 import Data.MemPack
 import Data.Text qualified as T
+import Data.Time (getCurrentTime)
+import Data.Time.Format.ISO8601 (ISO8601 (iso8601Format), formatParseM)
 import GHC.TypeNats
 import Streaming.Prelude qualified as S
 import System.FilePath ((</>))
@@ -79,6 +81,24 @@ mkRoundtripTestsFor groupName serialize =
               comment `shouldBe` (Just testComment)
           )
           fileName
+    it "should write/read manifest timestamp" $ do
+      withSystemTempDirectory "scls-format-test-XXXXXX" $ \fn -> do
+        let fileName = (fn </> "data.scls")
+        timestamp <- getCurrentTime
+        _ <-
+          serialize
+            fileName
+            Mainnet
+            (SlotNo 1)
+            ( defaultSerializationPlan
+                & withTimestamp timestamp
+            )
+
+        withLatestManifestFrame
+          ( \Manifest{summary = ManifestSummary{..}} ->
+              formatParseM iso8601Format (T.unpack createdAt) `shouldReturn` timestamp
+          )
+          fileName
  where
   roundtrip namespace (kSize, cddl) = do
     case buildMonoCTree =<< buildResolvedCTree (buildRefCTree $ asMap cddl) of
@@ -87,7 +107,7 @@ mkRoundtripTestsFor groupName serialize =
         entries <-
           withSomeSNat kSize \(snat :: SNat n) -> do
             withKnownNat snat do
-              replicateM 1024 $ do
+              fmap nubByKey $ replicateM 1024 $ do
                 key <- uniformByteStringM (fromIntegral kSize) globalStdGen
                 term <- applyAtomicGen (generateCBORTerm' mt (Name (T.pack "record_entry") mempty)) globalStdGen
                 Right (_, canonicalTerm) <- pure $ deserialiseFromBytes decodeTerm $ toLazyByteString (encodeTerm term)
