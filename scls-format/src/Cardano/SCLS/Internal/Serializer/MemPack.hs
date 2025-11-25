@@ -15,7 +15,8 @@ module Cardano.SCLS.Internal.Serializer.MemPack (
 
   -- * Type helpers
   Entry (..),
-  ByteStringSized (..),
+  ByteStringSized (getByteString),
+  fromByteString,
   SomeByteStringSized (..),
   CBORTerm (..),
   RawBytes (..),
@@ -192,8 +193,12 @@ instance Ord SomeByteStringSized where
       <> compare bs1 bs2
 
 -- | A bytestring with the size known at compile time.
-newtype ByteStringSized (n :: Nat) = ByteStringSized ByteString
+newtype ByteStringSized (n :: Nat) = ByteStringSized {getByteString :: ByteString}
   deriving (Eq, Ord, Show)
+
+fromByteString :: forall n. (KnownNat n) => ByteString -> ByteStringSized n
+fromByteString bs | BS.length bs == (fromInteger $ natVal $ Proxy @n) = ByteStringSized bs
+fromByteString bs = error $ "ByteStringSized: runtime size " <> (show $ BS.length bs) <> " doesn't match expected size " <> (show $ natVal $ Proxy @n)
 
 instance (KnownNat n) => MemPack (ByteStringSized n) where
   packedByteCount _ = fromInteger (natVal (Proxy :: Proxy n))

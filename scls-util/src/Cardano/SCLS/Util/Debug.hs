@@ -76,7 +76,7 @@ generateNamespaceEntries count spec = replicateM_ count do
   let size = fromSNat @n SNat
   keyIn <- liftIO $ uniformByteStringM (fromIntegral size) globalStdGen
   term <- liftIO $ applyAtomicGen (generateCBORTerm' spec (Name (T.pack "record_entry") mempty)) globalStdGen
-  S.yield $ GenericCBOREntry $ ChunkEntry (ByteStringSized @n keyIn) (CBORTerm term)
+  S.yield $ GenericCBOREntry $ ChunkEntry (fromByteString @n keyIn) (CBORTerm term)
 
 printHexEntries :: FilePath -> T.Text -> Int -> IO Result
 printHexEntries filePath ns_name@(Namespace.fromText -> ns) entryNo = do
@@ -91,8 +91,8 @@ printHexEntries filePath ns_name@(Namespace.fromText -> ns) entryNo = do
             stream
               & S.drop entryNo
               & S.take 1
-              & S.mapM_ \ChunkEntry{chunkEntryKey = ByteStringSized k, chunkEntryValue = RawBytes b} -> do
-                B8.putStrLn $ "Key: " <> Base16.encode k
+              & S.mapM_ \ChunkEntry{chunkEntryKey = k, chunkEntryValue = RawBytes b} -> do
+                B8.putStrLn $ "Key: " <> Base16.encode (getByteString k)
                 putStrLn "Data (hex):"
                 B8.putStrLn $ Base16.encode b
       pure Ok
