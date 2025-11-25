@@ -38,10 +38,12 @@ import Data.Map.Strict qualified as Map
 
 import Cardano.SCLS.Internal.Serializer.HasKey (HasKey (..))
 import Cardano.Types.Namespace (Namespace)
+import Data.Maybe (fromMaybe)
 import Data.MemPack
 import Data.MemPack.Buffer (pinnedByteArrayToByteString)
-import Data.Text (Text)
 import Data.Text qualified as T
+import Data.Time (getCurrentTime)
+import Data.Time.Format.ISO8601 (ISO8601 (iso8601Format), formatShow)
 import Data.Typeable (Typeable)
 import Data.Word (Word64)
 import Streaming (Of (..), liftIO)
@@ -71,8 +73,8 @@ newtype DataStream a = DataStream {runDataStream :: Stream (Of (InputChunk a)) I
 -- proper working with the hardware, i.e. flushing and calling fsync
 -- at the right moments.
 dumpToHandle :: (HasKey a, MemPack a, Typeable a, MemPackHeaderOffset a) => Handle -> Hdr -> SortedSerializationPlan a -> IO ()
-dumpToHandle handle hdr plan = do
-  let SerializationPlan{..} = getSerializationPlan plan
+dumpToHandle handle hdr sortedPlan = do
+  let plan@SerializationPlan{..} = getSerializationPlan sortedPlan
   _ <- hWriteFrame handle hdr
   manifestData <-
     pChunkStream -- output our sorted stream
@@ -112,7 +114,7 @@ dumpToHandle handle hdr plan = do
           & S.mapM_ (liftIO . hWriteFrame handle)
       pure ()
 
-  manifest <- mkManifest manifestData pManifestComment
+  manifest <- mkManifest manifestData plan
   _ <- hWriteFrame handle manifest
   pure ()
  where
@@ -217,8 +219,8 @@ instance Semigroup ManifestInfo where
 instance Monoid ManifestInfo where
   mempty = ManifestInfo Map.empty
 
-mkManifest :: ManifestInfo -> Maybe Text -> IO Manifest
-mkManifest (ManifestInfo namespaceInfo) comment = do
+mkManifest :: ManifestInfo -> SerializationPlan a -> IO Manifest
+mkManifest (ManifestInfo namespaceInfo) (SerializationPlan{..}) = do
   let ns = Map.toList namespaceInfo
       totalEntries = F.foldl' (+) 0 (namespaceEntries . snd <$> ns)
       totalChunks = F.foldl' (+) 0 (namespaceChunks . snd <$> ns)
@@ -227,6 +229,7 @@ mkManifest (ManifestInfo namespaceInfo) comment = do
           MT.merkleRootHash $
             MT.finalize $
               F.foldl' MT.add (MT.empty undefined) (namespaceHash . snd <$> ns)
+  createdAt <- T.pack <$> formatShow iso8601Format <$> fromMaybe getCurrentTime (fmap pure pTimestamp)
   pure
     Manifest
       { totalEntries
@@ -236,8 +239,8 @@ mkManifest (ManifestInfo namespaceInfo) comment = do
       , prevManifestOffset = 0 -- TODO: support chaining of manifests
       , summary =
           ManifestSummary
-            { createdAt = T.pack "2025-01-01T00:00:00Z" -- TODO: use current time
+            { createdAt
             , tool = T.pack "scls-tool:reference" -- TODO: add version (?)
-            , comment
+            , comment = pManifestComment
             }
       }
