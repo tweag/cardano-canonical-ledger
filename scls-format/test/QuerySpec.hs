@@ -3,8 +3,9 @@
 
 module QuerySpec (queryTests) where
 
-import Cardano.SCLS.Internal.Entry (ChunkEntry (..), IsKey (..))
-import Cardano.SCLS.Internal.Serializer.Dump (addChunks, defaultSerializationPlan)
+import Cardano.SCLS.Internal.Entry.ChunkEntry (ChunkEntry (..))
+import Cardano.SCLS.Internal.Entry.IsKey (IsKey (..))
+import Cardano.SCLS.Internal.Serializer.Dump.Plan (addChunks, defaultSerializationPlan)
 import Cardano.SCLS.Internal.Serializer.MemPack (RawBytes (..))
 import Cardano.SCLS.Internal.Serializer.Reference.Impl qualified as Reference (serialize)
 import Cardano.SCLS.Query (queryEntry)

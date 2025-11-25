@@ -1,4 +1,5 @@
 {-# LANGUAGE BlockArguments #-}
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE ViewPatterns #-}
 
@@ -7,7 +8,9 @@ module Cardano.SCLS.Internal.Serializer.External.Impl (
 ) where
 
 import Cardano.SCLS.Internal.Record.Hdr
-import Cardano.SCLS.Internal.Serializer.Dump
+import Cardano.SCLS.Internal.Serializer.Dump (DataStream (DataStream, runDataStream), dumpToHandle)
+import Cardano.SCLS.Internal.Serializer.Dump.Plan (ChunkStream, InputChunk, SerializationPlan, mkSortedSerializationPlan)
+import Cardano.SCLS.Internal.Serializer.HasKey (HasKey (Key, getKey))
 import Cardano.SCLS.Internal.Serializer.MemPack
 import Cardano.Types.Namespace (Namespace)
 import Cardano.Types.Namespace qualified as Namespace
@@ -90,7 +93,7 @@ the size of the entries, but it can be changed without modifying the interface.
 prepareExternalSortNamespaced ::
   (Typeable a, HasKey a, MemPack a) =>
   FilePath ->
-  S.Stream (S.Of (InputChunk a)) IO () ->
+  ChunkStream a ->
   IO ()
 prepareExternalSortNamespaced tmpDir = storeChunks . mergeChunks
  where

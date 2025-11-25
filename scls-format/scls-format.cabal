@@ -21,9 +21,12 @@ common warnings
 library
   import: warnings
   exposed-modules:
-    Cardano.SCLS.Internal.Entry
+    Cardano.SCLS.Internal.Entry.CBOREntry
+    Cardano.SCLS.Internal.Entry.ChunkEntry
+    Cardano.SCLS.Internal.Entry.IsKey
     Cardano.SCLS.Internal.Frame
     Cardano.SCLS.Internal.Hash
+    Cardano.SCLS.Internal.NamespaceCodec
     Cardano.SCLS.Internal.Reader
     Cardano.SCLS.Internal.Record.Chunk
     Cardano.SCLS.Internal.Record.Hdr
@@ -95,8 +98,10 @@ test-suite scls-format-test
     ChunksBuilderSpec
     MetadataBuilderSpec
     MultiNamespace
+    NamespacedEncodingSpec
     QuerySpec
     Roundtrip
+    TestEntry
 
   -- other-extensions:
   type: exitcode-stdio-1.0

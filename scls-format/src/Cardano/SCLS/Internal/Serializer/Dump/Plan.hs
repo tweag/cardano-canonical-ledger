@@ -9,9 +9,11 @@ module Cardano.SCLS.Internal.Serializer.Dump.Plan (
   -- * Plan
   SerializationPlan (..),
   InputChunk,
+  ChunkStream,
 
   -- ** Construction
   defaultSerializationPlan,
+  addNamespacedChunks,
   addChunks,
   withChunkFormat,
   addMetadata,
@@ -20,28 +22,35 @@ module Cardano.SCLS.Internal.Serializer.Dump.Plan (
   withTimestamp,
 
   -- * Sorted plan
-  SortedSerializationPlan,
-  getSerializationPlan,
+  SortedSerializationPlan (..),
   mkSortedSerializationPlan,
-  SortF,
 ) where
 
+import Cardano.SCLS.Internal.Entry.ChunkEntry (ChunkEntry, SomeChunkEntry (SomeChunkEntry), encodeChunkEntry)
+import Cardano.SCLS.Internal.NamespaceCodec (KnownNamespace (..))
 import Cardano.SCLS.Internal.Record.Chunk
 import Cardano.SCLS.Internal.Record.Metadata
+import Cardano.SCLS.Internal.Serializer.MemPack (RawBytes)
+import Cardano.Types.Namespace (Namespace, fromSymbol)
 
-import Cardano.Types.Namespace (Namespace)
-import Data.MemPack
+import Data.MemPack (MemPack)
 import Data.Text (Text)
 import Data.Time (UTCTime)
-import Data.Typeable (Typeable)
+import Data.Typeable (Proxy, Typeable)
+import GHC.TypeLits (KnownSymbol)
 import Streaming (Of (..))
 import Streaming qualified as S
 import Streaming.Internal (Stream (..))
+import Streaming.Prelude qualified as S
 
 {- | Helper to define an input data.
 Each chunk is a stream of values that will be written under a given namespace.
 -}
 type InputChunk a = S.Of Namespace (S.Stream (S.Of a) IO ())
+
+type ChunkStream a = Stream (Of (InputChunk a)) IO ()
+
+type MetadataStream = Stream (Of MetadataEntry) IO ()
 
 -- | Serialization plan with data sources and configuration options.
 data SerializationPlan a = SerializationPlan
@@ -51,9 +60,9 @@ data SerializationPlan a = SerializationPlan
   -- ^ Compression format for chunks
   , pBufferSize :: Int
   -- ^ Buffer size for record building (in bytes)
-  , pChunkStream :: Stream (Of (InputChunk a)) IO ()
+  , pChunkStream :: ChunkStream a
   -- ^ Input stream of entries to serialize, can be unsorted
-  , pMetadataStream :: Maybe (Stream (Of MetadataEntry) IO ())
+  , pMetadataStream :: Maybe MetadataStream
   -- ^ Optional stream of metadata records to include in the dump
   , pManifestComment :: Maybe Text
   -- ^ Optional comment to inlude in the file manifest
@@ -61,16 +70,8 @@ data SerializationPlan a = SerializationPlan
   -- ^ Optional timestamp value to include in the manifest. Defaults to the timestamp at the time of serialization.
   }
 
-{- | A function type used to sort streams.
-This type alias represents a function that takes a stream and produces a sorted stream of elements.
-Elements of type 'a' may be transformed into elements of type 'b' in the output stream.
--}
-type SortF a b =
-  (Stream (Of a) IO ()) ->
-  (Stream (Of b) IO ())
-
 -- | Create a serialization plan with default options and no data.
-defaultSerializationPlan :: forall a. (MemPack a, Typeable a) => SerializationPlan a
+defaultSerializationPlan :: SerializationPlan a
 defaultSerializationPlan =
   SerializationPlan
     { pChunkFormat = ChunkFormatRaw
@@ -82,7 +83,19 @@ defaultSerializationPlan =
     }
 
 -- | Add a chunked data stream to the dump configuration.
-addChunks :: (MemPack a, Typeable a) => Stream (Of (InputChunk a)) IO () -> SerializationPlan a -> SerializationPlan a
+addNamespacedChunks ::
+  forall ns.
+  (KnownSymbol ns, KnownNamespace ns) =>
+  Proxy ns ->
+  Stream (Of (ChunkEntry (NamespaceKey ns) (NamespaceEntry ns))) IO () ->
+  SerializationPlan (SomeChunkEntry RawBytes) ->
+  SerializationPlan (SomeChunkEntry RawBytes)
+addNamespacedChunks p stream =
+  addChunks $
+    S.yield
+      ((fromSymbol p) :> S.map (SomeChunkEntry . encodeChunkEntry p) stream)
+
+addChunks :: (MemPack a, Typeable a) => ChunkStream a -> SerializationPlan a -> SerializationPlan a
 addChunks stream plan@SerializationPlan{..} =
   plan
     { pChunkStream = pChunkStream <> stream
@@ -96,7 +109,7 @@ withChunkFormat format plan =
     }
 
 -- | Add a metadata stream to the serialization plan.
-addMetadata :: Stream (Of MetadataEntry) IO () -> SerializationPlan a -> SerializationPlan a
+addMetadata :: MetadataStream -> SerializationPlan a -> SerializationPlan a
 addMetadata stream plan =
   plan
     { pMetadataStream = Just stream
@@ -125,6 +138,14 @@ withTimestamp timestamp plan =
 
 -- | A serialization plan with sorted streams.
 newtype SortedSerializationPlan a = SortedSerializationPlan {getSerializationPlan :: SerializationPlan a}
+
+{- | A function type used to sort streams.
+This type alias represents a function that takes a stream and produces a sorted stream of elements.
+Elements of type 'a' may be transformed into elements of type 'b' in the output stream.
+-}
+type SortF a b =
+  (Stream (Of a) IO ()) ->
+  (Stream (Of b) IO ())
 
 -- | Create a sorted serialization plan from an existing plan and sorter functions.
 mkSortedSerializationPlan ::
