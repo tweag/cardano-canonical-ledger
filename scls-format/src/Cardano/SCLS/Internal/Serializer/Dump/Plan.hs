@@ -78,7 +78,13 @@ defaultSerializationPlan =
     }
 
 -- | Add a chunked data stream to the dump configuration.
-addNamespacedChunks :: forall ns. (KnownSymbol ns, KnownNamespace ns) => Proxy ns -> Stream (Of (ChunkEntry (NamespaceKey ns) (NamespaceEntry ns))) IO () -> SerializationPlan (SomeChunkEntry RawBytes) -> SerializationPlan (SomeChunkEntry RawBytes)
+addNamespacedChunks ::
+  forall ns.
+  (KnownSymbol ns, KnownNamespace ns) =>
+  Proxy ns ->
+  Stream (Of (ChunkEntry (NamespaceKey ns) (NamespaceEntry ns))) IO () ->
+  SerializationPlan (SomeChunkEntry RawBytes) ->
+  SerializationPlan (SomeChunkEntry RawBytes)
 addNamespacedChunks p stream =
   addChunks $
     S.yield
