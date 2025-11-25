@@ -1,4 +1,5 @@
 {-# LANGUAGE BlockArguments #-}
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ViewPatterns #-}
 
 module Roundtrip (
@@ -9,10 +10,11 @@ import Cardano.SCLS.CDDL (NamespaceInfo (..), namespaces)
 import Cardano.SCLS.Internal.Entry.CBOREntry (GenericCBOREntry (GenericCBOREntry), SomeCBOREntry (SomeCBOREntry))
 import Cardano.SCLS.Internal.Entry.ChunkEntry (ChunkEntry (ChunkEntry))
 import Cardano.SCLS.Internal.Hash (Digest (..))
-import Cardano.SCLS.Internal.Reader (extractRootHash, withHeader, withNamespacedData, withRecordData)
+import Cardano.SCLS.Internal.Reader (extractRootHash, withHeader, withLatestManifestFrame, withNamespacedData, withRecordData)
 import Cardano.SCLS.Internal.Record.Hdr (mkHdr)
+import Cardano.SCLS.Internal.Record.Manifest (Manifest (..), ManifestSummary (..))
 import Cardano.SCLS.Internal.Record.Metadata (Metadata (..), MetadataEntry (MetadataEntry))
-import Cardano.SCLS.Internal.Serializer.Dump.Plan (SerializationPlan, addChunks, addMetadata, defaultSerializationPlan)
+import Cardano.SCLS.Internal.Serializer.Dump.Plan (SerializationPlan, addChunks, addMetadata, defaultSerializationPlan, withManifestComment)
 import Cardano.SCLS.Internal.Serializer.External.Impl qualified as External (serialize)
 import Cardano.SCLS.Internal.Serializer.HasKey (sortByKey)
 import Cardano.SCLS.Internal.Serializer.MemPack
@@ -28,7 +30,7 @@ import Codec.CBOR.Cuddle.CDDL.Resolve (
   buildRefCTree,
   buildResolvedCTree,
  )
-import Codec.CBOR.Cuddle.Huddle
+import Codec.CBOR.Cuddle.Huddle (toCDDL)
 import Codec.CBOR.Read
 import Codec.CBOR.Term
 import Codec.CBOR.Write
@@ -59,6 +61,24 @@ mkRoundtripTestsFor groupName serialize =
       [ context (Namespace.asString n) $ it "should succeed with stream roundtrip" $ roundtrip n (namespaceKeySize ns, toCDDL (namespaceSpec ns))
       | (Namespace.fromText -> n, ns) <- Map.toList namespaces
       ]
+    it "should write/read manifest comment" $ do
+      withSystemTempDirectory "scls-format-test-XXXXXX" $ \fn -> do
+        let fileName = (fn </> "data.scls")
+            testComment = T.pack "This is a file comment."
+        _ <-
+          serialize
+            fileName
+            Mainnet
+            (SlotNo 1)
+            ( defaultSerializationPlan
+                & withManifestComment testComment
+            )
+
+        withLatestManifestFrame
+          ( \Manifest{summary = ManifestSummary{..}} ->
+              comment `shouldBe` (Just testComment)
+          )
+          fileName
  where
   roundtrip namespace (kSize, cddl) = do
     case buildMonoCTree =<< buildResolvedCTree (buildRefCTree $ asMap cddl) of
