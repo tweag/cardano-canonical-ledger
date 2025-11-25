@@ -67,6 +67,12 @@ address = "address" =:= VBytes
 -- Crypto
 --------------------------------------------------------------------------------
 
+keyhash32 :: Rule
+keyhash32 = "keyhash28" =:= hash32
+
+keyhash28 :: Rule
+keyhash28 = "keyhash32" =:= hash28 -- Important: seems on the current chain it's 32
+
 hash28 :: Rule
 hash28 = "hash28" =:= VBytes `sized` (28 :: Word64)
 
