@@ -221,3 +221,21 @@ anchor =
 
 epoch_no :: Rule
 epoch_no = "epoch_no" =:= VUInt `sized` (8 :: Word64)
+
+pool_keyhash :: Rule
+pool_keyhash = "pool_keyhash" =:= hash28
+
+reward_account :: Rule
+reward_account =
+  comment
+    [str| 28 bytes hash and one byte for the network type |]
+    $ "reward_account" =:= VBytes `sized` (29 :: Word64)
+
+protocol_version :: Rule
+protocol_version = "protocol_version" =:= arr [a major_protocol_version, a VUInt]
+
+major_protocol_version :: Rule
+major_protocol_version = "major_protocol_version" =:= (1 :: Integer) ... next_major_protocol_version
+
+next_major_protocol_version :: Integer
+next_major_protocol_version = 10
