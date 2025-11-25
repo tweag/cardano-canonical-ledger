@@ -218,3 +218,19 @@ anchor =
       [ "anchor_url" ==> url
       , "anchor_data_hash" ==> hash32
       ]
+
+pool_keyhash :: Rule
+pool_keyhash = "pool_keyhash" =:= hash28
+
+reward_account :: Rule
+reward_account =
+  "reward_account" =:= VBytes `sized` (29 :: Word64)
+
+protocol_version :: Rule
+protocol_version = "protocol_version" =:= arr [a major_protocol_version, a VUInt]
+
+major_protocol_version :: Rule
+major_protocol_version = "major_protocol_version" =:= (1 :: Integer) ... next_major_protocol_version
+
+next_major_protocol_version :: Integer
+next_major_protocol_version = 10

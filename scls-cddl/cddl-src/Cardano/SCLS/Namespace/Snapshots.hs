@@ -11,7 +11,6 @@ module Cardano.SCLS.Namespace.Snapshots where
 
 import Cardano.SCLS.Common
 import Codec.CBOR.Cuddle.Huddle
-import Data.Word (Word64)
 import Text.Heredoc (str)
 import Prelude (($))
 
@@ -34,9 +33,6 @@ record_key =
   "record_key"
     =:= credential
     / keyhash32
-
-pool_keyhash :: Rule
-pool_keyhash = "pool_keyhash" =:= hash28
 
 snapshot_out :: Rule
 snapshot_out =
@@ -65,12 +61,6 @@ pool_params =
       , "pool_metadata" ==> (pool_metadata / VNil)
       , "reward_account" ==> reward_account
       ]
-
-reward_account :: Rule
-reward_account =
-  "reward_account" =:= VBytes `sized` (29 :: Word64)
-
---  =:= arr [0, a network_id, a keyhash32]
 
 network_id :: Rule
 network_id = "network_id" =:= int 0 / int 1
