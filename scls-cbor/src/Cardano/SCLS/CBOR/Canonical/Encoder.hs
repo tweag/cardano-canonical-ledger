@@ -21,7 +21,7 @@ import Data.ByteString (ByteString)
 import Data.ByteString.Short (ShortByteString (SBS))
 import Data.ByteString.Short qualified as SBS
 import Data.Int
-import Data.List (insertBy)
+import Data.List (sortOn)
 import Data.Map qualified as Map
 import Data.Sequence qualified as Seq
 import Data.Word
@@ -244,10 +244,11 @@ instance
    where
     -- Order map by the byte-wise ordering of the canonically encoded map keys
     mSorted =
-      Map.foldlWithKey'
-        ( \acc k val ->
-            let keyBytes = toStrictByteString $ toCanonicalCBOR v k
-             in insertBy (\(x, _) (y, _) -> compare x y) (keyBytes, val) acc
-        )
-        []
-        m
+      sortOn fst $
+        Map.foldlWithKey'
+          ( \acc k val ->
+              let keyBytes = toStrictByteString $ toCanonicalCBOR v k
+               in (keyBytes, val) : acc
+          )
+          []
+          m
