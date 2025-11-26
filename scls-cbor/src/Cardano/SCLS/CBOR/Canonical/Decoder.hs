@@ -236,7 +236,7 @@ instance (FromCanonicalCBOR v a) => FromCanonicalCBOR v (Seq.Seq a) where
 
 -- | We always encode maps with the indefinite length encoding.
 instance
-  (FromCanonicalCBOR v k, FromCanonicalCBOR v val) =>
+  (Ord k, FromCanonicalCBOR v k, FromCanonicalCBOR v val) =>
   FromCanonicalCBOR v (Map.Map k val)
   where
   fromCanonicalCBOR = do
@@ -247,8 +247,9 @@ instance
         []
         id
         decodeEntry
-    -- Note that the ordering is reversed since we prepend to the list
-    pure $ Versioned @v $ Map.fromDistinctDescList asList
+    -- Use Map.fromList because encoding uses encoded key byte-order,
+    -- which may not match deserialized order
+    pure $ Versioned @v $ Map.fromList asList
    where
     decodeEntry = do
       Versioned a <- fromCanonicalCBOR @v
