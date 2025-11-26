@@ -20,7 +20,7 @@ import Data.Word
 import GHC.Generics (Generic)
 
 newtype Versioned (v :: Version) a = Versioned {unVer :: a}
-  deriving (Eq, Generic, Ord, Bounded, Functor)
+  deriving (Eq, Generic, Ord, Bounded, Functor, Show)
 
 class FromCanonicalCBOR (v :: Version) a where
   fromCanonicalCBOR :: Decoder s (Versioned v a)
