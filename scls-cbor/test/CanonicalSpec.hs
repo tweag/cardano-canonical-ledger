@@ -17,7 +17,7 @@ import Data.ByteString.Lazy qualified as BSL
 import Data.ByteString.Short (ShortByteString)
 import Data.Data (Typeable, typeRep)
 import Data.Int
-import Data.List (nubBy, sortBy)
+import Data.List (nubBy, sortOn)
 import Data.Map qualified as Map
 import Data.Proxy (Proxy (Proxy))
 import Data.Sequence qualified as Seq
@@ -53,13 +53,13 @@ tests =
             roundtrip Proxy (Proxy @Bool)
             roundtrip Proxy (Proxy @(Map.Map Int ByteString))
       )
-    prop "encoded map is ordered by encoded key byte-order" $ do
+    prop "encoded map is ordered by encoded key byte-order" $
       forAll (genNonDuplicateList (arbitrary @Int) (arbitrary @ByteString)) $
-        \list -> do
+        \list ->
           let m = Map.fromList list
-              sortedList = sortBy (\(k1, _) (k2, _) -> compare (toLazyByteString $ toCanonicalCBOR Proxy k1) (toLazyByteString $ toCanonicalCBOR Proxy k2)) list
+              sortedList = sortOn (toLazyByteString . toCanonicalCBOR Proxy . fst) list
               decoded = deserialiseFromBytes (customMapDecoder Proxy) $ toLazyByteString $ toCanonicalCBOR Proxy m
-          decoded `shouldBe` Right (BSL.empty, sortedList)
+           in decoded `shouldBe` Right (BSL.empty, sortedList)
  where
   roundtrip :: forall v a. (Arbitrary a, Typeable a, Show a, Eq a, ToCanonicalCBOR v a, FromCanonicalCBOR v a) => Proxy v -> Proxy a -> SpecWith ()
   roundtrip p p1 = do
