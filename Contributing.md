@@ -20,15 +20,15 @@ nix develop
 
 This will set up the environment with the required GHC version and all necessary libraries and tools.
 
-#### Multiple GHC versions
+#### Multiple GHC versions and configurations
 
-The Nix setup provides dev shells for various GHC versions. You can enter a shell with a specific GHC version by using:
+The Nix setup provides dev shells for various GHC versions and configurations (test coverage enabled, profiling enabled, ...). You can enter a shell with a specific GHC version by using:
 
 ``` sh
 nix develop .#ghc984
 ```
 
-Replace `ghc984` with the desired GHC version. Available versions can be found in the flake configuration.
+Replace `ghc984` with the desired GHC version and configuration variant. Available options can be found in the flake configuration.
 
 #### Nix cache (optional, but recommended)
 
