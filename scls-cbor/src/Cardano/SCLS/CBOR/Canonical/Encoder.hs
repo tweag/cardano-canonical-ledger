@@ -15,11 +15,13 @@ import Cardano.SCLS.Internal.Version (Version)
 import Codec.CBOR.ByteArray.Sliced qualified as BAS
 import Codec.CBOR.Encoding (Encoding)
 import Codec.CBOR.Encoding qualified as E
+import Codec.CBOR.Write (toStrictByteString)
 import Data.Array.Byte qualified as Prim
 import Data.ByteString (ByteString)
 import Data.ByteString.Short (ShortByteString (SBS))
 import Data.ByteString.Short qualified as SBS
 import Data.Int
+import Data.List (sortOn)
 import Data.Map qualified as Map
 import Data.Sequence qualified as Seq
 import Data.Word
@@ -235,7 +237,18 @@ instance
   where
   toCanonicalCBOR v m =
     E.encodeMapLenIndef
-      <> Map.foldrWithKey
-        (\k val b -> toCanonicalCBOR v k <> toCanonicalCBOR v val <> b)
+      <> foldr
+        (\(k, val) b -> E.encodePreEncoded k <> toCanonicalCBOR v val <> b)
         E.encodeBreak
-        m
+        mSorted
+   where
+    -- Order map by the byte-wise ordering of the canonically encoded map keys
+    mSorted =
+      sortOn fst $
+        Map.foldlWithKey'
+          ( \acc k val ->
+              let keyBytes = toStrictByteString $ toCanonicalCBOR v k
+               in (keyBytes, val) : acc
+          )
+          []
+          m
