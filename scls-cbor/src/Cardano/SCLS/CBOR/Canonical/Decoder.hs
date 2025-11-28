@@ -49,42 +49,42 @@ instance FromCanonicalCBOR v Bool where
 --------------------------------------------------------------------------------
 
 instance FromCanonicalCBOR v Integer where
-  fromCanonicalCBOR = Versioned @v <$> D.decodeInteger
+  fromCanonicalCBOR = Versioned @v <$> D.decodeIntegerCanonical
 
 instance FromCanonicalCBOR v Word where
-  fromCanonicalCBOR = Versioned @v <$> D.decodeWord
+  fromCanonicalCBOR = Versioned @v <$> D.decodeWordCanonical
 
 instance FromCanonicalCBOR v Word8 where
-  fromCanonicalCBOR = Versioned @v <$> D.decodeWord8
+  fromCanonicalCBOR = Versioned @v <$> D.decodeWord8Canonical
 
 instance FromCanonicalCBOR v Word16 where
-  fromCanonicalCBOR = Versioned @v <$> D.decodeWord16
+  fromCanonicalCBOR = Versioned @v <$> D.decodeWord16Canonical
 
 instance FromCanonicalCBOR v Word32 where
-  fromCanonicalCBOR = Versioned @v <$> D.decodeWord32
+  fromCanonicalCBOR = Versioned @v <$> D.decodeWord32Canonical
 
 instance FromCanonicalCBOR v Word64 where
-  fromCanonicalCBOR = Versioned @v <$> D.decodeWord64
+  fromCanonicalCBOR = Versioned @v <$> D.decodeWord64Canonical
 
 instance FromCanonicalCBOR v Int where
-  fromCanonicalCBOR = Versioned @v <$> D.decodeInt
+  fromCanonicalCBOR = Versioned @v <$> D.decodeIntCanonical
 
 instance FromCanonicalCBOR v Int32 where
-  fromCanonicalCBOR = Versioned @v <$> D.decodeInt32
+  fromCanonicalCBOR = Versioned @v <$> D.decodeInt32Canonical
 
 instance FromCanonicalCBOR v Int64 where
-  fromCanonicalCBOR = Versioned @v <$> D.decodeInt64
+  fromCanonicalCBOR = Versioned @v <$> D.decodeInt64Canonical
 
 --------------------------------------------------------------------------------
 -- Bytes
 --------------------------------------------------------------------------------
 
 instance FromCanonicalCBOR v ByteString where
-  fromCanonicalCBOR = Versioned @v <$> D.decodeBytes
+  fromCanonicalCBOR = Versioned @v <$> D.decodeBytesCanonical
 
 instance FromCanonicalCBOR v SBS.ShortByteString where
   fromCanonicalCBOR = do
-    BA.BA (Prim.ByteArray ba) <- D.decodeByteArray
+    BA.BA (Prim.ByteArray ba) <- D.decodeByteArrayCanonical
     pure $ Versioned @v $ SBS.SBS ba
 
 --------------------------------------------------------------------------------
@@ -103,7 +103,7 @@ instance
   FromCanonicalCBOR v (a, b)
   where
   fromCanonicalCBOR = do
-    D.decodeListLenOf 2
+    D.decodeListLenCanonicalOf 2
     Versioned a <- fromCanonicalCBOR @v
     Versioned b <- fromCanonicalCBOR @v
     pure $ Versioned @v (a, b)
@@ -113,7 +113,7 @@ instance
   FromCanonicalCBOR v (a, b, c)
   where
   fromCanonicalCBOR = do
-    D.decodeListLenOf 2
+    D.decodeListLenCanonicalOf 2
     Versioned a <- fromCanonicalCBOR @v
     Versioned b <- fromCanonicalCBOR @v
     Versioned c <- fromCanonicalCBOR @v
@@ -128,7 +128,7 @@ instance
   FromCanonicalCBOR v (a, b, c, d)
   where
   fromCanonicalCBOR = do
-    D.decodeListLenOf 2
+    D.decodeListLenCanonicalOf 2
     Versioned a <- fromCanonicalCBOR @v
     Versioned b <- fromCanonicalCBOR @v
     Versioned c <- fromCanonicalCBOR @v
@@ -145,7 +145,7 @@ instance
   FromCanonicalCBOR v (a, b, c, d, e)
   where
   fromCanonicalCBOR = do
-    D.decodeListLenOf 2
+    D.decodeListLenCanonicalOf 2
     Versioned a <- fromCanonicalCBOR @v
     Versioned b <- fromCanonicalCBOR @v
     Versioned c <- fromCanonicalCBOR @v
@@ -164,7 +164,7 @@ instance
   FromCanonicalCBOR v (a, b, c, d, e, f)
   where
   fromCanonicalCBOR = do
-    D.decodeListLenOf 2
+    D.decodeListLenCanonicalOf 2
     Versioned a <- fromCanonicalCBOR @v
     Versioned b <- fromCanonicalCBOR @v
     Versioned c <- fromCanonicalCBOR @v
@@ -185,7 +185,7 @@ instance
   FromCanonicalCBOR v (a, b, c, d, e, f, g)
   where
   fromCanonicalCBOR = do
-    D.decodeListLenOf 2
+    D.decodeListLenCanonicalOf 2
     Versioned a <- fromCanonicalCBOR @v
     Versioned b <- fromCanonicalCBOR @v
     Versioned c <- fromCanonicalCBOR @v
@@ -208,7 +208,7 @@ instance
   FromCanonicalCBOR v (a, b, c, d, e, f, g, h)
   where
   fromCanonicalCBOR = do
-    D.decodeListLenOf 2
+    D.decodeListLenCanonicalOf 2
     Versioned a <- fromCanonicalCBOR @v
     Versioned b <- fromCanonicalCBOR @v
     Versioned c <- fromCanonicalCBOR @v
@@ -226,7 +226,7 @@ instance
 -- | We always encode lists with the definite length encoding.
 instance (FromCanonicalCBOR v a) => FromCanonicalCBOR v [a] where
   fromCanonicalCBOR = do
-    len <- D.decodeListLen
+    len <- D.decodeListLenCanonical
     D.decodeSequenceLenN
       (\acc (Versioned x) -> x : acc)
       []
