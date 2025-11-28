@@ -153,7 +153,7 @@ such interface is more composable.
 
 {- | Create a stream of the entries from the given namespace.
 
-Attendion this method does work on the provided handle and it
+Attention this method does work on the provided handle and it
 will not be safe to use in case if other parts of the stream
 use this handle as well.
 -}
