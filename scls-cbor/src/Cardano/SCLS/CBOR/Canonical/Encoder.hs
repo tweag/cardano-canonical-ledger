@@ -224,32 +224,27 @@ instance
 -- Lists
 --------------------------------------------------------------------------------
 
--- | We always encode lists with the indefinite length encoding.
+-- | We always encode lists with the definite length encoding.
 instance (ToCanonicalCBOR v a) => ToCanonicalCBOR v [a] where
   toCanonicalCBOR v xs =
-    E.encodeListLenIndef
-      <> foldr (\x r -> toCanonicalCBOR v x <> r) E.encodeBreak xs
+    E.encodeListLen (fromIntegral $ length xs) <> foldMap (toCanonicalCBOR v) xs
 
 instance (ToCanonicalCBOR v a) => ToCanonicalCBOR v (Seq.Seq a) where
   toCanonicalCBOR v xs =
-    E.encodeListLenIndef
-      <> foldr (\x r -> toCanonicalCBOR v x <> r) E.encodeBreak xs
+    E.encodeListLen (fromIntegral $ length xs) <> foldMap (toCanonicalCBOR v) xs
 
 --------------------------------------------------------------------------------
 -- Maps
 --------------------------------------------------------------------------------
 
--- | We always encode maps with the indefinite length encoding.
+-- | We always encode maps with the definite length encoding and ordered by encoded keys byte-order.
 instance
   (ToCanonicalCBOR v k, ToCanonicalCBOR v val) =>
   ToCanonicalCBOR v (Map.Map k val)
   where
   toCanonicalCBOR v m =
-    E.encodeMapLenIndef
-      <> foldr
-        (\(k, val) b -> E.encodePreEncoded k <> toCanonicalCBOR v val <> b)
-        E.encodeBreak
-        mSorted
+    (E.encodeMapLen (fromIntegral $ length mSorted))
+      <> foldMap (\(k, val) -> E.encodePreEncoded k <> toCanonicalCBOR v val) mSorted
    where
     -- Order map by the byte-wise ordering of the canonically encoded map keys
     mSorted =
