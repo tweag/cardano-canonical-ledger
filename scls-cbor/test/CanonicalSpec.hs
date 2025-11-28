@@ -85,11 +85,12 @@ tests =
   -- Decode map as list of pairs
   customMapDecoder :: forall v s a b. (FromCanonicalCBOR v a, FromCanonicalCBOR v b) => Proxy v -> Decoder s ([(a, b)])
   customMapDecoder _ = do
-    D.decodeMapLenIndef
-    D.decodeSequenceLenIndef
+    len <- D.decodeMapLenCanonical
+    D.decodeSequenceLenN
       (\acc x -> x : acc)
       []
       reverse -- We prepend, so we must reverse at the end
+      len
       do
         Versioned a <- fromCanonicalCBOR @v
         Versioned b <- fromCanonicalCBOR @v

@@ -224,14 +224,15 @@ instance
 -- Lists
 --------------------------------------------------------------------------------
 
--- | We always encode lists with the indefinite length encoding.
+-- | We always encode lists with the definite length encoding.
 instance (FromCanonicalCBOR v a) => FromCanonicalCBOR v [a] where
   fromCanonicalCBOR = do
-    D.decodeListLenIndef
-    D.decodeSequenceLenIndef
+    len <- D.decodeListLen
+    D.decodeSequenceLenN
       (\acc (Versioned x) -> x : acc)
       []
       (Versioned @v . reverse)
+      len
       (fromCanonicalCBOR @v)
 
 instance (FromCanonicalCBOR v a) => FromCanonicalCBOR v (Seq.Seq a) where
@@ -241,18 +242,19 @@ instance (FromCanonicalCBOR v a) => FromCanonicalCBOR v (Seq.Seq a) where
 -- Maps
 --------------------------------------------------------------------------------
 
--- | We always encode maps with the indefinite length encoding.
+-- | We always encode maps with the definite length encoding.
 instance
   (Ord k, FromCanonicalCBOR v k, FromCanonicalCBOR v val) =>
   FromCanonicalCBOR v (Map.Map k val)
   where
   fromCanonicalCBOR = do
-    D.decodeMapLenIndef
+    len <- D.decodeMapLenCanonical
     asList <-
-      D.decodeSequenceLenIndef
+      D.decodeSequenceLenN
         (\acc x -> x : acc)
         []
         id
+        len
         decodeEntry
     -- Use Map.fromList because encoding uses encoded key byte-order,
     -- which may not match deserialized order
