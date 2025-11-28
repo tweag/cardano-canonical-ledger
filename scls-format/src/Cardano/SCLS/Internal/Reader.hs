@@ -147,7 +147,7 @@ withHeader filePath f = do
 
 {- $stream
 Stream API is used to provide an interface for the streaming framework.
-In this case usage of the resources is responcibility of the caller, however
+In this case usage of the resources is responsibility of the caller, however
 such interface is more composable.
 -}
 
