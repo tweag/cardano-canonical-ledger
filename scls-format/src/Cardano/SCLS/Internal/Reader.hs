@@ -13,6 +13,11 @@ module Cardano.SCLS.Internal.Reader (
   extractNamespaceHash,
   withKnownNamespacedData,
 
+  -- * Stream API
+  -- $stream
+  namespacedData,
+  knownNamespacedData,
+
   -- * Low-level functions
   decodeChunkEntries,
 ) where
@@ -27,7 +32,7 @@ import Control.Monad (when)
 import Control.Monad.Trans.Fail
 import Data.ByteString qualified as BS
 import Data.Foldable (for_)
-import Data.Function (fix)
+import Data.Function (fix, (&))
 import Data.Map.Strict qualified as Map
 import Data.MemPack (MemPack, unpack, unpackLeftOver)
 import Data.MemPack.ByteOrdered (BigEndian (BigEndian))
@@ -64,19 +69,7 @@ decodeChunkEntries = go
 -- | Stream all data chunks for the given namespace.
 withNamespacedData :: (MemPack u, Typeable u) => FilePath -> Namespace -> (S.Stream (S.Of u) IO () -> IO a) -> IO a
 withNamespacedData filePath namespace f =
-  IO.withBinaryFile filePath ReadMode \handle -> f (stream handle)
- where
-  stream handle = do
-    flip fix headerOffset \go record -> do
-      next <- S.liftIO do
-        fetchNextFrame handle record
-      for_ next \next_record -> do
-        dataRecord <- S.liftIO do
-          fetchOffsetFrame handle next_record
-        for_ (decodeFrame dataRecord) \chunkRecord -> do
-          when (chunkNamespace (frameViewContent (chunkRecord)) == namespace) do
-            decodeChunkEntries (chunkData $ frameViewContent chunkRecord)
-        go next_record
+  IO.withBinaryFile filePath ReadMode (\handle -> f (namespacedData handle namespace))
 
 withKnownNamespacedData :: forall ns r. (KnownSymbol ns, KnownNamespace ns) => FilePath -> Proxy ns -> (S.Stream (S.Of (ChunkEntry (NamespaceKey ns) (NamespaceEntry ns))) IO () -> IO r) -> IO r
 withKnownNamespacedData filePath p f =
@@ -151,3 +144,41 @@ withHeader filePath f = do
     case decodeFrame frameData of
       Right FrameView{frameViewContent = hdr@Hdr{}} -> f hdr
       Left _ -> error "Failed to decode header"
+
+{- $stream
+Stream API is used to provide an interface for the streaming framework.
+In this case usage of the resources is responcibility of the caller, however
+such interface is more composable.
+-}
+
+{- | Create a stream of the entries from the given namespace.
+
+Attendion this method does work on the provided handle and it
+will not be safe to use in case if other parts of the stream
+use this handle as well.
+-}
+namespacedData :: (MemPack u, Typeable u) => Handle -> Namespace -> S.Stream (S.Of u) IO ()
+namespacedData handle namespace = stream
+ where
+  stream = do
+    S.liftIO $ hSeek handle AbsoluteSeek 0
+    flip fix headerOffset \go record -> do
+      next <- S.liftIO do
+        fetchNextFrame handle record
+      for_ next \next_record -> do
+        dataRecord <- S.liftIO do
+          fetchOffsetFrame handle next_record
+        for_ (decodeFrame dataRecord) \chunkRecord -> do
+          when (chunkNamespace (frameViewContent (chunkRecord)) == namespace) do
+            decodeChunkEntries (chunkData $ frameViewContent chunkRecord)
+        go next_record
+
+knownNamespacedData :: forall ns. (KnownSymbol ns, KnownNamespace ns) => Handle -> Proxy ns -> S.Stream (S.Of (ChunkEntry (NamespaceKey ns) (NamespaceEntry ns))) IO ()
+knownNamespacedData handle p =
+  namespacedData
+    @(ChunkEntry (ByteStringSized (NamespaceKeySize ns)) RawBytes)
+    handle
+    namespace
+    & S.map (fromJust . decodeChunkEntry p)
+ where
+  namespace = Namespace.fromSymbol p
