@@ -35,7 +35,7 @@ namespaces =
     , ("blocks/v0", NamespaceInfo (collectFromInit [HIRule Blocks.record_entry]) 36) -- 28 bytes for key, and 8 for epoch in BE
     , ("pots/v0", NamespaceInfo (collectFromInit [HIRule Pots.record_entry]) 8) -- Key is epoch number
     , ("pool_stake/v0", NamespaceInfo (collectFromInit [HIRule PoolStake.record_entry]) 28) -- 28 bytes for key
-    , ("snapshots/v0", NamespaceInfo (collectFromInit [HIRule Snapshots.record_entry]) 30)
+    , ("snapshots/v0", NamespaceInfo (collectFromInit [HIRule Snapshots.record_entry]) 32)
     , ("gov/committee/v0", NamespaceInfo (collectFromInit [HIRule GovCommittee.record_entry]) 8)
     , ("gov/constitution/v0", NamespaceInfo (collectFromInit [HIRule GovConstitution.record_entry]) 8)
     , ("gov/pparams/v0", NamespaceInfo (collectFromInit [HIRule GovPParams.record_entry]) 4)
