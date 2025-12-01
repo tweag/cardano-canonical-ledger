@@ -2,6 +2,7 @@
 module Data.MemPack.ByteOrdered (
   BigEndian (..),
   Storable (..),
+  packWord16beM,
   packWord32beM,
   packWord64beM,
   unpackBigEndianM,
@@ -44,6 +45,9 @@ instance (Bytes a, MemPack a) => MemPack (BigEndian a) where
 
 packBigEndianM :: (Bytes a, MemPack a) => a -> Pack s ()
 packBigEndianM = packM . BigEndian
+
+packWord16beM :: Word16 -> Pack s ()
+packWord16beM = packBigEndianM
 
 packWord32beM :: Word32 -> Pack s ()
 packWord32beM = packBigEndianM
