@@ -242,7 +242,7 @@ instance (FromCanonicalCBOR v a) => FromCanonicalCBOR v (Seq.Seq a) where
 -- Maps
 --------------------------------------------------------------------------------
 
--- | We always encode maps with the definite length encoding.
+-- | We always encode maps with the definite length encoding. This does not check canonical order of keys.
 instance
   (Ord k, FromCanonicalCBOR v k, FromCanonicalCBOR v val) =>
   FromCanonicalCBOR v (Map.Map k val)
