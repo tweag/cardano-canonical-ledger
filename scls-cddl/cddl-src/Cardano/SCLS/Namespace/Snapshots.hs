@@ -95,4 +95,4 @@ pool_metadata :: Rule
 pool_metadata = "pool_metadata" =:= arr [a url, a pool_metadata_hash]
 
 pool_metadata_hash :: Rule
-pool_metadata_hash = "pool_metadata_hash" =:= hash32
+pool_metadata_hash = "pool_metadata_hash" =:= VBytes
