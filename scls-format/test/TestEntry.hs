@@ -1,4 +1,5 @@
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
@@ -26,6 +27,7 @@ import Data.Data (Proxy (Proxy))
 import Data.MemPack (packByteStringM, unpackByteStringM)
 import Data.MemPack.Extra (ByteStringSized (ByteStringSized))
 import System.Random.Stateful (Uniform (uniformM), globalStdGen, uniformByteStringM)
+import Test.QuickCheck
 
 -- | Example data type for testing
 newtype TestEntryKey = TestEntryKey BS.ByteString
@@ -45,8 +47,12 @@ data TestEntry = TestEntry
   }
   deriving (Eq, Show)
 
+instance Arbitrary TestEntry where
+  arbitrary = TestEntry <$> (BS.pack <$> arbitrary) <*> arbitrary
+
 newtype TestUTxO = TestUTxO TestEntry
   deriving (Eq, Show)
+  deriving newtype (Arbitrary)
 
 newtype TestUTxOKey = TestUTxOKey BS.ByteString
   deriving (Eq, Ord)
@@ -65,6 +71,7 @@ instance IsKey TestUTxOKey where
 
 newtype TestBlock = TestBlock TestEntry
   deriving (Eq, Show)
+  deriving newtype (Arbitrary)
 
 newtype TestBlockKey = TestBlockKey BS.ByteString
   deriving (Eq, Ord)

@@ -6,6 +6,8 @@ module CanonicalSpec (
 
 import Cardano.SCLS.CBOR.Canonical.Decoder (FromCanonicalCBOR (fromCanonicalCBOR), Versioned (Versioned))
 import Cardano.SCLS.CBOR.Canonical.Encoder (ToCanonicalCBOR (toCanonicalCBOR))
+
+-- import Cardano.SCLS.Internal.Version (Version (V1))
 import Codec.CBOR.Decoding (Decoder)
 import Codec.CBOR.Decoding qualified as D
 import Codec.CBOR.Read (deserialiseFromBytes)

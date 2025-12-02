@@ -12,6 +12,8 @@ module NamespacedEncodingSpec where
 
 import Cardano.SCLS.Internal.NamespaceCodec (CanonicalCBOREntryDecoder (decodeEntry), CanonicalCBOREntryEncoder (encodeEntry), Versioned (Versioned))
 import Cardano.SCLS.Internal.Serializer.Dump.Plan (addNamespacedChunks, defaultSerializationPlan)
+
+-- import Cardano.SCLS.Testlib
 import Codec.CBOR.Read (deserialiseFromBytes)
 import Codec.CBOR.Write
 import Control.Monad (replicateM)
@@ -48,3 +50,7 @@ spec = do
               & addNamespacedChunks (Proxy @"blocks/v0") (S.each blocks)
       -- Just checking if the type-checker is happy
       pure ()
+
+-- describe "TestEnry passes tests" do
+--   testNS @"utxo/v0"
+--   testNS @"blocks/v0"
