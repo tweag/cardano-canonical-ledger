@@ -257,3 +257,21 @@ instance
           )
           []
           m
+
+-- | Encode a `Foldable` instance with key-value pairs as elements as a CBOR map
+encodeAsMap :: (Foldable t, ToCanonicalCBOR v a, ToCanonicalCBOR v b) => proxy v -> t (a, b) -> Encoding
+encodeAsMap v l =
+  foldl'
+    (\b (k, val) -> b <> E.encodePreEncoded k <> toCanonicalCBOR v val)
+    (E.encodeMapLen (fromIntegral $ length sorted))
+    sorted
+ where
+  sorted =
+    sortOn fst $
+      foldl'
+        ( \acc (k, val) ->
+            let keyBytes = toStrictByteString $ toCanonicalCBOR v k
+             in (keyBytes, val) : acc
+        )
+        []
+        l
