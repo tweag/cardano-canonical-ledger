@@ -1,4 +1,4 @@
-cabal-version: 3.14
+cabal-version: 3.0
 name: scls-cbor
 version: 0.1.0.0
 synopsis: CBOR utilities for the Cardano Canonical Ledger State

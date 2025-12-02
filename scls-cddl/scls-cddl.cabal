@@ -1,4 +1,4 @@
-cabal-version: 3.14
+cabal-version: 3.0
 name: scls-cddl
 version: 0.1.0.0
 synopsis: CDDL Namespace Definitions and Serialisation Code
@@ -43,7 +43,7 @@ library
     containers >=0.6,
     cuddle >=0.3,
     heredoc >=0.2,
-    text
+    text,
 
   hs-source-dirs:
     cddl-src
@@ -64,7 +64,7 @@ library validate
     cuddle >=0.3,
     scls-cddl,
     text,
-    transformers
+    transformers,
 
   hs-source-dirs:
     cddl-validate
@@ -84,7 +84,7 @@ executable gen-cddl
     filepath >=1.4,
     prettyprinter,
     scls-cddl,
-    text
+    text,
 
 test-suite scls-util-test
   import: warnings
