@@ -10,6 +10,7 @@
 module Cardano.SCLS.Namespace.GovProposals where
 
 import Cardano.SCLS.Common
+import Cardano.SCLS.Namespace.GovConstitution (constitution)
 import Cardano.SCLS.Namespace.GovPParams
 import Codec.CBOR.Cuddle.Comments ((//-))
 import Codec.CBOR.Cuddle.Huddle
@@ -77,7 +78,7 @@ gov_action =
           ]
           //- "Committee membership update"
       )
-    / (arr [5, "purpose" ==> (gov_action_id / VNil)] //- "New constitution")
+    / (arr [5, "purpose" ==> (gov_action_id / VNil), "constitution" ==> constitution] //- "New constitution")
     / (arr [6, a VNil] //- "Info action")
 
 gov_action_id :: Rule
