@@ -9,7 +9,10 @@ example, since there are multiple possible ways to encode 'Maybe' we do
 not provide an instance here - it is better to specify the precise encoding
 when defining the instances for specific types.
 -}
-module Cardano.SCLS.CBOR.Canonical.Encoder where
+module Cardano.SCLS.CBOR.Canonical.Encoder (
+  ToCanonicalCBOR (..),
+  CanonicalEncoding (unCanonicalEncoding),
+) where
 
 import Codec.CBOR.ByteArray.Sliced qualified as BAS
 import Codec.CBOR.Encoding (Encoding)
@@ -27,69 +30,74 @@ import Data.Text (Text)
 import Data.Word
 import GHC.TypeLits
 
+newtype CanonicalEncoding = CanonicalEncoding {unCanonicalEncoding :: Encoding}
+  deriving (Semigroup)
+
 -- | Encode data to CBOR corresponding with the SCLS format.
 class ToCanonicalCBOR (v :: Symbol) a where
   -- | Encode to canonical CBOR at a given version
-  toCanonicalCBOR :: proxy v -> a -> Encoding
+  toCanonicalCBOR :: proxy v -> a -> CanonicalEncoding
 
 --------------------------------------------------------------------------------
 -- Encoding, Term etc
 --------------------------------------------------------------------------------
 
 instance ToCanonicalCBOR v Encoding where
-  toCanonicalCBOR _ = id
+  toCanonicalCBOR _ = CanonicalEncoding
 
 --------------------------------------------------------------------------------
 -- Primitive types
 --------------------------------------------------------------------------------
 
 instance ToCanonicalCBOR v () where
-  toCanonicalCBOR _ = const E.encodeNull
+  toCanonicalCBOR _ = CanonicalEncoding . const E.encodeNull
 
 instance ToCanonicalCBOR v Bool where
-  toCanonicalCBOR _ = E.encodeBool
+  toCanonicalCBOR _ = CanonicalEncoding . E.encodeBool
 
 --------------------------------------------------------------------------------
 -- Numeric data
 --------------------------------------------------------------------------------
 
 instance ToCanonicalCBOR v Integer where
-  toCanonicalCBOR _ = E.encodeInteger
+  toCanonicalCBOR _ = CanonicalEncoding . E.encodeInteger
 
 instance ToCanonicalCBOR v Word where
-  toCanonicalCBOR _ = E.encodeWord
+  toCanonicalCBOR _ = CanonicalEncoding . E.encodeWord
 
 instance ToCanonicalCBOR v Word8 where
-  toCanonicalCBOR _ = E.encodeWord8
+  toCanonicalCBOR _ = CanonicalEncoding . E.encodeWord8
 
 instance ToCanonicalCBOR v Word16 where
-  toCanonicalCBOR _ = E.encodeWord16
+  toCanonicalCBOR _ = CanonicalEncoding . E.encodeWord16
 
 instance ToCanonicalCBOR v Word32 where
-  toCanonicalCBOR _ = E.encodeWord32
+  toCanonicalCBOR _ = CanonicalEncoding . E.encodeWord32
 
 instance ToCanonicalCBOR v Word64 where
-  toCanonicalCBOR _ = E.encodeWord64
+  toCanonicalCBOR _ = CanonicalEncoding . E.encodeWord64
 
 instance ToCanonicalCBOR v Int where
-  toCanonicalCBOR _ = E.encodeInt
+  toCanonicalCBOR _ = CanonicalEncoding . E.encodeInt
 
 instance ToCanonicalCBOR v Int32 where
-  toCanonicalCBOR _ = E.encodeInt32
+  toCanonicalCBOR _ = CanonicalEncoding . E.encodeInt32
 
 instance ToCanonicalCBOR v Int64 where
-  toCanonicalCBOR _ = E.encodeInt64
+  toCanonicalCBOR _ = CanonicalEncoding . E.encodeInt64
 
 --------------------------------------------------------------------------------
 -- Bytes
 --------------------------------------------------------------------------------
 
 instance ToCanonicalCBOR v ByteString where
-  toCanonicalCBOR _ = E.encodeBytes
+  toCanonicalCBOR _ = CanonicalEncoding . E.encodeBytes
 
 instance ToCanonicalCBOR v SBS.ShortByteString where
   toCanonicalCBOR _ sbs@(SBS ba) =
-    E.encodeByteArray $ BAS.SBA (Prim.ByteArray ba) 0 (SBS.length sbs)
+    CanonicalEncoding $
+      E.encodeByteArray $
+        BAS.SBA (Prim.ByteArray ba) 0 (SBS.length sbs)
 
 --------------------------------------------------------------------------------
 -- Text
@@ -107,7 +115,7 @@ instance
   ToCanonicalCBOR v (a, b)
   where
   toCanonicalCBOR v (a, b) =
-    E.encodeListLen 2
+    CanonicalEncoding (E.encodeListLen 2)
       <> toCanonicalCBOR v a
       <> toCanonicalCBOR v b
 
@@ -119,7 +127,7 @@ instance
   ToCanonicalCBOR v (a, b, c)
   where
   toCanonicalCBOR v (a, b, c) =
-    E.encodeListLen 3
+    CanonicalEncoding (E.encodeListLen 3)
       <> toCanonicalCBOR v a
       <> toCanonicalCBOR v b
       <> toCanonicalCBOR v c
@@ -133,7 +141,7 @@ instance
   ToCanonicalCBOR v (a, b, c, d)
   where
   toCanonicalCBOR v (a, b, c, d) =
-    E.encodeListLen 4
+    CanonicalEncoding (E.encodeListLen 4)
       <> toCanonicalCBOR v a
       <> toCanonicalCBOR v b
       <> toCanonicalCBOR v c
@@ -149,7 +157,7 @@ instance
   ToCanonicalCBOR v (a, b, c, d, e)
   where
   toCanonicalCBOR v (a, b, c, d, e) =
-    E.encodeListLen 5
+    CanonicalEncoding (E.encodeListLen 5)
       <> toCanonicalCBOR v a
       <> toCanonicalCBOR v b
       <> toCanonicalCBOR v c
@@ -167,7 +175,7 @@ instance
   ToCanonicalCBOR v (a, b, c, d, e, f)
   where
   toCanonicalCBOR v (a, b, c, d, e, f) =
-    E.encodeListLen 6
+    CanonicalEncoding (E.encodeListLen 6)
       <> toCanonicalCBOR v a
       <> toCanonicalCBOR v b
       <> toCanonicalCBOR v c
@@ -187,7 +195,7 @@ instance
   ToCanonicalCBOR v (a, b, c, d, e, f, g)
   where
   toCanonicalCBOR v (a, b, c, d, e, f, g) =
-    E.encodeListLen 7
+    CanonicalEncoding (E.encodeListLen 7)
       <> toCanonicalCBOR v a
       <> toCanonicalCBOR v b
       <> toCanonicalCBOR v c
@@ -209,7 +217,7 @@ instance
   ToCanonicalCBOR v (a, b, c, d, e, f, g, h)
   where
   toCanonicalCBOR v (a, b, c, d, e, f, g, h) =
-    E.encodeListLen 8
+    CanonicalEncoding (E.encodeListLen 8)
       <> toCanonicalCBOR v a
       <> toCanonicalCBOR v b
       <> toCanonicalCBOR v c
@@ -226,11 +234,11 @@ instance
 -- | We always encode lists with the definite length encoding.
 instance (ToCanonicalCBOR v a) => ToCanonicalCBOR v [a] where
   toCanonicalCBOR v xs =
-    foldl' (\r x -> r <> toCanonicalCBOR v x) (E.encodeListLen (fromIntegral $ length xs)) xs
+    foldl' (\r x -> r <> toCanonicalCBOR v x) (CanonicalEncoding (E.encodeListLen (fromIntegral $ length xs))) xs
 
 instance (ToCanonicalCBOR v a) => ToCanonicalCBOR v (Seq.Seq a) where
   toCanonicalCBOR v xs =
-    foldl' (\r x -> r <> toCanonicalCBOR v x) (E.encodeListLen (fromIntegral $ length xs)) xs
+    foldl' (\r x -> r <> toCanonicalCBOR v x) (CanonicalEncoding (E.encodeListLen (fromIntegral $ length xs))) xs
 
 --------------------------------------------------------------------------------
 -- Maps
@@ -243,8 +251,8 @@ instance
   where
   toCanonicalCBOR v m =
     foldl'
-      (\b (k, val) -> b <> E.encodePreEncoded k <> toCanonicalCBOR v val)
-      (E.encodeMapLen (fromIntegral $ length mSorted))
+      (\b (k, val) -> b <> CanonicalEncoding (E.encodePreEncoded k) <> toCanonicalCBOR v val)
+      (CanonicalEncoding (E.encodeMapLen (fromIntegral $ length mSorted)))
       mSorted
    where
     -- Order map by the byte-wise ordering of the canonically encoded map keys
@@ -252,25 +260,25 @@ instance
       sortOn fst $
         Map.foldlWithKey'
           ( \acc k val ->
-              let keyBytes = toStrictByteString $ toCanonicalCBOR v k
+              let keyBytes = toStrictByteString $ unCanonicalEncoding $ toCanonicalCBOR v k
                in (keyBytes, val) : acc
           )
           []
           m
 
 -- | Encode a `Foldable` instance with key-value pairs as elements as a CBOR map
-encodeAsMap :: (Foldable t, ToCanonicalCBOR v a, ToCanonicalCBOR v b) => proxy v -> t (a, b) -> Encoding
+encodeAsMap :: (Foldable t, ToCanonicalCBOR v a, ToCanonicalCBOR v b) => proxy v -> t (a, b) -> CanonicalEncoding
 encodeAsMap v l =
   foldl'
-    (\b (k, val) -> b <> E.encodePreEncoded k <> toCanonicalCBOR v val)
-    (E.encodeMapLen (fromIntegral $ length sorted))
+    (\b (k, val) -> b <> CanonicalEncoding (E.encodePreEncoded k) <> toCanonicalCBOR v val)
+    (CanonicalEncoding (E.encodeMapLen (fromIntegral $ length sorted)))
     sorted
  where
   sorted =
     sortOn fst $
       foldl'
         ( \acc (k, val) ->
-            let keyBytes = toStrictByteString $ toCanonicalCBOR v k
+            let keyBytes = toStrictByteString $ unCanonicalEncoding $ toCanonicalCBOR v k
              in (keyBytes, val) : acc
         )
         []
