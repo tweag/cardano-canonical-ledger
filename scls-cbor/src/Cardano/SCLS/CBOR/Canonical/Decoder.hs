@@ -89,6 +89,13 @@ instance FromCanonicalCBOR v SBS.ShortByteString where
     pure $ Versioned @v $ SBS.SBS ba
 
 --------------------------------------------------------------------------------
+-- Text
+--------------------------------------------------------------------------------
+
+instance FromCanonicalCBOR v T.Text where
+  fromCanonicalCBOR = Versioned @v <$> D.decodeStringCanonical
+
+--------------------------------------------------------------------------------
 -- Tuples
 --------------------------------------------------------------------------------
 
