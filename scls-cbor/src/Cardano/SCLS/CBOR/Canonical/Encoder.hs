@@ -9,7 +9,11 @@ example, since there are multiple possible ways to encode 'Maybe' we do
 not provide an instance here - it is better to specify the precise encoding
 when defining the instances for specific types.
 -}
-module Cardano.SCLS.CBOR.Canonical.Encoder where
+module Cardano.SCLS.CBOR.Canonical.Encoder (
+  ToCanonicalCBOR (..),
+  CanonicalEncoding (unCanonicalEncoding),
+  encodeAsMap,
+) where
 
 import Codec.CBOR.ByteArray.Sliced qualified as BAS
 import Codec.CBOR.Encoding (Encoding)
@@ -19,6 +23,7 @@ import Data.Array.Byte qualified as Prim
 import Data.ByteString (ByteString)
 import Data.ByteString.Short (ShortByteString (SBS))
 import Data.ByteString.Short qualified as SBS
+import Data.Foldable qualified as F
 import Data.Int
 import Data.List qualified as List
 import Data.Map qualified as Map
@@ -27,6 +32,9 @@ import Data.Set qualified as Set
 import Data.Text (Text)
 import Data.Word
 import GHC.TypeLits
+
+newtype CanonicalEncoding = CanonicalEncoding {unCanonicalEncoding :: Encoding}
+  deriving (Semigroup, Monoid)
 
 -- | Encode data to CBOR corresponding with the SCLS format.
 class ToCanonicalCBOR (v :: Symbol) a where
@@ -243,19 +251,33 @@ instance
   ToCanonicalCBOR v (Map.Map k val)
   where
   toCanonicalCBOR v m =
-    (E.encodeMapLen (fromIntegral $ length mSorted))
-      <> foldMap (\(k, val) -> E.encodePreEncoded k <> toCanonicalCBOR v val) mSorted
+    encodeAsMap v l
    where
-    -- Order map by the byte-wise ordering of the canonically encoded map keys
-    mSorted =
-      List.sortOn fst $
-        Map.foldlWithKey'
-          ( \acc k val ->
-              let keyBytes = toStrictByteString $ toCanonicalCBOR v k
-               in (keyBytes, val) : acc
-          )
-          []
-          m
+    l =
+      Map.foldlWithKey'
+        ( \acc k val ->
+            let kEncoding = toCanonicalCBOR v k
+                valEncoding = toCanonicalCBOR v val
+             in (kEncoding, valEncoding) : acc
+        )
+        []
+        m
+
+encodeAsMap :: (Foldable t) => proxy (v :: Symbol) -> t (Encoding, Encoding) -> Encoding
+encodeAsMap v f =
+  (toCanonicalCBOR v (E.encodeMapLen (fromIntegral $ length f)))
+    <> foldMap (\(kBytes, valEncoding) -> toCanonicalCBOR v (E.encodePreEncoded kBytes) <> valEncoding) sorted
+ where
+  -- Order map by the byte-wise ordering of the canonically encoded map keys
+  sorted =
+    List.sortOn fst $
+      F.foldl'
+        ( \acc (kEncoding, valEncoding) ->
+            let kBytes = toStrictByteString kEncoding
+             in (kBytes, valEncoding) : acc
+        )
+        []
+        f
 
 --------------------------------------------------------------------------------
 -- Set
