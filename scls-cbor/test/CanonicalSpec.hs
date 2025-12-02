@@ -20,6 +20,7 @@ import Data.List (nubBy, sortOn)
 import Data.Map qualified as Map
 import Data.Proxy (Proxy (Proxy))
 import Data.Sequence qualified as Seq
+import Data.Text qualified as T
 import Data.Word (Word16, Word32, Word64, Word8)
 import Test.Hspec
 import Test.Hspec.QuickCheck (prop)
@@ -51,6 +52,7 @@ tests =
             roundtrip Proxy (Proxy @(Seq.Seq Int))
             roundtrip Proxy (Proxy @Bool)
             roundtrip Proxy (Proxy @(Map.Map Int ByteString))
+            roundtripWith Proxy (Proxy @T.Text) T.pack
       )
     prop "encoded map is ordered by encoded key byte-order" $
       forAll (genNonDuplicateList (arbitrary @Int) (arbitrary @ByteString)) $
@@ -61,14 +63,16 @@ tests =
            in decoded `shouldBe` Right (BSL.empty, sortedList)
  where
   roundtrip :: forall v a. (Arbitrary a, Typeable a, Show a, Eq a, ToCanonicalCBOR v a, FromCanonicalCBOR v a) => Proxy v -> Proxy a -> SpecWith ()
-  roundtrip p p1 = do
+  roundtrip p p1 = roundtripWith p p1 id
+  roundtripWith :: forall v a x. (Arbitrary a, Typeable x, Show a, Show x, Eq x, ToCanonicalCBOR v x, FromCanonicalCBOR v x) => Proxy v -> Proxy x -> (a -> x) -> SpecWith ()
+  roundtripWith p p1 f = do
     describe (show $ typeRep p1) $ do
       prop "x == decode . encode x" $ do
         \(x :: a) -> do
-          let encodedBytes = toLazyByteString $ toCanonicalCBOR p x
-              decoded = deserialiseFromBytes (fromCanonicalCBOR @v @a) encodedBytes
+          let encodedBytes = toLazyByteString $ toCanonicalCBOR p (f x)
+              decoded = deserialiseFromBytes (fromCanonicalCBOR @v @x) encodedBytes
           -- Decoded value should match and no bytes left after decoding
-          decoded `shouldBe` Right (BSL.empty, Versioned x)
+          decoded `shouldBe` Right (BSL.empty, Versioned (f x))
   -- Generate list of pairs with no duplicate first element
   genNonDuplicateList :: (Eq a) => Gen a -> Gen b -> Gen [(a, b)]
   genNonDuplicateList g1 g2 =

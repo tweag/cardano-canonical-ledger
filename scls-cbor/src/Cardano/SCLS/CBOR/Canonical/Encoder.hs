@@ -23,6 +23,7 @@ import Data.Int
 import Data.List (sortOn)
 import Data.Map qualified as Map
 import Data.Sequence qualified as Seq
+import Data.Text (Text)
 import Data.Word
 import GHC.TypeLits
 
@@ -89,6 +90,13 @@ instance ToCanonicalCBOR v ByteString where
 instance ToCanonicalCBOR v SBS.ShortByteString where
   toCanonicalCBOR _ sbs@(SBS ba) =
     E.encodeByteArray $ BAS.SBA (Prim.ByteArray ba) 0 (SBS.length sbs)
+
+--------------------------------------------------------------------------------
+-- Text
+--------------------------------------------------------------------------------
+
+instance ToCanonicalCBOR v Text where
+  toCanonicalCBOR _ = E.encodeString
 
 --------------------------------------------------------------------------------
 -- Tuples
