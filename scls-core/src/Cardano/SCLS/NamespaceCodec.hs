@@ -21,6 +21,9 @@ module Cardano.SCLS.NamespaceCodec (
   decodeKeyFromBytes,
   encodeEntryToBytes,
   decodeEntryFromBytes,
+  CanonicalEncoding (unCanonicalEncoding),
+  CanonicalDecoder (CanonicalDecoder, unCanonicalDecoder),
+  unsafeToCanonicalEncoding,
 ) where
 
 import Cardano.SCLS.Entry.IsKey (IsKey (keySize, packKeyM, unpackKeyM))
@@ -38,6 +41,16 @@ import Data.MemPack.Buffer (pinnedByteArrayToByteString)
 import Data.MemPack.Extra (ByteStringSized (..), RawBytes (RawBytes), runDecode)
 import GHC.TypeLits (KnownNat)
 
+newtype CanonicalEncoding = CanonicalEncoding {unCanonicalEncoding :: Encoding}
+  deriving (Semigroup, Monoid)
+
+-- | Unsafe lifting `Encoding` to `CanonicalEncoding`. Does not ensure that `Encoding` was defined according to canonical rules.
+unsafeToCanonicalEncoding :: Encoding -> CanonicalEncoding
+unsafeToCanonicalEncoding = CanonicalEncoding
+
+newtype CanonicalDecoder s a = CanonicalDecoder {unCanonicalDecoder :: Decoder s a}
+  deriving (Functor, Applicative, Monad, MonadFail)
+
 {- | Encode a value to canonical CBOR with a specific namespace.
 
 A namespace identifies the specific version of the encoding for a data type.
@@ -50,7 +63,7 @@ encoding at compile-time. The key size is automatically determined by the
 -}
 class CanonicalCBOREntryEncoder ns a where
   -- | Encode an entry value to canonical CBOR for the given namespace.
-  encodeEntry :: a -> Encoding
+  encodeEntry :: a -> CanonicalEncoding
 
 {- | Decode a value from canonical CBOR with a specific namespace.
 
@@ -59,15 +72,15 @@ wrapper that tracks the namespace information.
 -}
 class CanonicalCBOREntryDecoder ns a where
   -- | Decode a value from canonical CBOR with a specific namespace.
-  decodeEntry :: Decoder s (Versioned ns a)
+  decodeEntry :: CanonicalDecoder s (Versioned ns a)
 
 encodeEntryToBytes :: forall ns a. (CanonicalCBOREntryEncoder ns a) => a -> RawBytes
 encodeEntryToBytes a =
-  RawBytes $ toStrictByteString $ encodeEntry @ns a
+  RawBytes $ toStrictByteString $ unCanonicalEncoding $ encodeEntry @ns a
 
 decodeEntryFromBytes :: forall ns a. (CanonicalCBOREntryDecoder ns a) => RawBytes -> Either DeserialiseFailure (Versioned ns a)
 decodeEntryFromBytes (RawBytes bs) =
-  fmap snd $ deserialiseFromBytes (decodeEntry @ns) $ BSL.fromStrict bs
+  fmap snd $ deserialiseFromBytes (unCanonicalDecoder $ decodeEntry @ns) $ BSL.fromStrict bs
 
 {- | A type class that associates a namespace with its key and entry types.
 This type class acts as a bridge between the namespace/version, its key type,

@@ -86,7 +86,7 @@ testNS =
 -- | Each value from the known namespace conforms to its spec
 propNamespaceEntryConformsToSpec :: forall ns. (KnownSymbol ns, KnownNamespace ns, Arbitrary (NamespaceEntry ns)) => NamespaceEntry ns -> Bool
 propNamespaceEntryConformsToSpec = \a ->
-  case validateBytesAgainst (toStrictByteString (encodeEntry @ns a)) nsName "record_entry" of
+  case validateBytesAgainst (toStrictByteString (unCanonicalEncoding $ encodeEntry @ns a)) nsName "record_entry" of
     Just (CBORTermResult _ Valid{}) -> True
     _ -> False
  where
@@ -94,7 +94,7 @@ propNamespaceEntryConformsToSpec = \a ->
 
 propTypeConformsToSpec :: forall ns a. (KnownSymbol ns, ToCanonicalCBOR ns a) => T.Text -> a -> Bool
 propTypeConformsToSpec t = \a ->
-  case validateBytesAgainst (toStrictByteString (toCanonicalCBOR (Proxy @ns) a)) nsName t of
+  case validateBytesAgainst (toStrictByteString $ unCanonicalEncoding (toCanonicalCBOR (Proxy @ns) a)) nsName t of
     Just (CBORTermResult _ Valid{}) -> True
     _ -> False
  where
@@ -115,11 +115,11 @@ decoding will put the value in it's canonical form.
 -}
 propNamespaceEntryRoundTrip :: forall ns. (KnownNamespace ns, Arbitrary (NamespaceEntry ns), Eq (NamespaceEntry ns), Show (NamespaceEntry ns)) => NamespaceEntry ns -> IO ()
 propNamespaceEntryRoundTrip = \a -> do
-  case deserialiseFromBytes (decodeEntry @ns) (toLazyByteString (encodeEntry @ns a)) of
+  case deserialiseFromBytes (unCanonicalDecoder $ decodeEntry @ns) (toLazyByteString (unCanonicalEncoding $ encodeEntry @ns a)) of
     Right (b, Versioned a') -> annotate "(b, a') = decode (encode a)" $ do
       b `shouldSatisfy` BL.null
       a' `shouldBe` a
-      case deserialiseFromBytes (decodeEntry @ns) (toLazyByteString (encodeEntry @ns a')) of
+      case deserialiseFromBytes (unCanonicalDecoder $ decodeEntry @ns) (toLazyByteString (unCanonicalEncoding $ encodeEntry @ns a')) of
         Right (b', Versioned a'') -> annotate "(b', a'') = decode (encode a')" $ do
           b' `shouldSatisfy` BL.null
           a'' `shouldBe` a'
@@ -127,10 +127,10 @@ propNamespaceEntryRoundTrip = \a -> do
     r -> r `shouldSatisfy` isRight
 
 debugValidateType :: forall ns a. (KnownSymbol ns, ToCanonicalCBOR ns a) => T.Text -> a -> Maybe CBORTermResult
-debugValidateType t a = validateBytesAgainst (toStrictByteString (toCanonicalCBOR (Proxy @ns) a)) nsName t
+debugValidateType t a = validateBytesAgainst (toStrictByteString $ unCanonicalEncoding (toCanonicalCBOR (Proxy @ns) a)) nsName t
  where
   nsName = T.pack (symbolVal (Proxy @ns))
 
 -- | Serialize value to CBOR (for usage in debug tools)
 debugEncodeType :: forall ns a. (KnownSymbol ns, ToCanonicalCBOR ns a) => a -> B.ByteString
-debugEncodeType a = Base16.encode $ toStrictByteString (toCanonicalCBOR (Proxy @ns) a)
+debugEncodeType a = Base16.encode $ toStrictByteString $ unCanonicalEncoding (toCanonicalCBOR (Proxy @ns) a)
