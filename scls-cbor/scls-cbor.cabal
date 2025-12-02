@@ -30,7 +30,6 @@ library
     bytestring,
     cborg,
     containers,
-    scls-format,
     text
 
   hs-source-dirs: src
@@ -55,4 +54,3 @@ test-suite scls-cbor-test
     hspec,
     quickcheck-instances,
     scls-cbor,
-    scls-format,

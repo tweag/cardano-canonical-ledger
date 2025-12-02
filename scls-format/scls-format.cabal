@@ -82,6 +82,7 @@ library
     mtl,
     pqueue,
     primitive,
+    scls-cbor,
     scls-format:{mempack},
     streaming,
     temporary,

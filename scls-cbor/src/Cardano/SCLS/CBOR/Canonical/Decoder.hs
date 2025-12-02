@@ -3,7 +3,6 @@
 
 module Cardano.SCLS.CBOR.Canonical.Decoder where
 
-import Cardano.SCLS.Internal.Version (Version)
 import Codec.CBOR.ByteArray qualified as BA
 import Codec.CBOR.Decoding (Decoder)
 import Codec.CBOR.Decoding qualified as D
@@ -18,11 +17,12 @@ import Data.Sequence qualified as Seq
 import Data.Text qualified as T
 import Data.Word
 import GHC.Generics (Generic)
+import GHC.TypeLits
 
-newtype Versioned (v :: Version) a = Versioned {unVer :: a}
+newtype Versioned (ns :: Symbol) a = Versioned {unVer :: a}
   deriving (Eq, Generic, Ord, Bounded, Functor, Show)
 
-class FromCanonicalCBOR (v :: Version) a where
+class FromCanonicalCBOR (v :: Symbol) a where
   fromCanonicalCBOR :: Decoder s (Versioned v a)
 
 --------------------------------------------------------------------------------

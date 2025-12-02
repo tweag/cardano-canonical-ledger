@@ -12,7 +12,7 @@ module Cardano.SCLS.Internal.Entry.ChunkEntry (
 ) where
 
 import Cardano.SCLS.Internal.Entry.IsKey (IsKey (..))
-import Cardano.SCLS.Internal.NamespaceCodec (CanonicalCBOREntryDecoder (decodeEntry), CanonicalCBOREntryEncoder (encodeEntry), KnownNamespace (..), NamespaceKeySize, VersionedNS (VersionedNS), decodeKeyFromBytes, encodeKeyToBytes)
+import Cardano.SCLS.Internal.NamespaceCodec (CanonicalCBOREntryDecoder (decodeEntry), CanonicalCBOREntryEncoder (encodeEntry), KnownNamespace (..), NamespaceKeySize, Versioned (Versioned), decodeKeyFromBytes, encodeKeyToBytes)
 import Cardano.SCLS.Internal.Serializer.HasKey
 import Codec.CBOR.Read (deserialiseFromBytes)
 import Codec.CBOR.Write (toStrictByteString)
@@ -98,5 +98,5 @@ decodeChunkEntry _ (ChunkEntry (ByteStringSized k) (RawBytes v)) = do
   case (keyMaybe, valueEither) of
     (Nothing, _) -> Nothing
     (_, Left _) -> Nothing
-    (Just key, Right (_, VersionedNS value)) ->
+    (Just key, Right (_, Versioned value)) ->
       Just $ ChunkEntry key value
