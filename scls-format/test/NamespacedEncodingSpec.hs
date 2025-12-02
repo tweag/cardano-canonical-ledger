@@ -10,7 +10,7 @@ associates data types with specific namespaces and versions.
 -}
 module NamespacedEncodingSpec where
 
-import Cardano.SCLS.Internal.NamespaceCodec (CanonicalCBOREntryDecoder (decodeEntry), CanonicalCBOREntryEncoder (encodeEntry), VersionedNS (VersionedNS))
+import Cardano.SCLS.Internal.NamespaceCodec (CanonicalCBOREntryDecoder (decodeEntry), CanonicalCBOREntryEncoder (encodeEntry), Versioned (Versioned))
 import Cardano.SCLS.Internal.Serializer.Dump.Plan (addNamespacedChunks, defaultSerializationPlan)
 import Codec.CBOR.Read (deserialiseFromBytes)
 import Codec.CBOR.Write
@@ -35,7 +35,7 @@ spec = do
 
       Right (_, decoded) <- pure $ deserialiseFromBytes (decodeEntry @"utxo/v0") $ toLazyByteString $ encodeEntry @"utxo/v0" val
 
-      decoded `shouldBe` (VersionedNS val)
+      decoded `shouldBe` (Versioned val)
 
   describe "SerializationPlan" $ do
     it "should accept chunks of different namespaces" $ do

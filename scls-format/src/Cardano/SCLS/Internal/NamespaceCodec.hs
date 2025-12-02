@@ -14,7 +14,7 @@ module Cardano.SCLS.Internal.NamespaceCodec (
   KnownNamespace (..),
   CanonicalCBOREntryEncoder (..),
   CanonicalCBOREntryDecoder (..),
-  VersionedNS (..),
+  Versioned (..),
   NamespaceKeySize,
   namespaceKeySize,
   encodeKeyToBytes,
@@ -23,6 +23,7 @@ module Cardano.SCLS.Internal.NamespaceCodec (
   decodeEntryFromBytes,
 ) where
 
+import Cardano.SCLS.CBOR.Canonical.Decoder (Versioned (..))
 import Cardano.SCLS.Internal.Entry.IsKey (IsKey (keySize, packKeyM, unpackKeyM))
 import Codec.CBOR.Decoding (Decoder)
 import Codec.CBOR.Encoding (Encoding)
@@ -35,10 +36,6 @@ import Data.MemPack (StateT (runStateT), Unpack (runUnpack), packWithByteArray)
 import Data.MemPack.Buffer (pinnedByteArrayToByteString)
 import Data.MemPack.Extra (ByteStringSized (..), RawBytes (RawBytes), runDecode)
 import GHC.TypeLits (KnownNat, Nat, Symbol, fromSNat, pattern SNat)
-
--- | A wrapper type that associates a decoded value with its namespace.
-newtype VersionedNS ns a = VersionedNS {unVersionedNS :: a}
-  deriving (Eq, Show)
 
 {- | Encode a value to canonical CBOR with a specific namespace.
 
@@ -56,18 +53,18 @@ class CanonicalCBOREntryEncoder ns a where
 
 {- | Decode a value from canonical CBOR with a specific namespace.
 
-Complements 'CanonicalCBOREntryEncoder' for deserialization . Returns a 'VersionedNS'
+Complements 'CanonicalCBOREntryEncoder' for deserialization . Returns a 'Versioned'
 wrapper that tracks the namespace information.
 -}
 class CanonicalCBOREntryDecoder ns a where
   -- | Decode a value from canonical CBOR with a specific namespace.
-  decodeEntry :: Decoder s (VersionedNS ns a)
+  decodeEntry :: Decoder s (Versioned ns a)
 
 encodeEntryToBytes :: forall ns a. (CanonicalCBOREntryEncoder ns a) => a -> RawBytes
 encodeEntryToBytes a =
   RawBytes $ toStrictByteString $ encodeEntry @ns a
 
-decodeEntryFromBytes :: forall ns a. (CanonicalCBOREntryDecoder ns a) => RawBytes -> Either DeserialiseFailure (VersionedNS ns a)
+decodeEntryFromBytes :: forall ns a. (CanonicalCBOREntryDecoder ns a) => RawBytes -> Either DeserialiseFailure (Versioned ns a)
 decodeEntryFromBytes (RawBytes bs) =
   fmap snd $ deserialiseFromBytes (decodeEntry @ns) $ BSL.fromStrict bs
 

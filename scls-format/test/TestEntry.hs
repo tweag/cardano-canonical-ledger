@@ -17,7 +17,7 @@ module TestEntry (
 
 import Cardano.SCLS.Internal.Entry.ChunkEntry (ChunkEntry (ChunkEntry))
 import Cardano.SCLS.Internal.Entry.IsKey (IsKey (keySize, packKeyM, unpackKeyM))
-import Cardano.SCLS.Internal.NamespaceCodec (CanonicalCBOREntryDecoder (decodeEntry), CanonicalCBOREntryEncoder (encodeEntry), KnownNamespace (NamespaceEntry, NamespaceKey), NamespaceKeySize, VersionedNS (VersionedNS), namespaceKeySize)
+import Cardano.SCLS.Internal.NamespaceCodec (CanonicalCBOREntryDecoder (decodeEntry), CanonicalCBOREntryEncoder (encodeEntry), KnownNamespace (NamespaceEntry, NamespaceKey), NamespaceKeySize, Versioned (Versioned), namespaceKeySize)
 import Cardano.SCLS.Internal.Serializer.HasKey (HasKey (Key, getKey))
 import Codec.CBOR.Decoding qualified as D
 import Codec.CBOR.Encoding qualified as E
@@ -97,7 +97,7 @@ instance CanonicalCBOREntryDecoder "utxo/v0" TestUTxO where
     D.decodeListLenOf 2
     key <- D.decodeBytes
     value <- D.decodeInt
-    pure $ VersionedNS $ TestUTxO $ TestEntry key value
+    pure $ Versioned $ TestUTxO $ TestEntry key value
 
 instance CanonicalCBOREntryEncoder "blocks/v0" TestBlock where
   -- For this test, we reuse the same data type (TestEntry), but we encode its value as `n+1`.
@@ -109,7 +109,7 @@ instance CanonicalCBOREntryDecoder "blocks/v0" TestBlock where
     D.decodeListLenOf 2
     key <- D.decodeBytes
     value <- D.decodeInt
-    pure $ VersionedNS $ TestBlock $ TestEntry key (value - 1)
+    pure $ Versioned $ TestBlock $ TestEntry key (value - 1)
 
 instance KnownNamespace "utxo/v0" where
   type NamespaceKey "utxo/v0" = TestUTxOKey

@@ -11,7 +11,6 @@ when defining the instances for specific types.
 -}
 module Cardano.SCLS.CBOR.Canonical.Encoder where
 
-import Cardano.SCLS.Internal.Version (Version)
 import Codec.CBOR.ByteArray.Sliced qualified as BAS
 import Codec.CBOR.Encoding (Encoding)
 import Codec.CBOR.Encoding qualified as E
@@ -25,9 +24,10 @@ import Data.List (sortOn)
 import Data.Map qualified as Map
 import Data.Sequence qualified as Seq
 import Data.Word
+import GHC.TypeLits
 
 -- | Encode data to CBOR corresponding with the SCLS format.
-class ToCanonicalCBOR (v :: Version) a where
+class ToCanonicalCBOR (v :: Symbol) a where
   -- | Encode to canonical CBOR at a given version
   toCanonicalCBOR :: proxy v -> a -> Encoding
 
