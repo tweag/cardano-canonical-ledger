@@ -60,7 +60,7 @@ gov_action =
             ]
             //- "Params update"
         )
-    / (arr [1, a gov_action_id, a protocol_version] //- "Hard fork")
+    / (arr [1, a (gov_action_id / VNil), a protocol_version] //- "Hard fork")
     / ( arr
           [ 2
           , "withdrawls" ==> mp [0 <+ asKey reward_account ==> coin]
