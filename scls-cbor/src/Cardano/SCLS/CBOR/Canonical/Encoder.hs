@@ -104,7 +104,7 @@ instance ToCanonicalCBOR v SBS.ShortByteString where
 --------------------------------------------------------------------------------
 
 instance ToCanonicalCBOR v Text where
-  toCanonicalCBOR _ = E.encodeString
+  toCanonicalCBOR _ = CanonicalEncoding . E.encodeString
 
 --------------------------------------------------------------------------------
 -- Tuples

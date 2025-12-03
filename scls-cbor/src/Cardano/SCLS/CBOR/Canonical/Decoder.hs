@@ -100,7 +100,7 @@ instance FromCanonicalCBOR v SBS.ShortByteString where
 --------------------------------------------------------------------------------
 
 instance FromCanonicalCBOR v T.Text where
-  fromCanonicalCBOR = Versioned @v <$> D.decodeStringCanonical
+  fromCanonicalCBOR = Versioned @v <$> CanonicalDecoder D.decodeStringCanonical
 
 --------------------------------------------------------------------------------
 -- Tuples
