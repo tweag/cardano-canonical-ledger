@@ -72,7 +72,7 @@ gov_action =
     / ( arr
           [ 4
           , "purpose" ==> (gov_action_id / VNil)
-          , "removed" ==> arr [a credential]
+          , "removed" ==> arr [0 <+ a credential]
           , "added" ==> mp [0 <+ asKey credential ==> epoch_no]
           , "threshold" ==> unit_interval
           ]
