@@ -23,8 +23,9 @@ module Cardano.SCLS.Internal.NamespaceCodec (
   decodeEntryFromBytes,
 ) where
 
-import Cardano.SCLS.CBOR.Canonical.Decoder (Versioned (..))
 import Cardano.SCLS.Internal.Entry.IsKey (IsKey (keySize, packKeyM, unpackKeyM))
+import Cardano.SCLS.NamespaceKey
+import Cardano.SCLS.Versioned (Versioned (..))
 import Codec.CBOR.Decoding (Decoder)
 import Codec.CBOR.Encoding (Encoding)
 import Codec.CBOR.Read (DeserialiseFailure, deserialiseFromBytes)
@@ -35,7 +36,7 @@ import Data.Data (Proxy (Proxy), Typeable, typeRep)
 import Data.MemPack (StateT (runStateT), Unpack (runUnpack), packWithByteArray)
 import Data.MemPack.Buffer (pinnedByteArrayToByteString)
 import Data.MemPack.Extra (ByteStringSized (..), RawBytes (RawBytes), runDecode)
-import GHC.TypeLits (KnownNat, Nat, Symbol, fromSNat, pattern SNat)
+import GHC.TypeLits (KnownNat)
 
 {- | Encode a value to canonical CBOR with a specific namespace.
 
@@ -67,22 +68,6 @@ encodeEntryToBytes a =
 decodeEntryFromBytes :: forall ns a. (CanonicalCBOREntryDecoder ns a) => RawBytes -> Either DeserialiseFailure (Versioned ns a)
 decodeEntryFromBytes (RawBytes bs) =
   fmap snd $ deserialiseFromBytes (decodeEntry @ns) $ BSL.fromStrict bs
-
-{- | Maps a namespace (represented as a type-level string/Symbol) to its expected key size.
-
-Instances for this type family should be created for each namespace/version.
-
-For example:
-@
-type instance NamespaceKeySize "utxo/v0" = 34
-@
--}
-type family NamespaceKeySize (ns :: Symbol) :: Nat
-
--- | Get the namespace key size at runtime.
-namespaceKeySize :: forall ns. (KnownNat (NamespaceKeySize ns)) => Int
-namespaceKeySize =
-  fromInteger $ fromSNat $ SNat @(NamespaceKeySize ns)
 
 {- | A type class that associates a namespace with its key and entry types.
 This type class acts as a bridge between the namespace/version, its key type,
