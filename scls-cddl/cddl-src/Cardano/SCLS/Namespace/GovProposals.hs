@@ -54,7 +54,7 @@ gov_action =
   "gov_action"
     =:= ( arr
             [ 0
-            , "purpose" ==> gov_action_id
+            , "purpose" ==> (gov_action_id / VNil)
             , "update" ==> gov_pparams_out
             , "hash" ==> (script_hash / VNil)
             ]
