@@ -43,6 +43,7 @@ library
     containers >=0.6,
     cuddle >=0.3,
     heredoc >=0.2,
+    scls-core,
     text
 
   hs-source-dirs:

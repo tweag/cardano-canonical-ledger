@@ -30,7 +30,8 @@ library
     bytestring,
     cborg,
     containers,
-    text,
+    scls-core,
+    text
 
   hs-source-dirs: src
   default-language: GHC2021
@@ -54,4 +55,5 @@ test-suite scls-cbor-test
     hspec,
     quickcheck-instances,
     scls-cbor,
+    scls-core,
     text,
