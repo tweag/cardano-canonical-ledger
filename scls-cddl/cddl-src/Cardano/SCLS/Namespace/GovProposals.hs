@@ -21,7 +21,31 @@ import Text.Heredoc (str)
 record_entry :: Rule
 record_entry =
   comment
-    [str| The key for the entry is a gov_action_id (34 bytes: 32 bytes for transaction_id + 2 bytes for gov_action_index) |]
+    [str| Size of the key
+        |
+        | ```
+        | meta:
+        |   endian: be
+        |
+        | seq:
+        |   - id: key
+        |     type: gov_proposals
+        |
+        | gov_proposals:
+        |   seq:
+        |     - id: tx_addr
+        |       doc: transaction
+        |       type: bytes
+        |       size: 28
+        |     - id: tx_idx
+        |       doc: index inside transaction
+        |       type: u4
+        |     - id: gov_action_idx
+        |       doc: governance action index
+        |       type: u2
+        | ```
+        |
+        |]
     $ "record_entry" =:= proposal
 
 committee_cold_credential :: Rule

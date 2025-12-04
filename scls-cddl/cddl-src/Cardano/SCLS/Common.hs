@@ -213,11 +213,15 @@ script_hash =
 
 anchor :: Rule
 anchor =
-  "anchor"
-    =:= arr
-      [ "anchor_url" ==> url
-      , "anchor_data_hash" ==> hash32
-      ]
+  comment
+    [str|
+    | Signed url
+    |]
+    $ "anchor"
+      =:= arr
+        [ "anchor_url" ==> url
+        , "anchor_data_hash" ==> VBytes
+        ]
 
 epoch_no :: Rule
 epoch_no = "epoch_no" =:= VUInt `sized` (8 :: Word64)

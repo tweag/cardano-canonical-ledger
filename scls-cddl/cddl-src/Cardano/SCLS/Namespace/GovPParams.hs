@@ -5,6 +5,7 @@
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
+
 {-# HLINT ignore "Use camelCase" #-}
 
 module Cardano.SCLS.Namespace.GovPParams where
@@ -18,13 +19,44 @@ import Prelude (Integer, ($))
 record_entry :: Rule
 record_entry =
   comment
-    [str| The key for the entry is one of the following:
-                |    prev / curr / fut1 / fut0
-                |      fut0 stands for possible future
-                |      fut1 stands for definite future
-                |
-                | fut0 + no pparams is not represented, key should be omitted in that case
-                |]
+    [str| Specification for parameters
+        |
+        | ```
+        | meta:
+        |   endian: be
+        |
+        | seq:
+        |   - id: key
+        |     type: gov_pparams
+        |
+        | types:
+        |   gov_pparams:
+        |     seq:
+        |       - id: value
+        |         type: strz
+        |         size: 4
+        |         encoding: ASCII
+        |       - id: valiant
+        |         size: 0
+        |         type:
+        |           switch-on: value
+        |           cases:
+        |             '"prev"': kprev
+        |             '"curr"': kcurr
+        |             '"fut0"': kfut0
+        |             '"fut1"': kfut1
+        |   kprev:
+        |     doc: previous values
+        |   kcurr:
+        |     doc: current values
+        |   kfut0:
+        |     doc: possible future
+        |   kfut1:
+        |     doc: definitive future
+        | ```
+        |
+        | fut0 with missig parameters should be omitted.
+        |]
     $ "record_entry" =:= gov_pparams_out
 
 gov_pparams_out :: Rule
@@ -125,27 +157,48 @@ ex_units = "ex_units" =:= arr ["mem" ==> VUInt, "steps" ==> VUInt]
 
 pool_voting_thresholds :: Rule
 pool_voting_thresholds =
-  "pool_voting_thresholds"
-    =:= arr
-      [ a unit_interval -- motion no confidence
-      , a unit_interval -- committee normal
-      , a unit_interval -- committee no confidence
-      , a unit_interval -- hard fork initiation
-      , a unit_interval -- security relevant parameter voting threshold
-      ]
+  comment
+    [str|
+    | 0 - motion no confidence
+    | 1 - committee normal
+    | 2 - committee no confidence
+    | 3 - hard fork initiation
+    | 4 - security relevant parameter voting threshold
+    |]
+    $ "pool_voting_thresholds"
+      =:= arr
+        [ a unit_interval -- motion no confidence
+        , a unit_interval -- committee normal
+        , a unit_interval -- committee no confidence
+        , a unit_interval -- hard fork initiation
+        , a unit_interval -- security relevant parameter voting threshold
+        ]
 
 drep_voting_thresholds :: Rule
 drep_voting_thresholds =
-  "drep_voting_thresholds"
-    =:= arr
-      [ a unit_interval -- motion no confidence
-      , a unit_interval -- committee normal
-      , a unit_interval -- committee no confidence
-      , a unit_interval -- update constitution
-      , a unit_interval -- hard fork initiation
-      , a unit_interval -- PP network group
-      , a unit_interval -- PP economic group
-      , a unit_interval -- PP technical group
-      , a unit_interval -- PP governance group
-      , a unit_interval -- treasury withdrawal
-      ]
+  comment
+    [str|
+    | 0 - motion no confidence
+    | 1 - committee normal
+    | 2 - committee no confidence
+    | 3 - update constitution
+    | 4 - hard fork initiation
+    | 5 - PP network group
+    | 6 - PP economic group
+    | 7 - PP technical group
+    | 8 - PP governance group
+    | 9 - treasury withdrawal
+    |]
+    $ "drep_voting_thresholds"
+      =:= arr
+        [ a unit_interval -- motion no confidence
+        , a unit_interval -- committee normal
+        , a unit_interval -- committee no confidence
+        , a unit_interval -- update constitution
+        , a unit_interval -- hard fork initiation
+        , a unit_interval -- PP network group
+        , a unit_interval -- PP economic group
+        , a unit_interval -- PP technical group
+        , a unit_interval -- PP governance group
+        , a unit_interval -- treasury withdrawal
+        ]
