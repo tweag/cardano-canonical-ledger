@@ -11,7 +11,7 @@ module Cardano.SCLS.Internal.Entry.ChunkEntry (
   decodeChunkEntry,
 ) where
 
-import Cardano.SCLS.Internal.Entry.IsKey (IsKey (..))
+import Cardano.SCLS.Entry.IsKey (IsKey (..))
 import Cardano.SCLS.Internal.NamespaceCodec (CanonicalCBOREntryDecoder (decodeEntry), CanonicalCBOREntryEncoder (encodeEntry), KnownNamespace (..), NamespaceKeySize, Versioned (Versioned), decodeKeyFromBytes, encodeKeyToBytes)
 import Cardano.SCLS.Internal.Serializer.HasKey
 import Codec.CBOR.Read (deserialiseFromBytes)

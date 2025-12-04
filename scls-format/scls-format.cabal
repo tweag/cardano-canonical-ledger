@@ -23,7 +23,6 @@ library
   exposed-modules:
     Cardano.SCLS.Internal.Entry.CBOREntry
     Cardano.SCLS.Internal.Entry.ChunkEntry
-    Cardano.SCLS.Internal.Entry.IsKey
     Cardano.SCLS.Internal.Frame
     Cardano.SCLS.Internal.Hash
     Cardano.SCLS.Internal.NamespaceCodec
