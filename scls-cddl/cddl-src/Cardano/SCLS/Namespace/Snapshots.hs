@@ -18,18 +18,57 @@ record_entry :: Rule
 record_entry =
   comment
     [str| The key for the entry is one of the following:
-                |    ((credential / keyhash32) , (0 / 1 / 2))
-                |  where additional value stands for the value type:
-                |    - 0 : Coin value
-                |    - 1 : Keyhash of an delegation address
-                |    - 2 : Pool parameters
-                |
-                |  the size of the key is 32 bytes:
-                |     1: key type
-                |     1: stage
-                |     28+1 / 29: keyhash size
-                |     1: value type
-                |]
+        |
+        | ```
+        | meta:
+        |   endian: be
+        |
+        | seq:
+        |   - id: key
+        |     type: snapshot
+        |
+        | types:
+        |   snapshot:
+        |     seq:
+        |       - id: key_type
+        |         type: u1
+        |       - id: keyhash
+        |         size: 29
+        |         type:
+        |           switch-on: key_type
+        |           cases:
+        |             0: credential
+        |             1: keyhash
+        |       - id: stage
+        |         type: u1
+        |         enum: snapshot_value
+        |       - id: value_type
+        |         type: u1
+        |         enum: snapshot_value
+        |
+        |   credential:
+        |     seq:
+        |       - id: cred_data
+        |         size: 28
+        |
+        |   keyhash:
+        |     seq:
+        |       - id: keyhash_data
+        |         size: 28
+        |       - id: dummy
+        |         size: 1
+        |
+        | enums:
+        |   snapshot_stage:
+        |     0: mark
+        |     1: set
+        |     2: go
+        |   snapshot_value:
+        |     0: coin
+        |     1: address
+        |     2: pool_params
+        | ```
+        |]
     $ "record_entry" =:= snapshot_out
 
 record_key :: Rule

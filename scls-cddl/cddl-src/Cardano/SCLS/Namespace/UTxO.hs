@@ -19,7 +19,32 @@ import Text.Heredoc (str)
 import Prelude (foldr, (++))
 
 record_entry :: Rule
-record_entry = "record_entry" =:= tx_out
+record_entry =
+  comment
+    [str| The key for the entry is one of the following:
+        |
+        | ```
+        | meta:
+        |   endian: be
+        |
+        | seq:
+        |   - id: key
+        |     type: utxo_key
+        |
+        | types:
+        |   utxo_key:
+        |     seq:
+        |      - id: tx_addr
+        |        doc: transaction
+        |        type: bytes
+        |        size: 28
+        |      - id: tx_idx
+        |        doc: index inside transaction
+        |        type: u4
+        | ```
+        |
+        |]
+    $ "record_entry" =:= tx_out
 
 tx_out :: Rule
 tx_out = "tx_out" =:= arr [0, a shelley_tx_out] / arr [1, a babbage_tx_out]
