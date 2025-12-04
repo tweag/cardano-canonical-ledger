@@ -25,7 +25,6 @@ library
     Cardano.SCLS.Internal.Entry.ChunkEntry
     Cardano.SCLS.Internal.Frame
     Cardano.SCLS.Internal.Hash
-    Cardano.SCLS.Internal.NamespaceCodec
     Cardano.SCLS.Internal.Reader
     Cardano.SCLS.Internal.Record.Chunk
     Cardano.SCLS.Internal.Record.Hdr

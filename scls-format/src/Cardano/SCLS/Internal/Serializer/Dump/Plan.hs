@@ -27,9 +27,9 @@ module Cardano.SCLS.Internal.Serializer.Dump.Plan (
 ) where
 
 import Cardano.SCLS.Internal.Entry.ChunkEntry (ChunkEntry, SomeChunkEntry (SomeChunkEntry), encodeChunkEntry)
-import Cardano.SCLS.Internal.NamespaceCodec (KnownNamespace (..))
 import Cardano.SCLS.Internal.Record.Chunk
 import Cardano.SCLS.Internal.Record.Metadata
+import Cardano.SCLS.NamespaceCodec (KnownNamespace (..))
 import Cardano.Types.Namespace (Namespace, fromSymbol)
 
 import Data.MemPack (MemPack)

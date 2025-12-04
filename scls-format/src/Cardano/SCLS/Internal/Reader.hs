@@ -42,8 +42,8 @@ import System.IO
 import System.IO qualified as IO
 
 import Cardano.SCLS.Internal.Entry.ChunkEntry (ChunkEntry, decodeChunkEntry)
-import Cardano.SCLS.Internal.NamespaceCodec (KnownNamespace (NamespaceEntry, NamespaceKey), NamespaceKeySize)
 import Cardano.SCLS.Internal.Record.Internal.Class (IsFrameRecord)
+import Cardano.SCLS.NamespaceCodec (KnownNamespace (NamespaceEntry, NamespaceKey), NamespaceKeySize)
 import Cardano.Types.Namespace (Namespace)
 import Cardano.Types.Namespace qualified as Namespace
 import Data.Maybe (fromJust)
