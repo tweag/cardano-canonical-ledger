@@ -1,4 +1,4 @@
-# Revision history for scls-cddl
+# Revision history for mempack-scls
 
 ## 0.1.0.0 -- YYYY-mm-dd
 
