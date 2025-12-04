@@ -1,5 +1,5 @@
 cabal-version: 3.14
-name: scls-cddl
+name: scls-cardano
 version: 0.1.0.0
 synopsis: CDDL Namespace Definitions and Serialisation Code
 description:
@@ -63,7 +63,7 @@ library validate
     cborg,
     containers,
     cuddle >=0.3,
-    scls-cddl,
+    scls-cardano,
     text,
     transformers
 
@@ -88,7 +88,7 @@ library testlib
     hspec,
     scls-core,
     scls-cbor,
-    scls-cddl:{validate},
+    scls-cardano:{validate},
     text,
 
   visibility: public
@@ -106,7 +106,7 @@ executable gen-cddl
     directory >=1,
     filepath >=1.4,
     prettyprinter,
-    scls-cddl,
+    scls-cardano,
     text
 
 test-suite scls-util-test
@@ -119,4 +119,4 @@ test-suite scls-util-test
     base >=4.18 && <5,
     containers,
     hspec,
-    scls-cddl:{validate},
+    scls-cardano:{validate},
