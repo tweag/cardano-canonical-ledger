@@ -7,6 +7,7 @@ module Roundtrip (
 ) where
 
 import Cardano.SCLS.CDDL (NamespaceInfo (..), namespaces)
+import Cardano.SCLS.Epoch (Epoch (..))
 import Cardano.SCLS.Internal.Entry.CBOREntry (GenericCBOREntry (GenericCBOREntry), SomeCBOREntry (SomeCBOREntry))
 import Cardano.SCLS.Internal.Entry.ChunkEntry (ChunkEntry (ChunkEntry))
 import Cardano.SCLS.Internal.Hash (Digest (..))
@@ -20,7 +21,6 @@ import Cardano.SCLS.Internal.Serializer.HasKey (nubByKey, sortByKey)
 import Cardano.SCLS.Internal.Serializer.Reference.Impl qualified as Reference (serialize)
 import Cardano.Types.Namespace qualified as Namespace
 import Cardano.Types.Network (NetworkId (..))
-import Cardano.Types.SlotNo (SlotNo (..))
 import Codec.CBOR.Cuddle.CBOR.Gen (generateCBORTerm')
 import Codec.CBOR.Cuddle.CDDL (Name (..))
 import Codec.CBOR.Cuddle.CDDL.Resolve (
@@ -71,7 +71,7 @@ mkRoundtripTestsFor groupName serialize =
           serialize
             fileName
             Mainnet
-            (SlotNo 1)
+            (Epoch 1)
             ( defaultSerializationPlan
                 & withManifestComment testComment
             )
@@ -89,7 +89,7 @@ mkRoundtripTestsFor groupName serialize =
           serialize
             fileName
             Mainnet
-            (SlotNo 1)
+            (Epoch 1)
             ( defaultSerializationPlan
                 & withTimestamp timestamp
             )
@@ -122,7 +122,7 @@ mkRoundtripTestsFor groupName serialize =
           serialize
             fileName
             Mainnet
-            (SlotNo 1)
+            (Epoch 1)
             ( defaultSerializationPlan
                 & addChunks (S.each [namespace S.:> S.each entries])
                 & addMetadata (S.each mEntries)
@@ -133,7 +133,7 @@ mkRoundtripTestsFor groupName serialize =
               annotate
                 "header roundtrip successful"
                 $ hdr
-                  `shouldBe` mkHdr Mainnet (SlotNo 1)
+                  `shouldBe` mkHdr Mainnet (Epoch 1)
           )
         withSomeSNat kSize \(snat :: SNat n) -> do
           withKnownNat snat do
@@ -167,4 +167,4 @@ mkRoundtripTestsFor groupName serialize =
                   `shouldBe` mEntries
           )
 
-type SerializeF = FilePath -> NetworkId -> SlotNo -> SerializationPlan SomeCBOREntry -> IO ()
+type SerializeF = FilePath -> NetworkId -> Epoch -> SerializationPlan SomeCBOREntry -> IO ()

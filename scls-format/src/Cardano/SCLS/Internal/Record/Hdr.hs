@@ -10,10 +10,10 @@ import Control.Monad.State (MonadState (put))
 import Data.MemPack (MemPack (..))
 import Foreign
 
+import Cardano.SCLS.Epoch
 import Cardano.SCLS.Internal.Record.Internal.Class
 import Cardano.SCLS.Internal.Version (Version (..), packVersion, unpackVersion)
 import Cardano.Types.Network
-import Cardano.Types.SlotNo
 
 -- TODO: switch to non-pure interface instead
 
@@ -22,7 +22,7 @@ data Hdr = Hdr
   { magic :: Word64
   , version :: Version
   , networkId :: NetworkId
-  , slotNo :: SlotNo
+  , slotNo :: Epoch
   }
   deriving (Show, Eq)
 
@@ -58,7 +58,7 @@ instance Storable Hdr where
     4
       + (sizeOf (undefined :: Word32))
       + (sizeOf (undefined :: NetworkId))
-      + (sizeOf (undefined :: SlotNo))
+      + (sizeOf (undefined :: Epoch))
   alignment _ = 8
   peek ptr = do
     magic_pre <- peekByteOff ptr 0
@@ -74,7 +74,7 @@ instance Storable Hdr where
     pokeByteOff ptr 9 slotNo
 
 -- | Creates header record for the current version.
-mkHdr :: NetworkId -> SlotNo -> Hdr
+mkHdr :: NetworkId -> Epoch -> Hdr
 mkHdr networkId slotNo =
   Hdr
     { magic = 1397506899 -- "SCLS"

@@ -5,6 +5,7 @@ module MultiNamespace (
   tests,
 ) where
 
+import Cardano.SCLS.Epoch (Epoch (..))
 import Cardano.SCLS.Internal.Hash (Digest (..))
 import Cardano.SCLS.Internal.Reader (extractNamespaceHash, extractNamespaceList, extractRootHash, withNamespacedData)
 import Cardano.SCLS.Internal.Serializer.Dump.Plan (SerializationPlan, addChunks, defaultSerializationPlan)
@@ -13,7 +14,6 @@ import Cardano.SCLS.Internal.Serializer.Reference.Impl qualified as Reference (s
 import Cardano.Types.Namespace (Namespace (..))
 import Cardano.Types.Namespace qualified as Namespace
 import Cardano.Types.Network (NetworkId (..))
-import Cardano.Types.SlotNo (SlotNo (..))
 import Crypto.Hash.MerkleTree.Incremental qualified as MT
 import Data.ByteString (ByteString)
 import Data.ByteString.Char8 qualified as BS8
@@ -72,7 +72,7 @@ mkTestsFor serialize = do
     let input = [("ns0", []), ("ns1", ["data"]), ("ns2", [])]
     roundtrip serialize input
 
-type SerializeF = FilePath -> NetworkId -> SlotNo -> SerializationPlan RawBytes -> IO ()
+type SerializeF = FilePath -> NetworkId -> Epoch -> SerializationPlan RawBytes -> IO ()
 
 roundtrip :: SerializeF -> [(Namespace, [ByteString])] -> IO ()
 roundtrip serialize input = do
@@ -82,7 +82,7 @@ roundtrip serialize input = do
       serialize
         fileName
         Mainnet
-        (SlotNo 1)
+        (Epoch 1)
         mkPlan
     nsps <- extractNamespaceList fileName
     annotate "Namespaces are as expected" do

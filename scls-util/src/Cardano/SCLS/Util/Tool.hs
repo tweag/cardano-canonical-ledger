@@ -3,6 +3,7 @@
 
 module Cardano.SCLS.Util.Tool (splitFile, mergeFiles, extract, ExtractOptions (..)) where
 
+import Cardano.SCLS.Epoch (Epoch (Epoch))
 import Cardano.SCLS.Internal.Reader
 import Cardano.SCLS.Internal.Record.Hdr (Hdr (..))
 import Cardano.SCLS.Internal.Serializer.Dump
@@ -12,7 +13,6 @@ import Cardano.SCLS.Util.Result
 import Cardano.Types.Namespace (Namespace (..))
 import Cardano.Types.Namespace qualified as Namespace
 import Cardano.Types.Network (NetworkId (Mainnet))
-import Cardano.Types.SlotNo (SlotNo (SlotNo))
 import Control.Exception (SomeException, catch)
 import Control.Monad (foldM)
 import Data.Function ((&))
@@ -83,7 +83,7 @@ mergeFiles outputFile sourceFiles = do
       serialize
         outputFile
         Mainnet
-        (SlotNo 1)
+        (Epoch 1)
         (defaultSerializationPlan & addChunks stream)
 
       putStrLn "Merge complete"

@@ -2,11 +2,11 @@
 
 module Common (generateTestFile, runSclsUtil) where
 
+import Cardano.SCLS.Epoch (Epoch (Epoch))
 import Cardano.SCLS.Internal.Serializer.Dump.Plan (addChunks, defaultSerializationPlan)
 import Cardano.SCLS.Internal.Serializer.Reference.Impl qualified as Reference
 import Cardano.Types.Namespace (Namespace (..))
 import Cardano.Types.Network (NetworkId (Mainnet))
-import Cardano.Types.SlotNo (SlotNo (SlotNo))
 import Data.ByteString.Char8 qualified as BS8
 import Data.Function ((&))
 import Data.MemPack.Extra (RawBytes (..))
@@ -33,7 +33,7 @@ generateTestFile dir = do
   Reference.serialize @RawBytes
     fileName
     Mainnet
-    (SlotNo 1)
+    (Epoch 1)
     (defaultSerializationPlan & addChunks mkStream)
 
   return (fileName, map fst testData)

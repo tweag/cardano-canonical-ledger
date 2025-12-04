@@ -7,6 +7,7 @@ module Cardano.SCLS.Internal.Serializer.External.Impl (
   serialize,
 ) where
 
+import Cardano.SCLS.Epoch
 import Cardano.SCLS.Internal.Record.Hdr
 import Cardano.SCLS.Internal.Serializer.Dump (DataStream (DataStream, runDataStream), dumpToHandle)
 import Cardano.SCLS.Internal.Serializer.Dump.Plan (ChunkStream, InputChunk, SerializationPlan, mkSortedSerializationPlan)
@@ -14,7 +15,6 @@ import Cardano.SCLS.Internal.Serializer.HasKey (HasKey (Key, getKey))
 import Cardano.Types.Namespace (Namespace)
 import Cardano.Types.Namespace qualified as Namespace
 import Cardano.Types.Network
-import Cardano.Types.SlotNo
 
 import Control.Exception (onException, throwIO)
 import Control.Monad.ST (runST)
@@ -53,7 +53,7 @@ serialize ::
   -- | Network identifier
   NetworkId ->
   -- | Slot of the current transaction
-  SlotNo ->
+  Epoch ->
   -- | Serialization plan to use
   SerializationPlan a ->
   IO ()
