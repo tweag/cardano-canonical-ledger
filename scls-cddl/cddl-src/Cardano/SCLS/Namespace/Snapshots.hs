@@ -24,7 +24,11 @@ record_entry =
                 |    - 1 : Keyhash of an delegation address
                 |    - 2 : Pool parameters
                 |
-                |  the size of the key is 30 bytes, (1 + 28 for tag and 1 for value type)
+                |  the size of the key is 32 bytes:
+                |     1: key type
+                |     1: stage
+                |     28+1 / 29: keyhash size
+                |     1: value type
                 |]
     $ "record_entry" =:= snapshot_out
 
