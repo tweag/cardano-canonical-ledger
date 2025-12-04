@@ -24,7 +24,6 @@ module Data.MemPack.Extra (
   runDecode,
 ) where
 
--- import Cardano.SCLS.Internal.Serializer.HasKey
 import Codec.CBOR.Read qualified as CBOR
 import Codec.CBOR.Term qualified as CBOR
 import Codec.CBOR.Write qualified as CBOR
