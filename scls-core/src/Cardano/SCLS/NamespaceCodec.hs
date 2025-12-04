@@ -10,7 +10,7 @@ This module provides a mechanism to associate data types with versioned namespac
 at the type level. This is useful for handling different eras of Cardano ledger,
 where each era might have different data structures with their own encoding schemes.
 -}
-module Cardano.SCLS.Internal.NamespaceCodec (
+module Cardano.SCLS.NamespaceCodec (
   KnownNamespace (..),
   CanonicalCBOREntryEncoder (..),
   CanonicalCBOREntryDecoder (..),
