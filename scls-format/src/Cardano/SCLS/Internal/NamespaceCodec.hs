@@ -23,7 +23,7 @@ module Cardano.SCLS.Internal.NamespaceCodec (
   decodeEntryFromBytes,
 ) where
 
-import Cardano.SCLS.Internal.Entry.IsKey (IsKey (keySize, packKeyM, unpackKeyM))
+import Cardano.SCLS.Entry.IsKey (IsKey (keySize, packKeyM, unpackKeyM))
 import Cardano.SCLS.NamespaceKey
 import Cardano.SCLS.Versioned (Versioned (..))
 import Codec.CBOR.Decoding (Decoder)
