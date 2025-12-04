@@ -1,4 +1,5 @@
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
@@ -15,10 +16,12 @@ module TestEntry (
   chunkEntryFromUTxO,
 ) where
 
+import Cardano.SCLS.CBOR.Canonical.Decoder
+import Cardano.SCLS.CBOR.Canonical.Encoder
+import Cardano.SCLS.Entry.IsKey (IsKey (keySize, packKeyM, unpackKeyM))
 import Cardano.SCLS.Internal.Entry.ChunkEntry (ChunkEntry (ChunkEntry))
-import Cardano.SCLS.Internal.Entry.IsKey (IsKey (keySize, packKeyM, unpackKeyM))
-import Cardano.SCLS.Internal.NamespaceCodec (CanonicalCBOREntryDecoder (decodeEntry), CanonicalCBOREntryEncoder (encodeEntry), KnownNamespace (NamespaceEntry, NamespaceKey), NamespaceKeySize, Versioned (Versioned), namespaceKeySize)
 import Cardano.SCLS.Internal.Serializer.HasKey (HasKey (Key, getKey))
+import Cardano.SCLS.NamespaceCodec (CanonicalCBOREntryDecoder (decodeEntry), CanonicalCBOREntryEncoder (encodeEntry), KnownNamespace (NamespaceEntry, NamespaceKey), NamespaceKeySize, Versioned (Versioned), namespaceKeySize)
 import Codec.CBOR.Decoding qualified as D
 import Codec.CBOR.Encoding qualified as E
 import Data.ByteString qualified as BS
@@ -26,6 +29,7 @@ import Data.Data (Proxy (Proxy))
 import Data.MemPack (packByteStringM, unpackByteStringM)
 import Data.MemPack.Extra (ByteStringSized (ByteStringSized))
 import System.Random.Stateful (Uniform (uniformM), globalStdGen, uniformByteStringM)
+import Test.QuickCheck
 
 -- | Example data type for testing
 newtype TestEntryKey = TestEntryKey BS.ByteString
@@ -45,8 +49,12 @@ data TestEntry = TestEntry
   }
   deriving (Eq, Show)
 
+instance Arbitrary TestEntry where
+  arbitrary = TestEntry <$> (BS.pack <$> arbitrary) <*> arbitrary
+
 newtype TestUTxO = TestUTxO TestEntry
   deriving (Eq, Show)
+  deriving newtype (Arbitrary)
 
 newtype TestUTxOKey = TestUTxOKey BS.ByteString
   deriving (Eq, Ord)
@@ -62,6 +70,7 @@ instance IsKey TestUTxOKey where
 
 newtype TestBlock = TestBlock TestEntry
   deriving (Eq, Show)
+  deriving newtype (Arbitrary)
 
 newtype TestBlockKey = TestBlockKey BS.ByteString
   deriving (Eq, Ord)
@@ -96,25 +105,19 @@ instance CanonicalCBOREntryDecoder "utxo/v0" TestUTxO where
     value <- D.decodeInt
     pure $ Versioned $ TestUTxO $ TestEntry key value
 
-instance CanonicalCBOREntryEncoder "blocks/v0" TestBlock where
-  -- For this test, we reuse the same data type (TestEntry), but we encode its value as `n+1`.
-  encodeEntry (TestBlock TestEntry{key, value}) =
-    E.encodeListLen 2 <> E.encodeBytes key <> E.encodeInt (value + 1)
-
-instance CanonicalCBOREntryDecoder "blocks/v0" TestBlock where
-  decodeEntry = do
-    D.decodeListLenOf 2
-    key <- D.decodeBytes
-    value <- D.decodeInt
-    pure $ Versioned $ TestBlock $ TestEntry key (value - 1)
-
 instance KnownNamespace "utxo/v0" where
   type NamespaceKey "utxo/v0" = TestUTxOKey
   type NamespaceEntry "utxo/v0" = TestUTxO
 
 instance KnownNamespace "blocks/v0" where
   type NamespaceKey "blocks/v0" = TestBlockKey
-  type NamespaceEntry "blocks/v0" = TestBlock
+  type NamespaceEntry "blocks/v0" = Int
+
+instance CanonicalCBOREntryDecoder "blocks/v0" Int where
+  decodeEntry = fmap (\x -> x - 1) <$> fromCanonicalCBOR
+
+instance CanonicalCBOREntryEncoder "blocks/v0" Int where
+  encodeEntry = toCanonicalCBOR Proxy . (+ 1)
 
 genKey :: forall ns. (KnownNamespace ns) => Proxy ns -> IO (ByteStringSized (NamespaceKeySize ns))
 genKey _ =
@@ -140,6 +143,6 @@ chunkEntryFromUTxO :: TestUTxO -> ChunkEntry TestUTxOKey TestUTxO
 chunkEntryFromUTxO (e@(TestUTxO (TestEntry k _))) =
   ChunkEntry (TestUTxOKey k) e
 
-chunkEntryFromBlock :: TestBlock -> ChunkEntry TestBlockKey TestBlock
-chunkEntryFromBlock (e@(TestBlock (TestEntry k _))) =
-  ChunkEntry (TestBlockKey k) e
+chunkEntryFromBlock :: TestBlock -> ChunkEntry TestBlockKey Int
+chunkEntryFromBlock (TestBlock (TestEntry k v)) =
+  ChunkEntry (TestBlockKey k) v
