@@ -1,6 +1,7 @@
 packages:
-  scls-format
   scls-cbor
   scls-cddl
+  scls-core
+  scls-format
   scls-util
   merkle-tree-incremental

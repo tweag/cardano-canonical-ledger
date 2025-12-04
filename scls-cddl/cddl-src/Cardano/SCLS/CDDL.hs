@@ -1,4 +1,9 @@
+{-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE PatternSynonyms #-}
+{-# LANGUAGE TypeFamilies #-}
+{-# OPTIONS_GHC -fno-warn-orphans #-}
 
 module Cardano.SCLS.CDDL (
   NamespaceInfo (..),
@@ -14,9 +19,14 @@ import Cardano.SCLS.Namespace.PoolStake qualified as PoolStake
 import Cardano.SCLS.Namespace.Pots qualified as Pots
 import Cardano.SCLS.Namespace.Snapshots qualified as Snapshots
 import Cardano.SCLS.Namespace.UTxO qualified as UTxO
-import Codec.CBOR.Cuddle.Huddle (Huddle, HuddleItem (HIRule), collectFromInit)
+import Cardano.SCLS.NamespaceKey qualified as Spec
+import Codec.CBOR.Cuddle.Huddle (Huddle, HuddleItem (HIRule), Rule, collectFromInit)
 import Data.Map.Strict qualified as Map
+import Data.Proxy
 import Data.Text (Text)
+import Data.Text qualified as T
+import GHC.TypeLits (KnownNat, KnownSymbol, symbolVal)
+import GHC.TypeNats (fromSNat, pattern SNat)
 import Numeric.Natural (Natural)
 
 -- | Various information about supported namespaces.
@@ -31,13 +41,33 @@ data NamespaceInfo = NamespaceInfo
 namespaces :: Map.Map Text NamespaceInfo
 namespaces =
   Map.fromList
-    [ ("utxo/v0", NamespaceInfo (collectFromInit [HIRule UTxO.record_entry]) 34)
-    , ("blocks/v0", NamespaceInfo (collectFromInit [HIRule Blocks.record_entry]) 36) -- 28 bytes for key, and 8 for epoch in BE
-    , ("pots/v0", NamespaceInfo (collectFromInit [HIRule Pots.record_entry]) 8) -- Key is epoch number
-    , ("pool_stake/v0", NamespaceInfo (collectFromInit [HIRule PoolStake.record_entry]) 28) -- 28 bytes for key
-    , ("snapshots/v0", NamespaceInfo (collectFromInit [HIRule Snapshots.record_entry]) 32) -- 1 byte for hash type, 1 byte for stage, 29 bytes for hash (cred 29, key 28+1),  1 for value type
-    , ("gov/committee/v0", NamespaceInfo (collectFromInit [HIRule GovCommittee.record_entry]) 8)
-    , ("gov/constitution/v0", NamespaceInfo (collectFromInit [HIRule GovConstitution.record_entry]) 8)
-    , ("gov/pparams/v0", NamespaceInfo (collectFromInit [HIRule GovPParams.record_entry]) 4)
-    , ("gov/proposals/v0", NamespaceInfo (collectFromInit [HIRule GovProposals.record_entry]) 34) -- 32 bytes txid+tx index + 2 bytes for proposal index
+    [ mkDefinition @"utxo/v0" UTxO.record_entry
+    , mkDefinition @"blocks/v0" Blocks.record_entry
+    , mkDefinition @"pots/v0" Pots.record_entry
+    , mkDefinition @"pool_stake/v0" PoolStake.record_entry
+    , mkDefinition @"snapshots/v0" Snapshots.record_entry
+    , mkDefinition @"gov/committee/v0" GovCommittee.record_entry
+    , mkDefinition @"gov/constitution/v0" GovConstitution.record_entry
+    , mkDefinition @"gov/pparams/v0" GovPParams.record_entry
+    , mkDefinition @"gov/proposals/v0" GovProposals.record_entry
     ]
+
+mkDefinition :: forall ns. (KnownSymbol ns, KnownNat (Spec.NamespaceKeySize ns)) => Rule -> (Text, NamespaceInfo)
+mkDefinition r =
+  ( n
+  , NamespaceInfo
+      (collectFromInit [HIRule r])
+      (fromSNat $ SNat @(Spec.NamespaceKeySize ns))
+  )
+ where
+  n = T.pack (symbolVal (Proxy @ns))
+
+type instance Spec.NamespaceKeySize "utxo/v0" = 34
+type instance Spec.NamespaceKeySize "blocks/v0" = 36 -- 28 bytes for key, and 8 for epoch in BE
+type instance Spec.NamespaceKeySize "pots/v0" = 8 -- Key is epoch number
+type instance Spec.NamespaceKeySize "pool_stake/v0" = 28 -- 28 bytes for key
+type instance Spec.NamespaceKeySize "snapshots/v0" = 32 -- 1 byte for hash type, 1 byte for stage, 29 bytes for hash (cred 29, key 28+1),  1 for value type
+type instance Spec.NamespaceKeySize "gov/committee/v0" = 8
+type instance Spec.NamespaceKeySize "gov/constitution/v0" = 8
+type instance Spec.NamespaceKeySize "gov/pparams/v0" = 4
+type instance Spec.NamespaceKeySize "gov/proposals/v0" = 34 -- 32 bytes txid+tx index + 2 bytes for proposal index
