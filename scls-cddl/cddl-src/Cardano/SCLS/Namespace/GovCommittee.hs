@@ -17,16 +17,39 @@ import Text.Heredoc (str)
 record_entry :: Rule
 record_entry =
   comment
-    [str| The key for the entry is epoch number (8 bytes) |]
+    [str| The key for the namespace
+        |
+        | ```
+        | meta:
+        |   endian: be
+        |
+        | seq:
+        |   - id: key
+        |     type: gov_committee
+        |
+        | types:
+        |   gov_committee:
+        |     seq:
+        |       - id: epoch
+        |         doc: epoch
+        |         type: u8
+        | ```
+        |]
     $ "record_entry" =:= committee
 
 committee :: Rule
 committee =
-  "committee"
-    =:= (mp [0 <+ asKey credential ==> committee_authorization])
+  comment
+    [str| Storage of the committee members
+        |]
+    $ "committee" =:= (mp [0 <+ asKey credential ==> committee_authorization])
 
 committee_authorization :: Rule
 committee_authorization =
-  "committee_authorization"
-    =:= arr [0, a credential]
-    / arr [1, a (anchor / VNil)]
+  comment
+    [str| 0 - hot committee member
+              | 1 - resignation
+              |]
+    $ "committee_authorization"
+      =:= arr [0, a credential]
+      / arr [1, a (anchor / VNil)]

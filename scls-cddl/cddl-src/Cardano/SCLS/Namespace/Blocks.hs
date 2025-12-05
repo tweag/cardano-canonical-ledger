@@ -11,6 +11,33 @@
 module Cardano.SCLS.Namespace.Blocks where
 
 import Codec.CBOR.Cuddle.Huddle
+import Text.Heredoc (str)
+import Prelude (($))
 
 record_entry :: Rule
-record_entry = "record_entry" =:= VInt
+record_entry =
+  comment
+    [str| Values for the blocks.
+       |
+       | Key definition:
+       |
+       | ```
+       | meta:
+       |   endian: be
+       |
+       | seq:
+       |   - id: key
+       |     type: blocks
+       |
+       | types:
+       |   block:
+       |     seq:
+       |       - id: keyhash_stakepool
+       |         doc: keyhash of the stake pool
+       |         size: 28
+       |       - id: epoch
+       |         doc: epoch
+       |         type: u8
+       | ```
+       |]
+    $ "record_entry" =:= VInt

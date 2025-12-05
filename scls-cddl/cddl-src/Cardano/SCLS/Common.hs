@@ -213,11 +213,15 @@ script_hash =
 
 anchor :: Rule
 anchor =
-  "anchor"
-    =:= arr
-      [ "anchor_url" ==> url
-      , "anchor_data_hash" ==> hash32
-      ]
+  comment
+    [str|
+    | Signed url
+    |]
+    $ "anchor"
+      =:= arr
+        [ "anchor_url" ==> url
+        , "anchor_data_hash" ==> VBytes
+        ]
 
 epoch_no :: Rule
 epoch_no = "epoch_no" =:= VUInt `sized` (8 :: Word64)
@@ -235,7 +239,4 @@ protocol_version :: Rule
 protocol_version = "protocol_version" =:= arr [a major_protocol_version, a VUInt]
 
 major_protocol_version :: Rule
-major_protocol_version = "major_protocol_version" =:= (1 :: Integer) ... next_major_protocol_version
-
-next_major_protocol_version :: Integer
-next_major_protocol_version = 10
+major_protocol_version = "major_protocol_version" =:= VUInt

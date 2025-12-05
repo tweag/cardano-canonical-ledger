@@ -18,8 +18,24 @@ record_entry :: Rule
 record_entry =
   comment
     [str| The key for the entry is one of the following:
-                |    (keyhash28)
-                |]
+        |
+        | ```
+        | meta:
+        |   endian: be
+        |
+        | seq:
+        |   - id: key
+        |     type: pool_stake
+        |
+        | types:
+        |   pool_stake:
+        |     seq:
+        |       - id: keyhash
+        |         doc: stake pool keyhash
+        |         size: 28
+        | ```
+        |
+        |]
     $ "record_entry" =:= individual_pool_stake
 
 individual_pool_stake :: Rule

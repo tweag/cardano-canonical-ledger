@@ -17,14 +17,31 @@ record_entry :: Rule
 record_entry =
   comment
     [str| Constinution record entry
-        | Key is the epoch number (8 bytes)
+        |
+        | ```
+        | meta:
+        |   endian: be
+        |
+        | seq:
+        |   - id: key
+        |     type: gov_constitution
+        |
+        | gov_constitution:
+        |   seq:
+        |     - id: epoch
+        |       doc: Current epoch.
+        |       type: u8
+        | ```
         |]
     $ "record_entry" =:= constitution
 
 constitution :: Rule
 constitution =
-  "constitution"
-    =:= arr
-      [ a anchor
-      , a (script_hash / VNil)
-      ]
+  comment
+    [str| address of the constition
+        |]
+    $ "constitution"
+      =:= arr
+        [ a anchor
+        , a (script_hash / VNil)
+        ]

@@ -17,7 +17,28 @@ import Text.Heredoc (str)
 
 -- | Top-level entry for pots namespace
 record_entry :: Rule
-record_entry = "record_entry" =:= pots_table
+record_entry =
+  comment
+    [str| The key for the entry is one of the following:
+        |
+        | ```
+        | meta:
+        |   endian: be
+        |
+        | seq:
+        |   - id: key
+        |     type: pots
+        |
+        | types:
+        |   pots:
+        |     seq:
+        |       - id: epoch
+        |         doc: current epoch
+        |         size: 8
+        | ```
+        |
+        |]
+    $ "record_entry" =:= pots_table
 
 -- | Table mapping pot names to coin values
 pots_table :: Rule
