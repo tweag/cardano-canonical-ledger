@@ -23,6 +23,8 @@ library
   default-language: GHC2021
   hs-source-dirs: src
   exposed-modules:
+    Cardano.SCLS.Entry.IsKey
+    Cardano.SCLS.NamespaceCodec
     Cardano.SCLS.NamespaceKey
     Cardano.SCLS.Versioned
 
@@ -35,4 +37,7 @@ library
     TypeFamilies
 
   build-depends:
-    base >=4.18 && <5
+    base >=4.18 && <5,
+    bytestring,
+    cborg,
+    mempack-scls,
