@@ -7,13 +7,13 @@ module Cardano.SCLS.Internal.Serializer.Reference.Impl (
   InputChunk,
 ) where
 
+import Cardano.SCLS.Epoch
 import Cardano.SCLS.Internal.Record.Hdr
 import Cardano.SCLS.Internal.Serializer.Dump (dumpToHandle)
 import Cardano.SCLS.Internal.Serializer.Dump.Plan (InputChunk, SerializationPlan, mkSortedSerializationPlan)
 import Cardano.SCLS.Internal.Serializer.HasKey (HasKey (getKey))
 import Cardano.Types.Namespace (Namespace (..))
 import Cardano.Types.Network
-import Cardano.Types.SlotNo
 import Control.Monad.IO.Class (MonadIO (liftIO))
 import Control.Monad.ST (runST)
 import Data.Function (on)
@@ -40,7 +40,7 @@ serialize ::
   -- | Network identifier
   NetworkId ->
   -- | Slot of the current transaction
-  SlotNo ->
+  Epoch ->
   SerializationPlan a ->
   IO ()
 serialize resultFilePath network slotNo plan = do

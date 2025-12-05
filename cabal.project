@@ -1,7 +1,8 @@
 packages:
   scls-cbor
-  scls-cddl
+  scls-cardano
   scls-core
   scls-format
   scls-util
+  mempack-scls
   merkle-tree-incremental

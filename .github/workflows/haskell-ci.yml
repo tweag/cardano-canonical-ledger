@@ -141,8 +141,9 @@ jobs:
           touch cabal.project
           echo "packages: $GITHUB_WORKSPACE/source/scls-format" >> cabal.project
           echo "packages: $GITHUB_WORKSPACE/source/scls-core" >> cabal.project
-          echo "packages: $GITHUB_WORKSPACE/source/scls-cddl" >> cabal.project
+          echo "packages: $GITHUB_WORKSPACE/source/scls-cardano" >> cabal.project
           echo "packages: $GITHUB_WORKSPACE/source/scls-cbor" >> cabal.project
+          echo "packages: $GITHUB_WORKSPACE/source/mempack-scls" >> cabal.project
           echo "packages: $GITHUB_WORKSPACE/source/merkle-tree-incremental" >> cabal.project
           cat cabal.project
       - name: sdist
@@ -157,35 +158,40 @@ jobs:
         run: |
           PKGDIR_scls_format="$(find "$GITHUB_WORKSPACE/unpacked" -maxdepth 1 -type d -regex '.*/scls-format-[0-9.]*')"
           echo "PKGDIR_scls_format=${PKGDIR_scls_format}" >> "$GITHUB_ENV"
-          PKGDIR_scls_cddl="$(find "$GITHUB_WORKSPACE/unpacked" -maxdepth 1 -type d -regex '.*/scls-cddl-[0-9.]*')"
-          echo "PKGDIR_scls_cddl=${PKGDIR_scls_cddl}" >> "$GITHUB_ENV"
+          PKGDIR_scls_cardano="$(find "$GITHUB_WORKSPACE/unpacked" -maxdepth 1 -type d -regex '.*/scls-cardano-[0-9.]*')"
+          echo "PKGDIR_scls_cardano=${PKGDIR_scls_cardano}" >> "$GITHUB_ENV"
           PKGDIR_scls_core="$(find "$GITHUB_WORKSPACE/unpacked" -maxdepth 1 -type d -regex '.*/scls-core-[0-9.]*')"
           echo "PKGDIR_scls_core=${PKGDIR_scls_core}" >> "$GITHUB_ENV"
           PKGDIR_scls_cbor="$(find "$GITHUB_WORKSPACE/unpacked" -maxdepth 1 -type d -regex '.*/scls-cbor-[0-9.]*')"
           echo "PKGDIR_scls_cbor=${PKGDIR_scls_cbor}" >> "$GITHUB_ENV"
+          PKGDIR_mempack_scls="$(find "$GITHUB_WORKSPACE/unpacked" -maxdepth 1 -type d -regex '.*/mempack-scls-[0-9.]*')"
+          echo "PKGDIR_mempack_scls=${PKGDIR_mempack_scls}" >> "$GITHUB_ENV"
           PKGDIR_merkle_tree_incremental="$(find "$GITHUB_WORKSPACE/unpacked" -maxdepth 1 -type d -regex '.*/merkle-tree-incremental-[0-9.]*')"
           echo "PKGDIR_merkle_tree_incremental=${PKGDIR_merkle_tree_incremental}" >> "$GITHUB_ENV"
           rm -f cabal.project cabal.project.local
           touch cabal.project
           touch cabal.project.local
           echo "packages: ${PKGDIR_scls_format}" >> cabal.project
-          echo "packages: ${PKGDIR_scls_cddl}" >> cabal.project
+          echo "packages: ${PKGDIR_scls_cardano}" >> cabal.project
           echo "packages: ${PKGDIR_scls_cbor}" >> cabal.project
           echo "packages: ${PKGDIR_scls_core}" >> cabal.project
+          echo "packages: ${PKGDIR_mempack_scls}" >> cabal.project
           echo "packages: ${PKGDIR_merkle_tree_incremental}" >> cabal.project
           echo "package scls-format" >> cabal.project
           echo "    ghc-options: -Werror=missing-methods -Werror=missing-fields -Werror=unused-packages -Werror=incomplete-patterns -Werror=incomplete-uni-patterns" >> cabal.project
-          echo "package scls-cddl" >> cabal.project
+          echo "package scls-cardano" >> cabal.project
           echo "    ghc-options: -Werror=missing-methods -Werror=missing-fields -Werror=unused-packages -Werror=incomplete-patterns -Werror=incomplete-uni-patterns" >> cabal.project
           echo "package scls-cbor" >> cabal.project
           echo "    ghc-options: -Werror=missing-methods -Werror=missing-fields -Werror=unused-packages -Werror=incomplete-patterns -Werror=incomplete-uni-patterns" >> cabal.project
           echo "package scls-core" >> cabal.project
           echo "    ghc-options: -Werror=missing-methods -Werror=missing-fields -Werror=unused-packages -Werror=incomplete-patterns -Werror=incomplete-uni-patterns" >> cabal.project
+          echo "package mempack-scls" >> cabal.project
+          echo "    ghc-options: -Werror=missing-methods -Werror=missing-fields -Werror=unused-packages -Werror=incomplete-patterns -Werror=incomplete-uni-patterns" >> cabal.project
           echo "package merkle-tree-incremental" >> cabal.project
           echo "    ghc-options: -Werror=missing-methods -Werror=missing-fields -Werror=unused-packages -Werror=incomplete-patterns -Werror=incomplete-uni-patterns" >> cabal.project
           cat >> cabal.project <<EOF
           EOF
-          $HCPKG list --simple-output --names-only | perl -ne 'for (split /\s+/) { print "constraints: any.$_ installed\n" unless /^(scls-cddl|scls-core|scls-format|scls-cbor|merkle-tree-incremental)$/; }' >> cabal.project.local
+          $HCPKG list --simple-output --names-only | perl -ne 'for (split /\s+/) { print "constraints: any.$_ installed\n" unless /^(scls-cardano|scls-core|scls-format|scls-cbor|mempack-scls|merkle-tree-incremental)$/; }' >> cabal.project.local
           cat cabal.project
           cat cabal.project.local
       - name: dump install plan

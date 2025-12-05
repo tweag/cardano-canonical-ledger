@@ -3,6 +3,7 @@
 
 module MergeSpec (mergeCommandTests) where
 
+import Cardano.SCLS.Epoch (Epoch (Epoch))
 import Cardano.SCLS.Internal.Reader (
   extractNamespaceList,
   extractRootHash,
@@ -12,7 +13,6 @@ import Cardano.SCLS.Internal.Serializer.Reference.Impl qualified as Reference
 import Cardano.Types.Namespace (Namespace (..))
 import Cardano.Types.Namespace qualified as Namespace
 import Cardano.Types.Network (NetworkId (Mainnet))
-import Cardano.Types.SlotNo (SlotNo (SlotNo))
 import Common (generateTestFile, runSclsUtil)
 import Control.Monad (forM)
 import Data.ByteString.Char8 qualified as BS8
@@ -41,7 +41,7 @@ generateSplitTestFiles dir = do
     Reference.serialize @RawBytes
       fileName
       Mainnet
-      (SlotNo 1)
+      (Epoch 1)
       (defaultSerializationPlan & addChunks mkStream)
 
     pure (fileName, ns)
@@ -81,7 +81,7 @@ generateOverlappingNsSplitTestFiles dir = do
     Reference.serialize @RawBytes
       fileName
       Mainnet
-      (SlotNo 1)
+      (Epoch 1)
       (defaultSerializationPlan & addChunks stream)
 
     pure (fileName, map fst nsEntries)

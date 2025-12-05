@@ -7,13 +7,13 @@ module Cardano.SCLS.Util.Debug where
 
 import Cardano.SCLS.CDDL
 
+import Cardano.SCLS.Epoch (Epoch (..))
 import Cardano.SCLS.Internal.Reader
 import Cardano.SCLS.Internal.Serializer.Dump.Plan (addChunks, defaultSerializationPlan)
 import Cardano.SCLS.Internal.Serializer.External.Impl qualified as External (serialize)
 import Cardano.Types.Namespace (Namespace)
 import Cardano.Types.Namespace qualified as Namespace
 import Cardano.Types.Network (NetworkId (..))
-import Cardano.Types.SlotNo (SlotNo (..))
 import Codec.CBOR.Cuddle.CBOR.Gen (generateCBORTerm')
 import Codec.CBOR.Cuddle.CDDL (Name (..))
 import Codec.CBOR.Cuddle.CDDL.CTree (CTreeRoot')
@@ -51,7 +51,7 @@ generateDebugFile outputFile namespaceEntries = do
     External.serialize
       outputFile
       Mainnet
-      (SlotNo 1)
+      (Epoch 1)
       ( defaultSerializationPlan
           & addChunks do
             S.each
