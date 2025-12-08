@@ -31,11 +31,13 @@ import Codec.CBOR.Write (toLazyByteString, toStrictByteString)
 import Data.ByteString qualified as B
 import Data.ByteString.Base16 qualified as Base16
 import Data.ByteString.Lazy qualified as BL
+import Data.Either (isRight)
 import Data.Proxy
 import Data.Text qualified as T
 import Data.Typeable
 import GHC.TypeLits
 import Test.Hspec
+import Test.Hspec.Expectations.Contrib (annotate)
 import Test.Hspec.QuickCheck
 import Test.QuickCheck
 
@@ -111,15 +113,18 @@ data V a = NoHash a | WithHash a (Maybe Hash)
 And it's ok to decode `WithHash a Nothing` to `NoHash a`, `decode.encode=id` property will fail, because
 decoding will put the value in it's canonical form.
 -}
-propNamespaceEntryRoundTrip :: forall ns. (KnownNamespace ns, Arbitrary (NamespaceEntry ns), Eq (NamespaceEntry ns)) => NamespaceEntry ns -> Bool
-propNamespaceEntryRoundTrip = \a ->
+propNamespaceEntryRoundTrip :: forall ns. (KnownNamespace ns, Arbitrary (NamespaceEntry ns), Eq (NamespaceEntry ns), Show (NamespaceEntry ns)) => NamespaceEntry ns -> IO ()
+propNamespaceEntryRoundTrip = \a -> do
   case deserialiseFromBytes (decodeEntry @ns) (toLazyByteString (encodeEntry @ns a)) of
-    Right (b, Versioned (a' :: NamespaceEntry ns)) ->
-      BL.null b
-        && case deserialiseFromBytes (decodeEntry @ns) (toLazyByteString (encodeEntry @ns a')) of
-          Right (b', Versioned a'') -> BL.null b' && a' == a''
-          _ -> False
-    _ -> False
+    Right (b, Versioned a') -> annotate "(b, a') = decode (encode a)" $ do
+      b `shouldSatisfy` BL.null
+      a' `shouldBe` a
+      case deserialiseFromBytes (decodeEntry @ns) (toLazyByteString (encodeEntry @ns a')) of
+        Right (b', Versioned a'') -> annotate "(b', a'') = decode (encode a')" $ do
+          b' `shouldSatisfy` BL.null
+          a'' `shouldBe` a'
+        r -> r `shouldSatisfy` isRight
+    r -> r `shouldSatisfy` isRight
 
 debugValidateType :: forall ns a. (KnownSymbol ns, ToCanonicalCBOR ns a) => T.Text -> a -> Maybe CBORTermResult
 debugValidateType t a = validateBytesAgainst (toStrictByteString (toCanonicalCBOR (Proxy @ns) a)) nsName t

@@ -86,9 +86,10 @@ library testlib
     cborg,
     cuddle,
     hspec,
-    scls-core,
-    scls-cbor,
+    hspec-expectations,
     scls-cardano:{validate},
+    scls-cbor,
+    scls-core,
     text,
 
   visibility: public
