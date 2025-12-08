@@ -4,7 +4,7 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TypeFamilies #-}
 
-module Cardano.SCLS.Internal.Entry.IsKey (
+module Cardano.SCLS.Entry.IsKey (
   IsKey (..),
 ) where
 
