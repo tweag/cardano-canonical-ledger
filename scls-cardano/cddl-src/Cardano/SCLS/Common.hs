@@ -176,7 +176,7 @@ unit_interval =
         )
 
 set :: (IsType0 t0) => t0 -> GRuleCall
-set = binding $ \x -> "set" =:= arr [0 <+ a x]
+set = binding $ \x -> "set" =:= tag 258 (arr [0 <+ a x])
 
 -- | nonnegative_interval = tag 30 [uint, positive_int]
 nonnegative_interval :: Rule
