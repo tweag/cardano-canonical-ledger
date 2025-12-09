@@ -12,6 +12,8 @@ when defining the instances for specific types.
 module Cardano.SCLS.CBOR.Canonical.Encoder (
   ToCanonicalCBOR (..),
   encodeAsMap,
+  SomeEncodablePair (..),
+  mkEncodablePair,
 ) where
 
 import Cardano.SCLS.NamespaceCodec (CanonicalEncoding (unCanonicalEncoding), unsafeToCanonicalEncoding)
@@ -26,6 +28,7 @@ import Data.Foldable qualified as F
 import Data.Int
 import Data.List qualified as List
 import Data.Map qualified as Map
+import Data.Proxy (Proxy (Proxy))
 import Data.Sequence qualified as Seq
 import Data.Set qualified as Set
 import Data.Text (Text)
@@ -253,15 +256,17 @@ instance
    where
     l =
       Map.foldlWithKey'
-        ( \acc k val ->
-            let kEncoding = toCanonicalCBOR v k
-                valEncoding = toCanonicalCBOR v val
-             in (kEncoding, valEncoding) : acc
-        )
+        (\acc k val -> SomeEncodablePair v k val : acc)
         []
         m
 
-encodeAsMap :: (Foldable t) => t (CanonicalEncoding, CanonicalEncoding) -> CanonicalEncoding
+data SomeEncodablePair v where
+  SomeEncodablePair :: (ToCanonicalCBOR v k, ToCanonicalCBOR v val) => proxy v -> k -> val -> SomeEncodablePair v
+
+mkEncodablePair :: forall v k val. (ToCanonicalCBOR v k, ToCanonicalCBOR v val) => k -> val -> SomeEncodablePair v
+mkEncodablePair = SomeEncodablePair (Proxy @v)
+
+encodeAsMap :: (Foldable t) => t (SomeEncodablePair v) -> CanonicalEncoding
 encodeAsMap f =
   (unsafeToCanonicalEncoding (E.encodeMapLen (fromIntegral $ length f)))
     <> foldMap (\(kBytes, valEncoding) -> unsafeToCanonicalEncoding (E.encodePreEncoded kBytes) <> valEncoding) sorted
@@ -270,8 +275,9 @@ encodeAsMap f =
   sorted =
     List.sortOn fst $
       F.foldl'
-        ( \acc (kEncoding, valEncoding) ->
-            let kBytes = toStrictByteString $ unCanonicalEncoding kEncoding
+        ( \acc (SomeEncodablePair v k val) ->
+            let kBytes = toStrictByteString $ unCanonicalEncoding $ toCanonicalCBOR v k
+                valEncoding = toCanonicalCBOR v val
              in (kBytes, valEncoding) : acc
         )
         []
