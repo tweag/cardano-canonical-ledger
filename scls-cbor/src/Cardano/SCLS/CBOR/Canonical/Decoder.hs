@@ -266,7 +266,7 @@ instance
 -- Set
 --------------------------------------------------------------------------------
 
--- | We always encode maps with the indefinite length encoding.
+-- | We always encode sets with the definite length encoding.
 instance
   (Ord a, FromCanonicalCBOR v a) =>
   FromCanonicalCBOR v (Set.Set a)
