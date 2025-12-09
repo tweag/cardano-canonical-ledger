@@ -3,12 +3,21 @@
 
 module Cardano.SCLS.CBOR.Canonical.Decoder (
   FromCanonicalCBOR (..),
+  decodeListLenCanonicalOf,
+  decodeListLenCanonical,
+  decodeMapLenCanonical,
+  decodeMapLenCanonicalOf,
+  decodeTagCanonical,
+  decodeTextOfCanonical,
+  decodeWordCanonicalOf,
+  decodeWord8Canonical,
+  peekTokenType,
 ) where
-
 
 import Cardano.SCLS.NamespaceCodec (CanonicalDecoder (CanonicalDecoder, unCanonicalDecoder))
 import Cardano.SCLS.Versioned
 import Codec.CBOR.ByteArray qualified as BA
+import Codec.CBOR.Decoding (TokenType)
 import Codec.CBOR.Decoding qualified as D
 import Codec.CBOR.Read qualified as CBOR.Read
 import Control.Exception (Exception)
@@ -20,6 +29,7 @@ import Data.Int
 import Data.Map qualified as Map
 import Data.Sequence qualified as Seq
 import Data.Set qualified as Set
+import Data.Text (Text)
 import Data.Text qualified as T
 import Data.Word
 import GHC.TypeLits
@@ -288,3 +298,49 @@ instance
         (coerce Set.fromList :: [Versioned v a] -> Versioned v (Set.Set a))
         n
         (unCanonicalDecoder fromCanonicalCBOR)
+
+decodeTextOfCanonical :: Text -> CanonicalDecoder s ()
+decodeTextOfCanonical t = do
+  t' <- CanonicalDecoder D.decodeStringCanonical
+  if t == t'
+    then
+      pure ()
+    else
+      fail $ "expected string " ++ show t
+
+decodeMapLenCanonical :: CanonicalDecoder s Int
+decodeMapLenCanonical =
+  CanonicalDecoder D.decodeMapLenCanonical
+
+decodeMapLenCanonicalOf :: Int -> CanonicalDecoder s ()
+decodeMapLenCanonicalOf len = do
+  len' <- CanonicalDecoder D.decodeMapLenCanonical
+  if len == len'
+    then
+      pure ()
+    else
+      fail $ "expected map of length " ++ show len
+
+decodeListLenCanonical :: CanonicalDecoder s Int
+decodeListLenCanonical =
+  CanonicalDecoder D.decodeListLenCanonical
+
+decodeListLenCanonicalOf :: Int -> CanonicalDecoder s ()
+decodeListLenCanonicalOf =
+  CanonicalDecoder . D.decodeListLenCanonicalOf
+
+decodeWordCanonicalOf :: Word -> CanonicalDecoder s ()
+decodeWordCanonicalOf =
+  CanonicalDecoder . D.decodeWordCanonicalOf
+
+decodeWord8Canonical :: CanonicalDecoder s Word8
+decodeWord8Canonical =
+  CanonicalDecoder D.decodeWord8Canonical
+
+peekTokenType :: CanonicalDecoder s TokenType
+peekTokenType =
+  CanonicalDecoder D.peekTokenType
+
+decodeTagCanonical :: CanonicalDecoder s Word
+decodeTagCanonical =
+  CanonicalDecoder D.decodeTagCanonical
