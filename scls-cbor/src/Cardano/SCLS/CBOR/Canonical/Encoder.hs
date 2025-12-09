@@ -20,9 +20,10 @@ import Data.ByteString (ByteString)
 import Data.ByteString.Short (ShortByteString (SBS))
 import Data.ByteString.Short qualified as SBS
 import Data.Int
-import Data.List (sortOn)
+import Data.List qualified as List
 import Data.Map qualified as Map
 import Data.Sequence qualified as Seq
+import Data.Set qualified as Set
 import Data.Text (Text)
 import Data.Word
 import GHC.TypeLits
@@ -252,7 +253,7 @@ instance
    where
     -- Order map by the byte-wise ordering of the canonically encoded map keys
     mSorted =
-      sortOn fst $
+      List.sortOn fst $
         Map.foldlWithKey'
           ( \acc k val ->
               let keyBytes = toStrictByteString $ toCanonicalCBOR v k
@@ -260,3 +261,18 @@ instance
           )
           []
           m
+
+--------------------------------------------------------------------------------
+-- Set
+--------------------------------------------------------------------------------
+
+-- See `https://github.com/input-output-hk/cbor-sets-spec/blob/master/CBOR_SETS.md`
+-- for details about the implementation.
+instance (ToCanonicalCBOR v a) => (ToCanonicalCBOR v (Set.Set a)) where
+  toCanonicalCBOR v s =
+    E.encodeTag 258
+      <> E.encodeListLen (fromIntegral size)
+      <> foldMap E.encodePreEncoded encSorted
+   where
+    size = Set.size s
+    encSorted = List.sort $ map (toStrictByteString . toCanonicalCBOR v) $ Set.toList s
