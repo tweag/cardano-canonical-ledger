@@ -137,6 +137,7 @@ gov_params_update =
               |   - max_value_size: Max size of a Value in an output
               |   - collateral_percentage: The scaling percentage of the collateral relative to the fee
               |   - max_collateral_inputs: Maximum number of collateral inputs allowed in a transaction
+              |   - min_fee_ref_script_cost_per_byte : reference scripts fee for the minimum fee calculation
               |]
     $ "gov_params_update"
       =:= mp
@@ -169,4 +170,5 @@ gov_params_update =
         , "max_block_header_size" ==> (VUInt `sized` (2 :: Word64) / VNil)
         , "max_collateral_inputs" ==> (VUInt `sized` (2 :: Word64) / VNil)
         , "pool_voting_thresholds" ==> (pool_voting_thresholds / VNil)
+        , "min_fee_ref_script_cost_per_byte" ==> (nonnegative_interval / VNil)
         ]

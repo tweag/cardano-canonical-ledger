@@ -86,6 +86,7 @@ gov_pparams_out =
               |   - max_value_size: Max size of a Value in an output
               |   - collateral_percentage: The scaling percentage of the collateral relative to the fee
               |   - max_collateral_inputs: Maximum number of collateral inputs allowed in a transaction
+              |   - min_fee_ref_script_cost_per_byte: Reference scripts fee for the minimum fee calculation
               |]
     $ "gov_pparams_out"
       =:= mp
@@ -119,6 +120,7 @@ gov_pparams_out =
         , "max_collateral_inputs" ==> VUInt `sized` (2 :: Word64)
         , "pool_voting_thresholds" ==> pool_voting_thresholds
         , "drep_activity" ==> epoch_interval
+        , "min_fee_ref_script_cost_per_byte" ==> (nonnegative_interval / VNil)
         ]
 
 epoch_interval :: Rule
