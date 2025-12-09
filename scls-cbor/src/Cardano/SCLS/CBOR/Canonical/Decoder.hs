@@ -12,9 +12,11 @@ import Control.Exception (Exception)
 import Data.Array.Byte qualified as Prim
 import Data.ByteString (ByteString)
 import Data.ByteString.Short qualified as SBS
+import Data.Coerce
 import Data.Int
 import Data.Map qualified as Map
 import Data.Sequence qualified as Seq
+import Data.Set qualified as Set
 import Data.Text qualified as T
 import Data.Word
 import GHC.TypeLits
@@ -259,3 +261,22 @@ instance
       Versioned a <- fromCanonicalCBOR @v
       Versioned b <- fromCanonicalCBOR @v
       return (a, b)
+
+--------------------------------------------------------------------------------
+-- Set
+--------------------------------------------------------------------------------
+
+-- | We always encode sets with the definite length encoding.
+instance
+  (Ord a, FromCanonicalCBOR v a) =>
+  FromCanonicalCBOR v (Set.Set a)
+  where
+  fromCanonicalCBOR = do
+    258 <- D.decodeTagCanonical
+    n <- D.decodeListLenCanonical
+    D.decodeSequenceLenN
+      (\acc x -> x : acc)
+      []
+      (coerce Set.fromList :: [Versioned v a] -> Versioned v (Set.Set a))
+      n
+      (fromCanonicalCBOR @v)

@@ -21,6 +21,7 @@ import Data.List (nubBy, sortOn)
 import Data.Map qualified as Map
 import Data.Proxy (Proxy (Proxy))
 import Data.Sequence qualified as Seq
+import Data.Set qualified as Set
 import Data.Text qualified as T
 import Data.Word (Word16, Word32, Word64, Word8)
 import Test.Hspec
@@ -53,6 +54,7 @@ tests =
             roundtrip Proxy (Proxy @(Seq.Seq Int))
             roundtrip Proxy (Proxy @Bool)
             roundtrip Proxy (Proxy @(Map.Map Int ByteString))
+            roundtrip Proxy (Proxy @(Set.Set ByteString))
             roundtripWith Proxy (Proxy @T.Text) T.pack
       )
     prop "encoded map is ordered by encoded key byte-order" $
