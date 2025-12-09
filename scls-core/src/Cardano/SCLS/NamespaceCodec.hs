@@ -22,8 +22,9 @@ module Cardano.SCLS.NamespaceCodec (
   encodeEntryToBytes,
   decodeEntryFromBytes,
   CanonicalEncoding (unCanonicalEncoding),
-  CanonicalDecoder (CanonicalDecoder, unCanonicalDecoder),
+  CanonicalDecoder (unCanonicalDecoder),
   unsafeToCanonicalEncoding,
+  unsafeToCanonicalDecoder,
 ) where
 
 import Cardano.SCLS.Entry.IsKey (IsKey (keySize, packKeyM, unpackKeyM))
@@ -50,6 +51,10 @@ unsafeToCanonicalEncoding = CanonicalEncoding
 
 newtype CanonicalDecoder s a = CanonicalDecoder {unCanonicalDecoder :: Decoder s a}
   deriving (Functor, Applicative, Monad, MonadFail)
+
+-- | Unsafe lifting `Decoder` to `CanonicalDecoder`. Does not ensure that `Decoder` was defined according to canonical rules.
+unsafeToCanonicalDecoder :: Decoder s a -> CanonicalDecoder s a
+unsafeToCanonicalDecoder = CanonicalDecoder
 
 {- | Encode a value to canonical CBOR with a specific namespace.
 

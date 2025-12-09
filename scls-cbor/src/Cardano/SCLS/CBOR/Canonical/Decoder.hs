@@ -14,7 +14,7 @@ module Cardano.SCLS.CBOR.Canonical.Decoder (
   peekTokenType,
 ) where
 
-import Cardano.SCLS.NamespaceCodec (CanonicalDecoder (CanonicalDecoder, unCanonicalDecoder))
+import Cardano.SCLS.NamespaceCodec (CanonicalDecoder (unCanonicalDecoder), unsafeToCanonicalDecoder)
 import Cardano.SCLS.Versioned
 import Codec.CBOR.ByteArray qualified as BA
 import Codec.CBOR.Decoding (TokenType)
@@ -52,52 +52,52 @@ instance Exception DecodingError
 --------------------------------------------------------------------------------
 
 instance FromCanonicalCBOR v () where
-  fromCanonicalCBOR = CanonicalDecoder $ Versioned @v <$> D.decodeNull
+  fromCanonicalCBOR = unsafeToCanonicalDecoder $ Versioned @v <$> D.decodeNull
 
 instance FromCanonicalCBOR v Bool where
-  fromCanonicalCBOR = CanonicalDecoder $ Versioned @v <$> D.decodeBool
+  fromCanonicalCBOR = unsafeToCanonicalDecoder $ Versioned @v <$> D.decodeBool
 
 --------------------------------------------------------------------------------
 -- Numeric data
 --------------------------------------------------------------------------------
 
 instance FromCanonicalCBOR v Integer where
-  fromCanonicalCBOR = CanonicalDecoder $ Versioned @v <$> D.decodeIntegerCanonical
+  fromCanonicalCBOR = unsafeToCanonicalDecoder $ Versioned @v <$> D.decodeIntegerCanonical
 
 instance FromCanonicalCBOR v Word where
-  fromCanonicalCBOR = CanonicalDecoder $ Versioned @v <$> D.decodeWordCanonical
+  fromCanonicalCBOR = unsafeToCanonicalDecoder $ Versioned @v <$> D.decodeWordCanonical
 
 instance FromCanonicalCBOR v Word8 where
-  fromCanonicalCBOR = CanonicalDecoder $ Versioned @v <$> D.decodeWord8Canonical
+  fromCanonicalCBOR = unsafeToCanonicalDecoder $ Versioned @v <$> D.decodeWord8Canonical
 
 instance FromCanonicalCBOR v Word16 where
-  fromCanonicalCBOR = CanonicalDecoder $ Versioned @v <$> D.decodeWord16Canonical
+  fromCanonicalCBOR = unsafeToCanonicalDecoder $ Versioned @v <$> D.decodeWord16Canonical
 
 instance FromCanonicalCBOR v Word32 where
-  fromCanonicalCBOR = CanonicalDecoder $ Versioned @v <$> D.decodeWord32Canonical
+  fromCanonicalCBOR = unsafeToCanonicalDecoder $ Versioned @v <$> D.decodeWord32Canonical
 
 instance FromCanonicalCBOR v Word64 where
-  fromCanonicalCBOR = CanonicalDecoder $ Versioned @v <$> D.decodeWord64Canonical
+  fromCanonicalCBOR = unsafeToCanonicalDecoder $ Versioned @v <$> D.decodeWord64Canonical
 
 instance FromCanonicalCBOR v Int where
-  fromCanonicalCBOR = CanonicalDecoder $ Versioned @v <$> D.decodeIntCanonical
+  fromCanonicalCBOR = unsafeToCanonicalDecoder $ Versioned @v <$> D.decodeIntCanonical
 
 instance FromCanonicalCBOR v Int32 where
-  fromCanonicalCBOR = CanonicalDecoder $ Versioned @v <$> D.decodeInt32Canonical
+  fromCanonicalCBOR = unsafeToCanonicalDecoder $ Versioned @v <$> D.decodeInt32Canonical
 
 instance FromCanonicalCBOR v Int64 where
-  fromCanonicalCBOR = CanonicalDecoder $ Versioned @v <$> D.decodeInt64Canonical
+  fromCanonicalCBOR = unsafeToCanonicalDecoder $ Versioned @v <$> D.decodeInt64Canonical
 
 --------------------------------------------------------------------------------
 -- Bytes
 --------------------------------------------------------------------------------
 
 instance FromCanonicalCBOR v ByteString where
-  fromCanonicalCBOR = CanonicalDecoder $ Versioned @v <$> D.decodeBytesCanonical
+  fromCanonicalCBOR = unsafeToCanonicalDecoder $ Versioned @v <$> D.decodeBytesCanonical
 
 instance FromCanonicalCBOR v SBS.ShortByteString where
   fromCanonicalCBOR = do
-    BA.BA (Prim.ByteArray ba) <- CanonicalDecoder D.decodeByteArrayCanonical
+    BA.BA (Prim.ByteArray ba) <- unsafeToCanonicalDecoder D.decodeByteArrayCanonical
     pure $ Versioned @v $ SBS.SBS ba
 
 --------------------------------------------------------------------------------
@@ -105,7 +105,7 @@ instance FromCanonicalCBOR v SBS.ShortByteString where
 --------------------------------------------------------------------------------
 
 instance FromCanonicalCBOR v T.Text where
-  fromCanonicalCBOR = Versioned @v <$> CanonicalDecoder D.decodeStringCanonical
+  fromCanonicalCBOR = Versioned @v <$> unsafeToCanonicalDecoder D.decodeStringCanonical
 
 --------------------------------------------------------------------------------
 -- Tuples
@@ -116,7 +116,7 @@ instance
   FromCanonicalCBOR v (a, b)
   where
   fromCanonicalCBOR = do
-    CanonicalDecoder $ D.decodeListLenCanonicalOf 2
+    unsafeToCanonicalDecoder $ D.decodeListLenCanonicalOf 2
     Versioned a <- fromCanonicalCBOR @v
     Versioned b <- fromCanonicalCBOR @v
     pure $ Versioned @v (a, b)
@@ -126,7 +126,7 @@ instance
   FromCanonicalCBOR v (a, b, c)
   where
   fromCanonicalCBOR = do
-    CanonicalDecoder $ D.decodeListLenCanonicalOf 2
+    unsafeToCanonicalDecoder $ D.decodeListLenCanonicalOf 2
     Versioned a <- fromCanonicalCBOR @v
     Versioned b <- fromCanonicalCBOR @v
     Versioned c <- fromCanonicalCBOR @v
@@ -141,7 +141,7 @@ instance
   FromCanonicalCBOR v (a, b, c, d)
   where
   fromCanonicalCBOR = do
-    CanonicalDecoder $ D.decodeListLenCanonicalOf 2
+    unsafeToCanonicalDecoder $ D.decodeListLenCanonicalOf 2
     Versioned a <- fromCanonicalCBOR @v
     Versioned b <- fromCanonicalCBOR @v
     Versioned c <- fromCanonicalCBOR @v
@@ -158,7 +158,7 @@ instance
   FromCanonicalCBOR v (a, b, c, d, e)
   where
   fromCanonicalCBOR = do
-    CanonicalDecoder $ D.decodeListLenCanonicalOf 2
+    unsafeToCanonicalDecoder $ D.decodeListLenCanonicalOf 2
     Versioned a <- fromCanonicalCBOR @v
     Versioned b <- fromCanonicalCBOR @v
     Versioned c <- fromCanonicalCBOR @v
@@ -177,7 +177,7 @@ instance
   FromCanonicalCBOR v (a, b, c, d, e, f)
   where
   fromCanonicalCBOR = do
-    CanonicalDecoder $ D.decodeListLenCanonicalOf 2
+    unsafeToCanonicalDecoder $ D.decodeListLenCanonicalOf 2
     Versioned a <- fromCanonicalCBOR @v
     Versioned b <- fromCanonicalCBOR @v
     Versioned c <- fromCanonicalCBOR @v
@@ -198,7 +198,7 @@ instance
   FromCanonicalCBOR v (a, b, c, d, e, f, g)
   where
   fromCanonicalCBOR = do
-    CanonicalDecoder $ D.decodeListLenCanonicalOf 2
+    unsafeToCanonicalDecoder $ D.decodeListLenCanonicalOf 2
     Versioned a <- fromCanonicalCBOR @v
     Versioned b <- fromCanonicalCBOR @v
     Versioned c <- fromCanonicalCBOR @v
@@ -221,7 +221,7 @@ instance
   FromCanonicalCBOR v (a, b, c, d, e, f, g, h)
   where
   fromCanonicalCBOR = do
-    CanonicalDecoder $ D.decodeListLenCanonicalOf 2
+    unsafeToCanonicalDecoder $ D.decodeListLenCanonicalOf 2
     Versioned a <- fromCanonicalCBOR @v
     Versioned b <- fromCanonicalCBOR @v
     Versioned c <- fromCanonicalCBOR @v
@@ -239,8 +239,8 @@ instance
 -- | We always encode lists with the definite length encoding.
 instance (FromCanonicalCBOR v a) => FromCanonicalCBOR v [a] where
   fromCanonicalCBOR = do
-    len <- CanonicalDecoder $ D.decodeListLenCanonical
-    CanonicalDecoder $
+    len <- unsafeToCanonicalDecoder $ D.decodeListLenCanonical
+    unsafeToCanonicalDecoder $
       D.decodeSequenceLenN
         (\acc (Versioned x) -> x : acc)
         []
@@ -261,9 +261,9 @@ instance
   FromCanonicalCBOR v (Map.Map k val)
   where
   fromCanonicalCBOR = do
-    len <- CanonicalDecoder $ D.decodeMapLenCanonical
+    len <- unsafeToCanonicalDecoder $ D.decodeMapLenCanonical
     asList <-
-      CanonicalDecoder $
+      unsafeToCanonicalDecoder $
         D.decodeSequenceLenN
           (\acc x -> x : acc)
           []
@@ -289,9 +289,9 @@ instance
   FromCanonicalCBOR v (Set.Set a)
   where
   fromCanonicalCBOR = do
-    258 <- CanonicalDecoder D.decodeTagCanonical
-    n <- CanonicalDecoder D.decodeListLenCanonical
-    CanonicalDecoder $
+    258 <- unsafeToCanonicalDecoder D.decodeTagCanonical
+    n <- unsafeToCanonicalDecoder D.decodeListLenCanonical
+    unsafeToCanonicalDecoder $
       D.decodeSequenceLenN
         (\acc x -> x : acc)
         []
@@ -301,7 +301,7 @@ instance
 
 decodeTextOfCanonical :: Text -> CanonicalDecoder s ()
 decodeTextOfCanonical t = do
-  t' <- CanonicalDecoder D.decodeStringCanonical
+  t' <- unsafeToCanonicalDecoder D.decodeStringCanonical
   if t == t'
     then
       pure ()
@@ -310,11 +310,11 @@ decodeTextOfCanonical t = do
 
 decodeMapLenCanonical :: CanonicalDecoder s Int
 decodeMapLenCanonical =
-  CanonicalDecoder D.decodeMapLenCanonical
+  unsafeToCanonicalDecoder D.decodeMapLenCanonical
 
 decodeMapLenCanonicalOf :: Int -> CanonicalDecoder s ()
 decodeMapLenCanonicalOf len = do
-  len' <- CanonicalDecoder D.decodeMapLenCanonical
+  len' <- unsafeToCanonicalDecoder D.decodeMapLenCanonical
   if len == len'
     then
       pure ()
@@ -323,24 +323,24 @@ decodeMapLenCanonicalOf len = do
 
 decodeListLenCanonical :: CanonicalDecoder s Int
 decodeListLenCanonical =
-  CanonicalDecoder D.decodeListLenCanonical
+  unsafeToCanonicalDecoder D.decodeListLenCanonical
 
 decodeListLenCanonicalOf :: Int -> CanonicalDecoder s ()
 decodeListLenCanonicalOf =
-  CanonicalDecoder . D.decodeListLenCanonicalOf
+  unsafeToCanonicalDecoder . D.decodeListLenCanonicalOf
 
 decodeWordCanonicalOf :: Word -> CanonicalDecoder s ()
 decodeWordCanonicalOf =
-  CanonicalDecoder . D.decodeWordCanonicalOf
+  unsafeToCanonicalDecoder . D.decodeWordCanonicalOf
 
 decodeWord8Canonical :: CanonicalDecoder s Word8
 decodeWord8Canonical =
-  CanonicalDecoder D.decodeWord8Canonical
+  unsafeToCanonicalDecoder D.decodeWord8Canonical
 
 peekTokenType :: CanonicalDecoder s TokenType
 peekTokenType =
-  CanonicalDecoder D.peekTokenType
+  unsafeToCanonicalDecoder D.peekTokenType
 
 decodeTagCanonical :: CanonicalDecoder s Word
 decodeTagCanonical =
-  CanonicalDecoder D.decodeTagCanonical
+  unsafeToCanonicalDecoder D.decodeTagCanonical
