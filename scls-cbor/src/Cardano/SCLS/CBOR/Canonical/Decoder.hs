@@ -8,13 +8,14 @@ module Cardano.SCLS.CBOR.Canonical.Decoder (
   decodeMapLenCanonical,
   decodeMapLenCanonicalOf,
   decodeTagCanonical,
-  decodeTextOfCanonical,
+  decodeTextCanonicalOf,
   decodeWordCanonicalOf,
   decodeWord8Canonical,
   peekTokenType,
+  decodeSequenceLenNCanonical,
 ) where
 
-import Cardano.SCLS.NamespaceCodec (CanonicalDecoder (unCanonicalDecoder), unsafeToCanonicalDecoder)
+import Cardano.SCLS.CBOR.Canonical (CanonicalDecoder (unCanonicalDecoder), unsafeToCanonicalDecoder)
 import Cardano.SCLS.Versioned
 import Codec.CBOR.ByteArray qualified as BA
 import Codec.CBOR.Decoding (TokenType)
@@ -240,13 +241,12 @@ instance
 instance (FromCanonicalCBOR v a) => FromCanonicalCBOR v [a] where
   fromCanonicalCBOR = do
     len <- unsafeToCanonicalDecoder $ D.decodeListLenCanonical
-    unsafeToCanonicalDecoder $
-      D.decodeSequenceLenN
-        (\acc (Versioned x) -> x : acc)
-        []
-        (Versioned @v . reverse)
-        len
-        (unCanonicalDecoder $ fromCanonicalCBOR @v)
+    decodeSequenceLenNCanonical
+      (\acc (Versioned x) -> x : acc)
+      []
+      (Versioned @v . reverse)
+      len
+      (fromCanonicalCBOR @v)
 
 instance (FromCanonicalCBOR v a) => FromCanonicalCBOR v (Seq.Seq a) where
   fromCanonicalCBOR = fmap Seq.fromList <$> fromCanonicalCBOR
@@ -263,13 +263,12 @@ instance
   fromCanonicalCBOR = do
     len <- unsafeToCanonicalDecoder $ D.decodeMapLenCanonical
     asList <-
-      unsafeToCanonicalDecoder $
-        D.decodeSequenceLenN
-          (\acc x -> x : acc)
-          []
-          id
-          len
-          (unCanonicalDecoder decodeEntry)
+      decodeSequenceLenNCanonical
+        (\acc x -> x : acc)
+        []
+        id
+        len
+        decodeEntry
     -- Use Map.fromList because encoding uses encoded key byte-order,
     -- which may not match deserialized order
     pure $ Versioned @v $ Map.fromList asList
@@ -289,18 +288,17 @@ instance
   FromCanonicalCBOR v (Set.Set a)
   where
   fromCanonicalCBOR = do
-    258 <- unsafeToCanonicalDecoder D.decodeTagCanonical
-    n <- unsafeToCanonicalDecoder D.decodeListLenCanonical
-    unsafeToCanonicalDecoder $
-      D.decodeSequenceLenN
-        (\acc x -> x : acc)
-        []
-        (coerce Set.fromList :: [Versioned v a] -> Versioned v (Set.Set a))
-        n
-        (unCanonicalDecoder fromCanonicalCBOR)
+    258 <- decodeTagCanonical
+    n <- decodeListLenCanonical
+    decodeSequenceLenNCanonical
+      (\acc x -> x : acc)
+      []
+      (coerce Set.fromList :: [Versioned v a] -> Versioned v (Set.Set a))
+      n
+      fromCanonicalCBOR
 
-decodeTextOfCanonical :: Text -> CanonicalDecoder s ()
-decodeTextOfCanonical t = do
+decodeTextCanonicalOf :: Text -> CanonicalDecoder s ()
+decodeTextCanonicalOf t = do
   t' <- unsafeToCanonicalDecoder D.decodeStringCanonical
   if t == t'
     then
@@ -314,7 +312,7 @@ decodeMapLenCanonical =
 
 decodeMapLenCanonicalOf :: Int -> CanonicalDecoder s ()
 decodeMapLenCanonicalOf len = do
-  len' <- unsafeToCanonicalDecoder D.decodeMapLenCanonical
+  len' <- decodeMapLenCanonical
   if len == len'
     then
       pure ()
@@ -344,3 +342,13 @@ peekTokenType =
 decodeTagCanonical :: CanonicalDecoder s Word
 decodeTagCanonical =
   unsafeToCanonicalDecoder D.decodeTagCanonical
+
+decodeSequenceLenNCanonical :: (r -> a -> r) -> r -> (r -> r') -> Int -> CanonicalDecoder s a -> CanonicalDecoder s r'
+decodeSequenceLenNCanonical f i f' n d =
+  unsafeToCanonicalDecoder
+    $ D.decodeSequenceLenN
+      f
+      i
+      f'
+      n
+    $ unCanonicalDecoder d

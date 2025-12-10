@@ -11,9 +11,11 @@ module Cardano.SCLS.Internal.Entry.ChunkEntry (
   decodeChunkEntry,
 ) where
 
+import Cardano.SCLS.CBOR.Canonical (CanonicalDecoder (unCanonicalDecoder), CanonicalEncoding (unCanonicalEncoding))
 import Cardano.SCLS.Entry.IsKey (IsKey (..))
 import Cardano.SCLS.Internal.Serializer.HasKey
-import Cardano.SCLS.NamespaceCodec (CanonicalCBOREntryDecoder (decodeEntry), CanonicalCBOREntryEncoder (encodeEntry), CanonicalDecoder (unCanonicalDecoder), CanonicalEncoding (unCanonicalEncoding), KnownNamespace (..), NamespaceKeySize, Versioned (Versioned), decodeKeyFromBytes, encodeKeyToBytes)
+import Cardano.SCLS.NamespaceCodec (CanonicalCBOREntryDecoder (decodeEntry), CanonicalCBOREntryEncoder (encodeEntry), KnownNamespace (..), NamespaceKeySize, decodeKeyFromBytes, encodeKeyToBytes)
+import Cardano.SCLS.Versioned (Versioned (Versioned))
 import Codec.CBOR.Read (deserialiseFromBytes)
 import Codec.CBOR.Write (toStrictByteString)
 import Data.ByteString qualified as BS

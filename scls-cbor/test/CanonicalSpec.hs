@@ -4,9 +4,9 @@ module CanonicalSpec (
   tests,
 ) where
 
+import Cardano.SCLS.CBOR.Canonical (CanonicalDecoder (unCanonicalDecoder), CanonicalEncoding (unCanonicalEncoding))
 import Cardano.SCLS.CBOR.Canonical.Decoder (FromCanonicalCBOR (fromCanonicalCBOR))
 import Cardano.SCLS.CBOR.Canonical.Encoder (ToCanonicalCBOR (toCanonicalCBOR))
-import Cardano.SCLS.NamespaceCodec (CanonicalDecoder (unCanonicalDecoder), CanonicalEncoding (unCanonicalEncoding))
 import Cardano.SCLS.Versioned
 import Codec.CBOR.Decoding (Decoder)
 import Codec.CBOR.Decoding qualified as D

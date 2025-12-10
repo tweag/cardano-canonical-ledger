@@ -21,7 +21,8 @@ import Cardano.SCLS.CBOR.Canonical.Encoder
 import Cardano.SCLS.Entry.IsKey (IsKey (keySize, packKeyM, unpackKeyM))
 import Cardano.SCLS.Internal.Entry.ChunkEntry (ChunkEntry (ChunkEntry))
 import Cardano.SCLS.Internal.Serializer.HasKey (HasKey (Key, getKey))
-import Cardano.SCLS.NamespaceCodec (CanonicalCBOREntryDecoder (decodeEntry), CanonicalCBOREntryEncoder (encodeEntry), KnownNamespace (NamespaceEntry, NamespaceKey), NamespaceKeySize, Versioned (Versioned), namespaceKeySize)
+import Cardano.SCLS.NamespaceCodec (CanonicalCBOREntryDecoder (decodeEntry), CanonicalCBOREntryEncoder (encodeEntry), KnownNamespace (NamespaceEntry, NamespaceKey), NamespaceKeySize, namespaceKeySize)
+import Cardano.SCLS.Versioned (Versioned (Versioned))
 import Data.ByteString qualified as BS
 import Data.Data (Proxy (Proxy))
 import Data.MemPack (packByteStringM, unpackByteStringM)

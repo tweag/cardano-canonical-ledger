@@ -16,7 +16,7 @@ module Cardano.SCLS.CBOR.Canonical.Encoder (
   mkEncodablePair,
 ) where
 
-import Cardano.SCLS.NamespaceCodec (CanonicalEncoding (unCanonicalEncoding), unsafeToCanonicalEncoding)
+import Cardano.SCLS.CBOR.Canonical (CanonicalEncoding (unCanonicalEncoding), unsafeToCanonicalEncoding)
 import Codec.CBOR.ByteArray.Sliced qualified as BAS
 import Codec.CBOR.Encoding qualified as E
 import Codec.CBOR.Write (toStrictByteString)
@@ -260,12 +260,30 @@ instance
         []
         m
 
+{- | An existential wrapper for a key-value pair where both the key and value
+can be canonically CBOR-encoded under the version @v@.
+
+This type is useful for encoding heterogeneous collections of key-value pairs
+as CBOR maps, where the key and value types may vary but all support
+'ToCanonicalCBOR' for the same version.
+
+Use 'mkEncodablePair' to construct values of this type.
+-}
 data SomeEncodablePair v where
   SomeEncodablePair :: (ToCanonicalCBOR v k, ToCanonicalCBOR v val) => proxy v -> k -> val -> SomeEncodablePair v
 
+{- | Construct a 'SomeEncodablePair' from a key and value, given that both
+support 'ToCanonicalCBOR' for the version `v`.
+-}
 mkEncodablePair :: forall v k val. (ToCanonicalCBOR v k, ToCanonicalCBOR v val) => k -> val -> SomeEncodablePair v
 mkEncodablePair = SomeEncodablePair (Proxy @v)
 
+{- |
+  Helper for encoding map-like structures in canonical CBOR form.
+  This function takes a foldable collection of 'SomeEncodablePair' values and encodes them as a CBOR map,
+  using definite length encoding. Keys are sorted by their canonical CBOR-encoded byte representation,
+  as required by the canonical CBOR specification.
+-}
 encodeAsMap :: (Foldable t) => t (SomeEncodablePair v) -> CanonicalEncoding
 encodeAsMap f =
   (unsafeToCanonicalEncoding (E.encodeMapLen len))

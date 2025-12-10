@@ -14,24 +14,18 @@ module Cardano.SCLS.NamespaceCodec (
   KnownNamespace (..),
   CanonicalCBOREntryEncoder (..),
   CanonicalCBOREntryDecoder (..),
-  Versioned (..),
   NamespaceKeySize,
   namespaceKeySize,
   encodeKeyToBytes,
   decodeKeyFromBytes,
   encodeEntryToBytes,
   decodeEntryFromBytes,
-  CanonicalEncoding (unCanonicalEncoding),
-  CanonicalDecoder (unCanonicalDecoder),
-  unsafeToCanonicalEncoding,
-  unsafeToCanonicalDecoder,
 ) where
 
+import Cardano.SCLS.CBOR.Canonical (CanonicalDecoder (unCanonicalDecoder), CanonicalEncoding (unCanonicalEncoding))
 import Cardano.SCLS.Entry.IsKey (IsKey (keySize, packKeyM, unpackKeyM))
 import Cardano.SCLS.NamespaceKey
 import Cardano.SCLS.Versioned (Versioned (..))
-import Codec.CBOR.Decoding (Decoder)
-import Codec.CBOR.Encoding (Encoding)
 import Codec.CBOR.Read (DeserialiseFailure, deserialiseFromBytes)
 import Codec.CBOR.Write (toStrictByteString)
 import Data.ByteString (ByteString)
@@ -41,20 +35,6 @@ import Data.MemPack (StateT (runStateT), Unpack (runUnpack), packWithByteArray)
 import Data.MemPack.Buffer (pinnedByteArrayToByteString)
 import Data.MemPack.Extra (ByteStringSized (..), RawBytes (RawBytes), runDecode)
 import GHC.TypeLits (KnownNat)
-
-newtype CanonicalEncoding = CanonicalEncoding {unCanonicalEncoding :: Encoding}
-  deriving (Semigroup, Monoid)
-
--- | Unsafe lifting `Encoding` to `CanonicalEncoding`. Does not ensure that `Encoding` was defined according to canonical rules.
-unsafeToCanonicalEncoding :: Encoding -> CanonicalEncoding
-unsafeToCanonicalEncoding = CanonicalEncoding
-
-newtype CanonicalDecoder s a = CanonicalDecoder {unCanonicalDecoder :: Decoder s a}
-  deriving (Functor, Applicative, Monad, MonadFail)
-
--- | Unsafe lifting `Decoder` to `CanonicalDecoder`. Does not ensure that `Decoder` was defined according to canonical rules.
-unsafeToCanonicalDecoder :: Decoder s a -> CanonicalDecoder s a
-unsafeToCanonicalDecoder = CanonicalDecoder
 
 {- | Encode a value to canonical CBOR with a specific namespace.
 

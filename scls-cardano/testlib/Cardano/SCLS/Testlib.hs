@@ -21,9 +21,11 @@ module Cardano.SCLS.Testlib (
   debugEncodeType,
 ) where
 
+import Cardano.SCLS.CBOR.Canonical (unCanonicalDecoder, unCanonicalEncoding)
 import Cardano.SCLS.CBOR.Canonical.Encoder
 import Cardano.SCLS.CDDL.Validate
 import Cardano.SCLS.NamespaceCodec
+import Cardano.SCLS.Versioned
 import Codec.CBOR.Cuddle.CBOR.Validator (CBORTermResult (..), CDDLResult (Valid))
 import Codec.CBOR.Read (deserialiseFromBytes)
 import Codec.CBOR.Write (toLazyByteString, toStrictByteString)
