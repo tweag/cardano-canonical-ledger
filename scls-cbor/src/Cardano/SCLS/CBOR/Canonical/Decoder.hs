@@ -237,7 +237,7 @@ instance
 -- Lists
 --------------------------------------------------------------------------------
 
--- | We always encode lists with the definite length encoding.
+-- | We always decode lists with the definite length encoding.
 instance (FromCanonicalCBOR v a) => FromCanonicalCBOR v [a] where
   fromCanonicalCBOR = do
     len <- unsafeToCanonicalDecoder $ D.decodeListLenCanonical
@@ -255,7 +255,7 @@ instance (FromCanonicalCBOR v a) => FromCanonicalCBOR v (Seq.Seq a) where
 -- Maps
 --------------------------------------------------------------------------------
 
--- | We always encode maps with the definite length encoding. This does not check canonical order of keys.
+-- | We always decode maps with the definite length encoding. This does not check canonical order of keys.
 instance
   (Ord k, FromCanonicalCBOR v k, FromCanonicalCBOR v val) =>
   FromCanonicalCBOR v (Map.Map k val)
@@ -282,7 +282,7 @@ instance
 -- Set
 --------------------------------------------------------------------------------
 
--- | We always encode sets with the definite length encoding.
+-- | We always decode sets with the definite length encoding.
 instance
   (Ord a, FromCanonicalCBOR v a) =>
   FromCanonicalCBOR v (Set.Set a)
