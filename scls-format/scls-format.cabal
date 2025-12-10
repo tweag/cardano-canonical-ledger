@@ -111,7 +111,7 @@ test-suite scls-format-test
     bytestring,
     cborg >=0.2,
     containers,
-    cuddle >=0.3,
+    cuddle >=0.3 && <1.1.0,
     filepath,
     hspec,
     hspec-expectations,
