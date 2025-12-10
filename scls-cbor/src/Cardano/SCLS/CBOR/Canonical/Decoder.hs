@@ -126,7 +126,7 @@ instance
   FromCanonicalCBOR v (a, b, c)
   where
   fromCanonicalCBOR = do
-    unsafeToCanonicalDecoder $ D.decodeListLenCanonicalOf 2
+    unsafeToCanonicalDecoder $ D.decodeListLenCanonicalOf 3
     Versioned a <- fromCanonicalCBOR @v
     Versioned b <- fromCanonicalCBOR @v
     Versioned c <- fromCanonicalCBOR @v
@@ -141,7 +141,7 @@ instance
   FromCanonicalCBOR v (a, b, c, d)
   where
   fromCanonicalCBOR = do
-    unsafeToCanonicalDecoder $ D.decodeListLenCanonicalOf 2
+    unsafeToCanonicalDecoder $ D.decodeListLenCanonicalOf 4
     Versioned a <- fromCanonicalCBOR @v
     Versioned b <- fromCanonicalCBOR @v
     Versioned c <- fromCanonicalCBOR @v
@@ -158,7 +158,7 @@ instance
   FromCanonicalCBOR v (a, b, c, d, e)
   where
   fromCanonicalCBOR = do
-    unsafeToCanonicalDecoder $ D.decodeListLenCanonicalOf 2
+    unsafeToCanonicalDecoder $ D.decodeListLenCanonicalOf 5
     Versioned a <- fromCanonicalCBOR @v
     Versioned b <- fromCanonicalCBOR @v
     Versioned c <- fromCanonicalCBOR @v
@@ -177,7 +177,7 @@ instance
   FromCanonicalCBOR v (a, b, c, d, e, f)
   where
   fromCanonicalCBOR = do
-    unsafeToCanonicalDecoder $ D.decodeListLenCanonicalOf 2
+    unsafeToCanonicalDecoder $ D.decodeListLenCanonicalOf 6
     Versioned a <- fromCanonicalCBOR @v
     Versioned b <- fromCanonicalCBOR @v
     Versioned c <- fromCanonicalCBOR @v
@@ -198,7 +198,7 @@ instance
   FromCanonicalCBOR v (a, b, c, d, e, f, g)
   where
   fromCanonicalCBOR = do
-    unsafeToCanonicalDecoder $ D.decodeListLenCanonicalOf 2
+    unsafeToCanonicalDecoder $ D.decodeListLenCanonicalOf 7
     Versioned a <- fromCanonicalCBOR @v
     Versioned b <- fromCanonicalCBOR @v
     Versioned c <- fromCanonicalCBOR @v
@@ -221,7 +221,7 @@ instance
   FromCanonicalCBOR v (a, b, c, d, e, f, g, h)
   where
   fromCanonicalCBOR = do
-    unsafeToCanonicalDecoder $ D.decodeListLenCanonicalOf 2
+    unsafeToCanonicalDecoder $ D.decodeListLenCanonicalOf 8
     Versioned a <- fromCanonicalCBOR @v
     Versioned b <- fromCanonicalCBOR @v
     Versioned c <- fromCanonicalCBOR @v
