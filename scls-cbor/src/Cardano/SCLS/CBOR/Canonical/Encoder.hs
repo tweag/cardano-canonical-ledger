@@ -268,20 +268,22 @@ mkEncodablePair = SomeEncodablePair (Proxy @v)
 
 encodeAsMap :: (Foldable t) => t (SomeEncodablePair v) -> CanonicalEncoding
 encodeAsMap f =
-  (unsafeToCanonicalEncoding (E.encodeMapLen (fromIntegral $ length f)))
-    <> foldMap (\(kBytes, valEncoding) -> unsafeToCanonicalEncoding (E.encodePreEncoded kBytes) <> valEncoding) sorted
+  (unsafeToCanonicalEncoding (E.encodeMapLen len))
+    <> foldMap
+      (\(kBytes, valEncoding) -> unsafeToCanonicalEncoding (E.encodePreEncoded kBytes) <> valEncoding)
+      sorted
  where
   -- Order map by the byte-wise ordering of the canonically encoded map keys
-  sorted =
-    List.sortOn fst $
-      F.foldl'
-        ( \acc (SomeEncodablePair v k val) ->
-            let kBytes = toStrictByteString $ unCanonicalEncoding $ toCanonicalCBOR v k
-                valEncoding = toCanonicalCBOR v val
-             in (kBytes, valEncoding) : acc
-        )
-        []
-        f
+  (len, l) =
+    F.foldl'
+      ( \(n, acc) (SomeEncodablePair v k val) ->
+          let kBytes = toStrictByteString $ unCanonicalEncoding $ toCanonicalCBOR v k
+              valEncoding = toCanonicalCBOR v val
+           in (n + 1, (kBytes, valEncoding) : acc)
+      )
+      (0, [])
+      f
+  sorted = List.sortOn fst l
 
 --------------------------------------------------------------------------------
 -- Set
