@@ -82,7 +82,7 @@ testNS =
   describe nsName $ do
     prop "conforms to spec" $
       propNamespaceEntryConformsToSpec @ns
-    prop "canonical with regards to it's definition" $
+    prop "canonical with regards to its definition" $
       propNamespaceEntryRoundTrip @ns
     prop "is canonical" $
       propNamespaceEntryIsCanonical @ns
@@ -115,7 +115,7 @@ propNamespaceEntryIsCanonical = \a ->
           encodedTerm `shouldBe` encodedData
         r -> r `shouldSatisfy` isRight
 
-{- | Namespace entry are not contradictionary and can roundtrip: `decode.encode.decode.encode = decode.encode`
+{- | Namespace entry are not contradictory and can roundtrip: `decode.encode.decode.encode = decode.encode`
 
 We do not require `decode.encode=id` because we do not require input type to be in canonical form.
 

@@ -355,7 +355,7 @@ instance ToCanonicalCBOR v Term where
     TFloat f -> toCanonicalCBOR v f
     TDouble d -> toCanonicalCBOR v d
 
-{- | Convert tags that requires a special care or rules to encode
+{- | Convert tags that require a special care or rules to encode
 in the canonical format
 -}
 toCanonicalTagged :: proxy (v :: Symbol) -> Word64 -> Term -> CanonicalEncoding
