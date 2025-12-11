@@ -13,6 +13,8 @@ module Cardano.SCLS.Testlib (
 
   -- * properties
   propNamespaceEntryConformsToSpec,
+  propNamespaceEntryIsCanonical,
+  propTypeIsCanonical,
   propNamespaceEntryRoundTrip,
   propTypeConformsToSpec,
 
@@ -28,6 +30,7 @@ import Cardano.SCLS.NamespaceCodec
 import Cardano.SCLS.Versioned
 import Codec.CBOR.Cuddle.CBOR.Validator (CBORTermResult (..), CDDLResult (Valid))
 import Codec.CBOR.Read (deserialiseFromBytes)
+import Codec.CBOR.Term (decodeTerm)
 import Codec.CBOR.Write (toLazyByteString, toStrictByteString)
 
 import Data.ByteString qualified as B
@@ -82,6 +85,8 @@ testNS =
       propNamespaceEntryConformsToSpec @ns
     prop "canonical with regards to it's definition" $
       propNamespaceEntryRoundTrip @ns
+    prop "is canonical" $
+      propNamespaceEntryIsCanonical @ns
  where
   nsName = (symbolVal (Proxy @ns))
 
@@ -101,6 +106,16 @@ propTypeConformsToSpec t = \a ->
     _ -> False
  where
   nsName = T.pack (symbolVal (Proxy @ns))
+
+propNamespaceEntryIsCanonical :: forall ns. (KnownSymbol ns, KnownNamespace ns, Arbitrary (NamespaceEntry ns)) => NamespaceEntry ns -> IO ()
+propNamespaceEntryIsCanonical = \a ->
+  let encodedData = toLazyByteString (getRawEncoding $ encodeEntry @ns a)
+   in case deserialiseFromBytes (decodeTerm) encodedData of
+        Right (b, decodedAsTerm) -> annotate "(b, t) = decode @Term (encode x)" $ do
+          b `shouldSatisfy` BL.null
+          let encodedTerm = toLazyByteString (getRawEncoding $ toCanonicalCBOR (Proxy @ns) decodedAsTerm)
+          encodedTerm `shouldBe` encodedData
+        r -> r `shouldSatisfy` isRight
 
 {- | Namespace entry are not contradictionary and can roundtrip: `decode.encode.decode.encode = decode.encode`
 
@@ -136,3 +151,13 @@ debugValidateType t a = validateBytesAgainst (toStrictByteString $ getRawEncodin
 -- | Serialize value to CBOR (for usage in debug tools)
 debugEncodeType :: forall ns a. (KnownSymbol ns, ToCanonicalCBOR ns a) => a -> B.ByteString
 debugEncodeType a = Base16.encode $ toStrictByteString $ getRawEncoding (toCanonicalCBOR (Proxy @ns) a)
+
+propTypeIsCanonical :: forall ns a. (KnownSymbol ns, ToCanonicalCBOR ns a) => a -> IO ()
+propTypeIsCanonical = \a ->
+  let encodedData = toLazyByteString (getRawEncoding $ toCanonicalCBOR (Proxy @ns) a)
+   in case deserialiseFromBytes (decodeTerm) encodedData of
+        Right (b, decodedAsTerm) -> annotate "(b, t) = decode @Term (encode x)" $ do
+          b `shouldSatisfy` BL.null
+          let encodedTerm = toLazyByteString (getRawEncoding $ toCanonicalCBOR (Proxy @ns) decodedAsTerm)
+          encodedTerm `shouldBe` encodedData
+        r -> r `shouldSatisfy` isRight
