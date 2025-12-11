@@ -15,19 +15,25 @@ module Cardano.SCLS.CBOR.Canonical.Decoder (
   decodeSequenceLenNCanonical,
 ) where
 
-import Cardano.SCLS.CBOR.Canonical (CanonicalDecoder (getRawDecoder), assumeCanonicalDecoder)
+import Cardano.SCLS.CBOR.Canonical (CanonicalDecoder (getRawDecoder), assumeCanonicalDecoder, getRawEncoding)
+import Cardano.SCLS.CBOR.Canonical.Encoder (toCanonicalCBOR)
 import Cardano.SCLS.Versioned
 import Codec.CBOR.ByteArray qualified as BA
 import Codec.CBOR.Decoding (TokenType)
 import Codec.CBOR.Decoding qualified as D
 import Codec.CBOR.Read qualified as CBOR.Read
+import Codec.CBOR.Term
+import Codec.CBOR.Write qualified as CBOR.Write
 import Control.Exception (Exception)
+import Control.Monad (unless)
 import Data.Array.Byte qualified as Prim
 import Data.ByteString (ByteString)
+import Data.ByteString.Lazy qualified as BL
 import Data.ByteString.Short qualified as SBS
 import Data.Coerce
 import Data.Int
 import Data.Map qualified as Map
+import Data.Proxy
 import Data.Sequence qualified as Seq
 import Data.Set qualified as Set
 import Data.Text (Text)
@@ -88,6 +94,12 @@ instance FromCanonicalCBOR v Int32 where
 
 instance FromCanonicalCBOR v Int64 where
   fromCanonicalCBOR = assumeCanonicalDecoder $ Versioned @v <$> D.decodeInt64Canonical
+
+instance FromCanonicalCBOR v Float where
+  fromCanonicalCBOR = assumeCanonicalDecoder $ Versioned @v <$> D.decodeFloatCanonical
+
+instance FromCanonicalCBOR v Double where
+  fromCanonicalCBOR = assumeCanonicalDecoder $ Versioned @v <$> D.decodeDoubleCanonical
 
 --------------------------------------------------------------------------------
 -- Bytes
@@ -352,3 +364,19 @@ decodeSequenceLenNCanonical f i f' n d =
       f'
       n
     $ getRawDecoder d
+
+{- | This is not a production instance as basically it just performs
+a check that decoded instance is canonical.
+-}
+instance FromCanonicalCBOR v Term where
+  fromCanonicalCBOR = assumeCanonicalDecoder $ do
+    term <- decodeTerm
+    let termBytes = CBOR.Write.toLazyByteString $ getRawEncoding $ toCanonicalCBOR (Proxy @v) term
+    case CBOR.Read.deserialiseFromBytes decodeTerm termBytes of
+      Right (rest, decoded)
+        | BL.null rest -> do
+            unless (term == decoded) $ fail "data is not in canonical form"
+            return $ Versioned @v term
+        | otherwise ->
+            fail "FromCanonicalCBOR<Term> leftover found when decoding canonical structure"
+      Left e -> fail $ "FromCanonicalCBOR<Term> unable to do roundtrip: " <> show e

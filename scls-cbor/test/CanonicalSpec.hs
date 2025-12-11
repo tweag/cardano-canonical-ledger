@@ -1,4 +1,5 @@
 {-# LANGUAGE BlockArguments #-}
+{-# OPTIONS_GHC -fno-warn-orphans #-}
 
 module CanonicalSpec (
   tests,
@@ -11,9 +12,11 @@ import Cardano.SCLS.Versioned
 import Codec.CBOR.Decoding (Decoder)
 import Codec.CBOR.Decoding qualified as D
 import Codec.CBOR.Read (deserialiseFromBytes)
+import Codec.CBOR.Term (Term (..), decodeTerm)
 import Codec.CBOR.Write (toLazyByteString)
 import Control.Monad (forM_)
 import Data.ByteString (ByteString)
+import Data.ByteString qualified as BS
 import Data.ByteString.Lazy qualified as BSL
 import Data.ByteString.Short (ShortByteString)
 import Data.Data (Typeable, typeRep)
@@ -24,6 +27,7 @@ import Data.Proxy (Proxy (Proxy))
 import Data.Sequence qualified as Seq
 import Data.Set qualified as Set
 import Data.Text qualified as T
+import Data.Text.Lazy qualified as TL
 import Data.Word (Word16, Word32, Word64, Word8)
 import Test.Hspec
 import Test.Hspec.QuickCheck (prop)
@@ -54,9 +58,19 @@ tests =
             roundtrip Proxy (Proxy @[Int])
             roundtrip Proxy (Proxy @(Seq.Seq Int))
             roundtrip Proxy (Proxy @Bool)
+            roundtrip Proxy (Proxy @Float)
+            roundtrip Proxy (Proxy @Double)
             roundtrip Proxy (Proxy @(Map.Map Int ByteString))
             roundtrip Proxy (Proxy @(Set.Set ByteString))
             roundtripWith Proxy (Proxy @T.Text) T.pack
+            roundtripWith
+              Proxy
+              (Proxy @Term)
+              ( \x ->
+                  let encodedBytes = toLazyByteString $ getRawEncoding $ toCanonicalCBOR Proxy (x :: Term)
+                      Right (_, decoded) = deserialiseFromBytes decodeTerm encodedBytes
+                   in decoded
+              )
       )
     prop "encoded map is ordered by encoded key byte-order" $
       forAll (genNonDuplicateList (arbitrary @Int) (arbitrary @ByteString)) $
@@ -100,3 +114,71 @@ tests =
           Versioned b <- fromCanonicalCBOR @v
           return (a, b)
       )
+
+-- Shameless copypaste from cborg test-suite.
+
+instance Arbitrary Term where
+  arbitrary =
+    scale (pred') $
+      oneof
+        [ TInt <$> arbitrary
+        , TInteger <$> arbitrary
+        , TBytes <$> arbitrary
+        , TBytesI <$> arbitrary
+        , TString . T.pack <$> arbitrary
+        , TStringI . TL.pack <$> arbitrary
+        , TList <$> listOf_ arbitrary
+        , TListI <$> listOf_ arbitrary
+        , TMap <$> listOf_ arbitrary
+        , TMapI <$> listOf_ arbitrary
+        , TTagged <$> arbitrary `suchThat` (5 <=) <*> scale (pred') arbitrary
+        , TBool <$> scale (pred') arbitrary
+        , pure TNull
+        , TSimple <$> scale (pred') arbitrary
+        , THalf <$> scale (pred') arbitrary
+        , TFloat <$> scale (pred') arbitrary
+        , TDouble <$> scale (pred') arbitrary
+        ]
+   where
+    pred' 0 = 0
+    pred' x = (x - 1)
+    listOf_ gen = sized $ \n -> do
+      k <- choose (0, n)
+      vectorOf k (resize (n `div` (k + 1)) gen)
+
+  shrink (TInt n) = [TInt n' | n' <- shrink n]
+  shrink (TInteger n) = [TInteger n' | n' <- shrink n]
+  shrink (TBytes ws) = [TBytes (BS.pack ws') | ws' <- shrink (BS.unpack ws)]
+  shrink (TBytesI wss) =
+    [ TBytesI (BSL.fromChunks (map BS.pack wss'))
+    | wss' <- shrink (map BS.unpack (BSL.toChunks wss))
+    ]
+  shrink (TString cs) = [TString (T.pack cs') | cs' <- shrink (T.unpack cs)]
+  shrink (TStringI css) =
+    [ TStringI (TL.fromChunks (map T.pack css'))
+    | css' <- shrink (map T.unpack (TL.toChunks css))
+    ]
+  shrink (TList xs@[x]) = x : [TList xs' | xs' <- shrink xs]
+  shrink (TList xs) = [TList xs' | xs' <- shrink xs]
+  shrink (TListI xs@[x]) = x : [TListI xs' | xs' <- shrink xs]
+  shrink (TListI xs) = [TListI xs' | xs' <- shrink xs]
+  shrink (TMap xys@[(x, y)]) = x : y : [TMap xys' | xys' <- shrink xys]
+  shrink (TMap xys) = [TMap xys' | xys' <- shrink xys]
+  shrink (TMapI xys@[(x, y)]) = x : y : [TMapI xys' | xys' <- shrink xys]
+  shrink (TMapI xys) = [TMapI xys' | xys' <- shrink xys]
+  shrink (TTagged w t) =
+    t
+      : [ TTagged w' t'
+        | (w', t') <- shrink (w, t)
+        , not (w <= 5)
+        ]
+  shrink (TBool _) = []
+  shrink TNull = []
+  shrink (TSimple w) =
+    [ TSimple w'
+    | w' <- shrink w
+    , w < 20 || w > 31 || w == 23
+    ]
+  shrink (THalf _f) = []
+  shrink (TFloat f) = [TFloat f' | f' <- shrink f]
+  shrink (TDouble f) = [TDouble f' | f' <- shrink f]

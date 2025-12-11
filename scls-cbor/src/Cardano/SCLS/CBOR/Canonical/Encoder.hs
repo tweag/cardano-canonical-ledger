@@ -1,5 +1,6 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE LambdaCase #-}
 
 {- | Canonical CBOR representation
 
@@ -19,9 +20,11 @@ module Cardano.SCLS.CBOR.Canonical.Encoder (
 import Cardano.SCLS.CBOR.Canonical (CanonicalEncoding (getRawEncoding), assumeCanonicalEncoding)
 import Codec.CBOR.ByteArray.Sliced qualified as BAS
 import Codec.CBOR.Encoding qualified as E
+import Codec.CBOR.Term
 import Codec.CBOR.Write (toStrictByteString)
 import Data.Array.Byte qualified as Prim
 import Data.ByteString (ByteString)
+import Data.ByteString.Lazy qualified as BL
 import Data.ByteString.Short (ShortByteString (SBS))
 import Data.ByteString.Short qualified as SBS
 import Data.Foldable (toList)
@@ -32,6 +35,7 @@ import Data.Proxy (Proxy (Proxy))
 import Data.Sequence qualified as Seq
 import Data.Set qualified as Set
 import Data.Text (Text)
+import Data.Text.Lazy qualified as TL
 import Data.Traversable (mapAccumL)
 import Data.Word
 import GHC.TypeLits
@@ -88,6 +92,12 @@ instance ToCanonicalCBOR v Int32 where
 
 instance ToCanonicalCBOR v Int64 where
   toCanonicalCBOR _ = assumeCanonicalEncoding . E.encodeInt64
+
+instance ToCanonicalCBOR v Double where
+  toCanonicalCBOR _ = assumeCanonicalEncoding . E.encodeDouble
+
+instance ToCanonicalCBOR v Float where
+  toCanonicalCBOR _ = assumeCanonicalEncoding . E.encodeFloat
 
 --------------------------------------------------------------------------------
 -- Bytes
@@ -319,3 +329,35 @@ instance (ToCanonicalCBOR v a) => (ToCanonicalCBOR v (Set.Set a)) where
    where
     size = Set.size s
     encSorted = List.sort $ map (toStrictByteString . getRawEncoding . toCanonicalCBOR v) $ Set.toList s
+
+--------------------------------------------------------------------------------
+-- Term
+--------------------------------------------------------------------------------
+
+-- | Encode CBOR term in canonical form up to the cardano definition
+instance ToCanonicalCBOR v Term where
+  toCanonicalCBOR v = \case
+    TInt i -> toCanonicalCBOR v i
+    TInteger i -> toCanonicalCBOR v i
+    TBytes bytes -> toCanonicalCBOR v bytes
+    TBytesI lbs -> toCanonicalCBOR v (BL.toStrict lbs)
+    TString s -> toCanonicalCBOR v s
+    TStringI si -> toCanonicalCBOR v (TL.toStrict si)
+    TList tl -> toCanonicalCBOR v tl
+    TListI tli -> toCanonicalCBOR v tli
+    TTagged w t -> toCanonicalTagged v w t
+    TMap ls -> encodeAsMap [SomeEncodablePair k val | (k, val) <- ls]
+    TMapI ls -> encodeAsMap [SomeEncodablePair k val | (k, val) <- ls]
+    TBool b -> toCanonicalCBOR v b
+    TNull -> assumeCanonicalEncoding $ E.encodeNull
+    TSimple w -> toCanonicalCBOR v w
+    THalf f -> toCanonicalCBOR v f
+    TFloat f -> toCanonicalCBOR v f
+    TDouble d -> toCanonicalCBOR v d
+
+{- | Convert tags that requires a special care or rules to encode
+in the canonical format
+-}
+toCanonicalTagged :: proxy (v :: Symbol) -> Word64 -> Term -> CanonicalEncoding
+toCanonicalTagged v 258 (TList ns) = toCanonicalCBOR v (Set.fromList ns)
+toCanonicalTagged v t term = assumeCanonicalEncoding (E.encodeTag64 t) <> toCanonicalCBOR v term
