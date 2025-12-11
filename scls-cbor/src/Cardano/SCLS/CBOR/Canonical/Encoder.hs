@@ -24,7 +24,7 @@ import Data.Array.Byte qualified as Prim
 import Data.ByteString (ByteString)
 import Data.ByteString.Short (ShortByteString (SBS))
 import Data.ByteString.Short qualified as SBS
-import Data.Foldable qualified as F
+import Data.Foldable (toList)
 import Data.Int
 import Data.List qualified as List
 import Data.Map qualified as Map
@@ -32,6 +32,7 @@ import Data.Proxy (Proxy (Proxy))
 import Data.Sequence qualified as Seq
 import Data.Set qualified as Set
 import Data.Text (Text)
+import Data.Traversable (mapAccumL)
 import Data.Word
 import GHC.TypeLits
 
@@ -280,11 +281,11 @@ mkEncodablePair _ = SomeEncodablePair
 
 {- |
   Helper for encoding map-like structures in canonical CBOR form.
-  This function takes a foldable collection of 'SomeEncodablePair' values and encodes them as a CBOR map,
+  This function takes a Traversable collection of 'SomeEncodablePair' values and encodes them as a CBOR map,
   using definite length encoding. Keys are sorted by their canonical CBOR-encoded byte representation,
   as required by the canonical CBOR specification.
 -}
-encodeAsMap :: forall v t. (Foldable t) => t (SomeEncodablePair v) -> CanonicalEncoding
+encodeAsMap :: forall v t. (Traversable t) => t (SomeEncodablePair v) -> CanonicalEncoding
 encodeAsMap f =
   (unsafeToCanonicalEncoding (E.encodeMapLen len))
     <> foldMap
@@ -293,15 +294,15 @@ encodeAsMap f =
  where
   -- Order map by the byte-wise ordering of the canonically encoded map keys
   (len, l) =
-    F.foldl'
-      ( \(n, acc) (SomeEncodablePair k val) ->
-          let kBytes = toStrictByteString $ unCanonicalEncoding $ toCanonicalCBOR (Proxy @v) k
+    mapAccumL
+      ( \(!n) (SomeEncodablePair k val) ->
+          let !kBytes = toStrictByteString $ unCanonicalEncoding $ toCanonicalCBOR (Proxy @v) k
               valEncoding = toCanonicalCBOR (Proxy @v) val
-           in (n + 1, (kBytes, valEncoding) : acc)
+           in (n + 1, (kBytes, valEncoding))
       )
-      (0, [])
+      0
       f
-  sorted = List.sortOn fst l
+  sorted = List.sortOn fst $ toList l
 
 --------------------------------------------------------------------------------
 -- Set
