@@ -23,6 +23,7 @@ library
   default-language: GHC2021
   hs-source-dirs: src
   exposed-modules:
+    Cardano.SCLS.CBOR.Canonical
     Cardano.SCLS.Entry.IsKey
     Cardano.SCLS.NamespaceCodec
     Cardano.SCLS.NamespaceKey

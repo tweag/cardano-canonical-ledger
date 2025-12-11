@@ -21,9 +21,8 @@ import Cardano.SCLS.CBOR.Canonical.Encoder
 import Cardano.SCLS.Entry.IsKey (IsKey (keySize, packKeyM, unpackKeyM))
 import Cardano.SCLS.Internal.Entry.ChunkEntry (ChunkEntry (ChunkEntry))
 import Cardano.SCLS.Internal.Serializer.HasKey (HasKey (Key, getKey))
-import Cardano.SCLS.NamespaceCodec (CanonicalCBOREntryDecoder (decodeEntry), CanonicalCBOREntryEncoder (encodeEntry), KnownNamespace (NamespaceEntry, NamespaceKey), NamespaceKeySize, Versioned (Versioned), namespaceKeySize)
-import Codec.CBOR.Decoding qualified as D
-import Codec.CBOR.Encoding qualified as E
+import Cardano.SCLS.NamespaceCodec (CanonicalCBOREntryDecoder (decodeEntry), CanonicalCBOREntryEncoder (encodeEntry), KnownNamespace (NamespaceEntry, NamespaceKey), NamespaceKeySize, namespaceKeySize)
+import Cardano.SCLS.Versioned (Versioned (Versioned))
 import Data.ByteString qualified as BS
 import Data.Data (Proxy (Proxy))
 import Data.MemPack (packByteStringM, unpackByteStringM)
@@ -95,14 +94,11 @@ instance HasKey TestBlock where
   getKey (TestBlock (TestEntry k _)) = TestBlockKey k
 
 instance CanonicalCBOREntryEncoder "utxo/v0" TestUTxO where
-  encodeEntry (TestUTxO TestEntry{key, value}) =
-    E.encodeListLen 2 <> E.encodeBytes key <> E.encodeInt value
+  encodeEntry (TestUTxO TestEntry{key, value}) = toCanonicalCBOR (Proxy @"utxo/v0") (key, value)
 
 instance CanonicalCBOREntryDecoder "utxo/v0" TestUTxO where
   decodeEntry = do
-    D.decodeListLenOf 2
-    key <- D.decodeBytes
-    value <- D.decodeInt
+    Versioned (key, value) <- fromCanonicalCBOR
     pure $ Versioned $ TestUTxO $ TestEntry key value
 
 instance KnownNamespace "utxo/v0" where

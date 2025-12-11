@@ -14,7 +14,6 @@ module Cardano.SCLS.NamespaceCodec (
   KnownNamespace (..),
   CanonicalCBOREntryEncoder (..),
   CanonicalCBOREntryDecoder (..),
-  Versioned (..),
   NamespaceKeySize,
   namespaceKeySize,
   encodeKeyToBytes,
@@ -23,11 +22,10 @@ module Cardano.SCLS.NamespaceCodec (
   decodeEntryFromBytes,
 ) where
 
+import Cardano.SCLS.CBOR.Canonical (CanonicalDecoder (getRawDecoder), CanonicalEncoding (getRawEncoding))
 import Cardano.SCLS.Entry.IsKey (IsKey (keySize, packKeyM, unpackKeyM))
 import Cardano.SCLS.NamespaceKey
 import Cardano.SCLS.Versioned (Versioned (..))
-import Codec.CBOR.Decoding (Decoder)
-import Codec.CBOR.Encoding (Encoding)
 import Codec.CBOR.Read (DeserialiseFailure, deserialiseFromBytes)
 import Codec.CBOR.Write (toStrictByteString)
 import Data.ByteString (ByteString)
@@ -50,7 +48,7 @@ encoding at compile-time. The key size is automatically determined by the
 -}
 class CanonicalCBOREntryEncoder ns a where
   -- | Encode an entry value to canonical CBOR for the given namespace.
-  encodeEntry :: a -> Encoding
+  encodeEntry :: a -> CanonicalEncoding
 
 {- | Decode a value from canonical CBOR with a specific namespace.
 
@@ -59,15 +57,15 @@ wrapper that tracks the namespace information.
 -}
 class CanonicalCBOREntryDecoder ns a where
   -- | Decode a value from canonical CBOR with a specific namespace.
-  decodeEntry :: Decoder s (Versioned ns a)
+  decodeEntry :: CanonicalDecoder s (Versioned ns a)
 
 encodeEntryToBytes :: forall ns a. (CanonicalCBOREntryEncoder ns a) => a -> RawBytes
 encodeEntryToBytes a =
-  RawBytes $ toStrictByteString $ encodeEntry @ns a
+  RawBytes $ toStrictByteString $ getRawEncoding $ encodeEntry @ns a
 
 decodeEntryFromBytes :: forall ns a. (CanonicalCBOREntryDecoder ns a) => RawBytes -> Either DeserialiseFailure (Versioned ns a)
 decodeEntryFromBytes (RawBytes bs) =
-  fmap snd $ deserialiseFromBytes (decodeEntry @ns) $ BSL.fromStrict bs
+  fmap snd $ deserialiseFromBytes (getRawDecoder $ decodeEntry @ns) $ BSL.fromStrict bs
 
 {- | A type class that associates a namespace with its key and entry types.
 This type class acts as a bridge between the namespace/version, its key type,

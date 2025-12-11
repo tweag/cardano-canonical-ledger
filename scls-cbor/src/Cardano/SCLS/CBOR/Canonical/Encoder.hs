@@ -9,35 +9,43 @@ example, since there are multiple possible ways to encode 'Maybe' we do
 not provide an instance here - it is better to specify the precise encoding
 when defining the instances for specific types.
 -}
-module Cardano.SCLS.CBOR.Canonical.Encoder where
+module Cardano.SCLS.CBOR.Canonical.Encoder (
+  ToCanonicalCBOR (..),
+  encodeAsMap,
+  SomeEncodablePair (..),
+  mkEncodablePair,
+) where
 
+import Cardano.SCLS.CBOR.Canonical (CanonicalEncoding (getRawEncoding), assumeCanonicalEncoding)
 import Codec.CBOR.ByteArray.Sliced qualified as BAS
-import Codec.CBOR.Encoding (Encoding)
 import Codec.CBOR.Encoding qualified as E
 import Codec.CBOR.Write (toStrictByteString)
 import Data.Array.Byte qualified as Prim
 import Data.ByteString (ByteString)
 import Data.ByteString.Short (ShortByteString (SBS))
 import Data.ByteString.Short qualified as SBS
+import Data.Foldable (toList)
 import Data.Int
 import Data.List qualified as List
 import Data.Map qualified as Map
+import Data.Proxy (Proxy (Proxy))
 import Data.Sequence qualified as Seq
 import Data.Set qualified as Set
 import Data.Text (Text)
+import Data.Traversable (mapAccumL)
 import Data.Word
 import GHC.TypeLits
 
 -- | Encode data to CBOR corresponding with the SCLS format.
 class ToCanonicalCBOR (v :: Symbol) a where
   -- | Encode to canonical CBOR at a given version
-  toCanonicalCBOR :: proxy v -> a -> Encoding
+  toCanonicalCBOR :: proxy v -> a -> CanonicalEncoding
 
 --------------------------------------------------------------------------------
 -- Encoding, Term etc
 --------------------------------------------------------------------------------
 
-instance ToCanonicalCBOR v Encoding where
+instance ToCanonicalCBOR v CanonicalEncoding where
   toCanonicalCBOR _ = id
 
 --------------------------------------------------------------------------------
@@ -45,59 +53,61 @@ instance ToCanonicalCBOR v Encoding where
 --------------------------------------------------------------------------------
 
 instance ToCanonicalCBOR v () where
-  toCanonicalCBOR _ = const E.encodeNull
+  toCanonicalCBOR _ = assumeCanonicalEncoding . const E.encodeNull
 
 instance ToCanonicalCBOR v Bool where
-  toCanonicalCBOR _ = E.encodeBool
+  toCanonicalCBOR _ = assumeCanonicalEncoding . E.encodeBool
 
 --------------------------------------------------------------------------------
 -- Numeric data
 --------------------------------------------------------------------------------
 
 instance ToCanonicalCBOR v Integer where
-  toCanonicalCBOR _ = E.encodeInteger
+  toCanonicalCBOR _ = assumeCanonicalEncoding . E.encodeInteger
 
 instance ToCanonicalCBOR v Word where
-  toCanonicalCBOR _ = E.encodeWord
+  toCanonicalCBOR _ = assumeCanonicalEncoding . E.encodeWord
 
 instance ToCanonicalCBOR v Word8 where
-  toCanonicalCBOR _ = E.encodeWord8
+  toCanonicalCBOR _ = assumeCanonicalEncoding . E.encodeWord8
 
 instance ToCanonicalCBOR v Word16 where
-  toCanonicalCBOR _ = E.encodeWord16
+  toCanonicalCBOR _ = assumeCanonicalEncoding . E.encodeWord16
 
 instance ToCanonicalCBOR v Word32 where
-  toCanonicalCBOR _ = E.encodeWord32
+  toCanonicalCBOR _ = assumeCanonicalEncoding . E.encodeWord32
 
 instance ToCanonicalCBOR v Word64 where
-  toCanonicalCBOR _ = E.encodeWord64
+  toCanonicalCBOR _ = assumeCanonicalEncoding . E.encodeWord64
 
 instance ToCanonicalCBOR v Int where
-  toCanonicalCBOR _ = E.encodeInt
+  toCanonicalCBOR _ = assumeCanonicalEncoding . E.encodeInt
 
 instance ToCanonicalCBOR v Int32 where
-  toCanonicalCBOR _ = E.encodeInt32
+  toCanonicalCBOR _ = assumeCanonicalEncoding . E.encodeInt32
 
 instance ToCanonicalCBOR v Int64 where
-  toCanonicalCBOR _ = E.encodeInt64
+  toCanonicalCBOR _ = assumeCanonicalEncoding . E.encodeInt64
 
 --------------------------------------------------------------------------------
 -- Bytes
 --------------------------------------------------------------------------------
 
 instance ToCanonicalCBOR v ByteString where
-  toCanonicalCBOR _ = E.encodeBytes
+  toCanonicalCBOR _ = assumeCanonicalEncoding . E.encodeBytes
 
 instance ToCanonicalCBOR v SBS.ShortByteString where
   toCanonicalCBOR _ sbs@(SBS ba) =
-    E.encodeByteArray $ BAS.SBA (Prim.ByteArray ba) 0 (SBS.length sbs)
+    assumeCanonicalEncoding $
+      E.encodeByteArray $
+        BAS.SBA (Prim.ByteArray ba) 0 (SBS.length sbs)
 
 --------------------------------------------------------------------------------
 -- Text
 --------------------------------------------------------------------------------
 
 instance ToCanonicalCBOR v Text where
-  toCanonicalCBOR _ = E.encodeString
+  toCanonicalCBOR _ = assumeCanonicalEncoding . E.encodeString
 
 --------------------------------------------------------------------------------
 -- Tuples
@@ -108,7 +118,7 @@ instance
   ToCanonicalCBOR v (a, b)
   where
   toCanonicalCBOR v (a, b) =
-    E.encodeListLen 2
+    assumeCanonicalEncoding (E.encodeListLen 2)
       <> toCanonicalCBOR v a
       <> toCanonicalCBOR v b
 
@@ -120,7 +130,7 @@ instance
   ToCanonicalCBOR v (a, b, c)
   where
   toCanonicalCBOR v (a, b, c) =
-    E.encodeListLen 3
+    assumeCanonicalEncoding (E.encodeListLen 3)
       <> toCanonicalCBOR v a
       <> toCanonicalCBOR v b
       <> toCanonicalCBOR v c
@@ -134,7 +144,7 @@ instance
   ToCanonicalCBOR v (a, b, c, d)
   where
   toCanonicalCBOR v (a, b, c, d) =
-    E.encodeListLen 4
+    assumeCanonicalEncoding (E.encodeListLen 4)
       <> toCanonicalCBOR v a
       <> toCanonicalCBOR v b
       <> toCanonicalCBOR v c
@@ -150,7 +160,7 @@ instance
   ToCanonicalCBOR v (a, b, c, d, e)
   where
   toCanonicalCBOR v (a, b, c, d, e) =
-    E.encodeListLen 5
+    assumeCanonicalEncoding (E.encodeListLen 5)
       <> toCanonicalCBOR v a
       <> toCanonicalCBOR v b
       <> toCanonicalCBOR v c
@@ -168,7 +178,7 @@ instance
   ToCanonicalCBOR v (a, b, c, d, e, f)
   where
   toCanonicalCBOR v (a, b, c, d, e, f) =
-    E.encodeListLen 6
+    assumeCanonicalEncoding (E.encodeListLen 6)
       <> toCanonicalCBOR v a
       <> toCanonicalCBOR v b
       <> toCanonicalCBOR v c
@@ -188,7 +198,7 @@ instance
   ToCanonicalCBOR v (a, b, c, d, e, f, g)
   where
   toCanonicalCBOR v (a, b, c, d, e, f, g) =
-    E.encodeListLen 7
+    assumeCanonicalEncoding (E.encodeListLen 7)
       <> toCanonicalCBOR v a
       <> toCanonicalCBOR v b
       <> toCanonicalCBOR v c
@@ -210,7 +220,7 @@ instance
   ToCanonicalCBOR v (a, b, c, d, e, f, g, h)
   where
   toCanonicalCBOR v (a, b, c, d, e, f, g, h) =
-    E.encodeListLen 8
+    assumeCanonicalEncoding (E.encodeListLen 8)
       <> toCanonicalCBOR v a
       <> toCanonicalCBOR v b
       <> toCanonicalCBOR v c
@@ -224,43 +234,75 @@ instance
 -- Lists
 --------------------------------------------------------------------------------
 
--- | We always encode lists with the indefinite length encoding.
+-- | We always encode lists with the definite length encoding.
 instance (ToCanonicalCBOR v a) => ToCanonicalCBOR v [a] where
   toCanonicalCBOR v xs =
-    E.encodeListLenIndef
-      <> foldr (\x r -> toCanonicalCBOR v x <> r) E.encodeBreak xs
+    (assumeCanonicalEncoding (E.encodeListLen (fromIntegral $ length xs))) <> foldMap (toCanonicalCBOR v) xs
 
 instance (ToCanonicalCBOR v a) => ToCanonicalCBOR v (Seq.Seq a) where
   toCanonicalCBOR v xs =
-    E.encodeListLenIndef
-      <> foldr (\x r -> toCanonicalCBOR v x <> r) E.encodeBreak xs
+    (assumeCanonicalEncoding (E.encodeListLen (fromIntegral $ length xs))) <> foldMap (toCanonicalCBOR v) xs
 
 --------------------------------------------------------------------------------
 -- Maps
 --------------------------------------------------------------------------------
 
--- | We always encode maps with the indefinite length encoding.
+-- | We always encode maps with the definite length encoding and ordered by encoded keys byte-order.
 instance
   (ToCanonicalCBOR v k, ToCanonicalCBOR v val) =>
   ToCanonicalCBOR v (Map.Map k val)
   where
-  toCanonicalCBOR v m =
-    E.encodeMapLenIndef
-      <> foldr
-        (\(k, val) b -> E.encodePreEncoded k <> toCanonicalCBOR v val <> b)
-        E.encodeBreak
-        mSorted
+  toCanonicalCBOR _v m =
+    encodeAsMap l
    where
-    -- Order map by the byte-wise ordering of the canonically encoded map keys
-    mSorted =
-      List.sortOn fst $
-        Map.foldlWithKey'
-          ( \acc k val ->
-              let keyBytes = toStrictByteString $ toCanonicalCBOR v k
-               in (keyBytes, val) : acc
-          )
-          []
-          m
+    l =
+      Map.foldlWithKey'
+        (\acc k val -> SomeEncodablePair @v k val : acc)
+        []
+        m
+
+{- | An existential wrapper for a key-value pair where both the key and value
+can be canonically CBOR-encoded under the version @v@.
+
+This type is useful for encoding heterogeneous collections of key-value pairs
+as CBOR maps, where the key and value types may vary but all support
+'ToCanonicalCBOR' for the same version.
+
+Use 'mkEncodablePair' to construct values of this type.
+-}
+data SomeEncodablePair v where
+  SomeEncodablePair :: (ToCanonicalCBOR v k, ToCanonicalCBOR v val) => k -> val -> SomeEncodablePair v
+
+{- | Construct a 'SomeEncodablePair' from a key and value, given that both
+support 'ToCanonicalCBOR' for the version `v`.
+-}
+mkEncodablePair :: (ToCanonicalCBOR v k, ToCanonicalCBOR v val) => proxy v -> k -> val -> SomeEncodablePair v
+mkEncodablePair _ = SomeEncodablePair
+
+{- |
+  Helper for encoding map-like structures in canonical CBOR form.
+  This function takes a Traversable collection of 'SomeEncodablePair' values and encodes them as a CBOR map,
+  using definite length encoding. Keys are sorted by their canonical CBOR-encoded byte representation,
+  as required by the canonical CBOR specification.
+-}
+encodeAsMap :: forall v t. (Traversable t) => t (SomeEncodablePair v) -> CanonicalEncoding
+encodeAsMap f =
+  (assumeCanonicalEncoding (E.encodeMapLen len))
+    <> foldMap
+      (\(kBytes, valEncoding) -> assumeCanonicalEncoding (E.encodePreEncoded kBytes) <> valEncoding)
+      sorted
+ where
+  -- Order map by the byte-wise ordering of the canonically encoded map keys
+  (len, l) =
+    mapAccumL
+      ( \(!n) (SomeEncodablePair k val) ->
+          let !kBytes = toStrictByteString $ getRawEncoding $ toCanonicalCBOR (Proxy @v) k
+              valEncoding = toCanonicalCBOR (Proxy @v) val
+           in (n + 1, (kBytes, valEncoding))
+      )
+      0
+      f
+  sorted = List.sortOn fst $ toList l
 
 --------------------------------------------------------------------------------
 -- Set
@@ -270,9 +312,10 @@ instance
 -- for details about the implementation.
 instance (ToCanonicalCBOR v a) => (ToCanonicalCBOR v (Set.Set a)) where
   toCanonicalCBOR v s =
-    E.encodeTag 258
-      <> E.encodeListLen (fromIntegral size)
-      <> foldMap E.encodePreEncoded encSorted
+    assumeCanonicalEncoding $
+      E.encodeTag 258
+        <> E.encodeListLen (fromIntegral size)
+        <> foldMap E.encodePreEncoded encSorted
    where
     size = Set.size s
-    encSorted = List.sort $ map (toStrictByteString . toCanonicalCBOR v) $ Set.toList s
+    encSorted = List.sort $ map (toStrictByteString . getRawEncoding . toCanonicalCBOR v) $ Set.toList s
