@@ -11,7 +11,7 @@ module Cardano.SCLS.Internal.Entry.ChunkEntry (
   decodeChunkEntry,
 ) where
 
-import Cardano.SCLS.CBOR.Canonical (CanonicalDecoder (unCanonicalDecoder), CanonicalEncoding (unCanonicalEncoding))
+import Cardano.SCLS.CBOR.Canonical (CanonicalDecoder (getRawDecoder), CanonicalEncoding (getRawEncoding))
 import Cardano.SCLS.Entry.IsKey (IsKey (..))
 import Cardano.SCLS.Internal.Serializer.HasKey
 import Cardano.SCLS.NamespaceCodec (CanonicalCBOREntryDecoder (decodeEntry), CanonicalCBOREntryEncoder (encodeEntry), KnownNamespace (..), NamespaceKeySize, decodeKeyFromBytes, encodeKeyToBytes)
@@ -89,14 +89,14 @@ instance HasKey (SomeChunkEntry a) where
 encodeChunkEntry :: forall ns. (KnownNamespace ns) => Proxy ns -> ChunkEntry (NamespaceKey ns) (NamespaceEntry ns) -> ChunkEntry (ByteStringSized (NamespaceKeySize ns)) RawBytes
 encodeChunkEntry _ (ChunkEntry k v) =
   let key = encodeKeyToBytes @ns k
-      value = RawBytes $ toStrictByteString $ unCanonicalEncoding $ encodeEntry @ns v
+      value = RawBytes $ toStrictByteString $ getRawEncoding $ encodeEntry @ns v
    in ChunkEntry key value
 
 -- | Decode a chunk entry from raw bytes to namespace-specific types.
 decodeChunkEntry :: forall ns. (KnownNamespace ns) => Proxy ns -> ChunkEntry (ByteStringSized (NamespaceKeySize ns)) RawBytes -> Maybe (ChunkEntry (NamespaceKey ns) (NamespaceEntry ns))
 decodeChunkEntry _ (ChunkEntry (ByteStringSized k) (RawBytes v)) = do
   let keyMaybe = decodeKeyFromBytes (Proxy @ns) k
-  let valueEither = deserialiseFromBytes (unCanonicalDecoder $ decodeEntry @ns) $ BSL.fromStrict v
+  let valueEither = deserialiseFromBytes (getRawDecoder $ decodeEntry @ns) $ BSL.fromStrict v
   case (keyMaybe, valueEither) of
     (Nothing, _) -> Nothing
     (_, Left _) -> Nothing

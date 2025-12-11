@@ -22,7 +22,7 @@ module Cardano.SCLS.NamespaceCodec (
   decodeEntryFromBytes,
 ) where
 
-import Cardano.SCLS.CBOR.Canonical (CanonicalDecoder (unCanonicalDecoder), CanonicalEncoding (unCanonicalEncoding))
+import Cardano.SCLS.CBOR.Canonical (CanonicalDecoder (getRawDecoder), CanonicalEncoding (getRawEncoding))
 import Cardano.SCLS.Entry.IsKey (IsKey (keySize, packKeyM, unpackKeyM))
 import Cardano.SCLS.NamespaceKey
 import Cardano.SCLS.Versioned (Versioned (..))
@@ -61,11 +61,11 @@ class CanonicalCBOREntryDecoder ns a where
 
 encodeEntryToBytes :: forall ns a. (CanonicalCBOREntryEncoder ns a) => a -> RawBytes
 encodeEntryToBytes a =
-  RawBytes $ toStrictByteString $ unCanonicalEncoding $ encodeEntry @ns a
+  RawBytes $ toStrictByteString $ getRawEncoding $ encodeEntry @ns a
 
 decodeEntryFromBytes :: forall ns a. (CanonicalCBOREntryDecoder ns a) => RawBytes -> Either DeserialiseFailure (Versioned ns a)
 decodeEntryFromBytes (RawBytes bs) =
-  fmap snd $ deserialiseFromBytes (unCanonicalDecoder $ decodeEntry @ns) $ BSL.fromStrict bs
+  fmap snd $ deserialiseFromBytes (getRawDecoder $ decodeEntry @ns) $ BSL.fromStrict bs
 
 {- | A type class that associates a namespace with its key and entry types.
 This type class acts as a bridge between the namespace/version, its key type,

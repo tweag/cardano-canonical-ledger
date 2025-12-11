@@ -15,7 +15,7 @@ module Cardano.SCLS.CBOR.Canonical.Decoder (
   decodeSequenceLenNCanonical,
 ) where
 
-import Cardano.SCLS.CBOR.Canonical (CanonicalDecoder (unCanonicalDecoder), unsafeToCanonicalDecoder)
+import Cardano.SCLS.CBOR.Canonical (CanonicalDecoder (getRawDecoder), unsafeToCanonicalDecoder)
 import Cardano.SCLS.Versioned
 import Codec.CBOR.ByteArray qualified as BA
 import Codec.CBOR.Decoding (TokenType)
@@ -351,4 +351,4 @@ decodeSequenceLenNCanonical f i f' n d =
       i
       f'
       n
-    $ unCanonicalDecoder d
+    $ getRawDecoder d

@@ -10,7 +10,7 @@ associates data types with specific namespaces and versions.
 -}
 module NamespacedEncodingSpec where
 
-import Cardano.SCLS.CBOR.Canonical (unCanonicalDecoder, unCanonicalEncoding)
+import Cardano.SCLS.CBOR.Canonical (getRawDecoder, getRawEncoding)
 import Cardano.SCLS.Internal.Serializer.Dump.Plan (addNamespacedChunks, defaultSerializationPlan)
 import Cardano.SCLS.NamespaceCodec (CanonicalCBOREntryDecoder (decodeEntry), CanonicalCBOREntryEncoder (encodeEntry))
 import Cardano.SCLS.Testlib
@@ -36,7 +36,7 @@ spec = do
     it "should roundtrip encode/decode TestEntry successfully" $ do
       val <- genUTxO
 
-      Right (_, decoded) <- pure $ deserialiseFromBytes (unCanonicalDecoder $ decodeEntry @"utxo/v0") $ toLazyByteString $ unCanonicalEncoding $ encodeEntry @"utxo/v0" val
+      Right (_, decoded) <- pure $ deserialiseFromBytes (getRawDecoder $ decodeEntry @"utxo/v0") $ toLazyByteString $ getRawEncoding $ encodeEntry @"utxo/v0" val
 
       decoded `shouldBe` (Versioned val)
 

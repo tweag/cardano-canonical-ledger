@@ -4,7 +4,7 @@ module CanonicalSpec (
   tests,
 ) where
 
-import Cardano.SCLS.CBOR.Canonical (CanonicalDecoder (unCanonicalDecoder), CanonicalEncoding (unCanonicalEncoding))
+import Cardano.SCLS.CBOR.Canonical (CanonicalDecoder (getRawDecoder), CanonicalEncoding (getRawEncoding))
 import Cardano.SCLS.CBOR.Canonical.Decoder (FromCanonicalCBOR (fromCanonicalCBOR))
 import Cardano.SCLS.CBOR.Canonical.Encoder (ToCanonicalCBOR (toCanonicalCBOR))
 import Cardano.SCLS.Versioned
@@ -62,8 +62,8 @@ tests =
       forAll (genNonDuplicateList (arbitrary @Int) (arbitrary @ByteString)) $
         \list ->
           let m = Map.fromList list
-              sortedList = sortOn (toLazyByteString . unCanonicalEncoding . toCanonicalCBOR Proxy . fst) list
-              decoded = deserialiseFromBytes (customMapDecoder Proxy) $ toLazyByteString $ unCanonicalEncoding $ toCanonicalCBOR Proxy m
+              sortedList = sortOn (toLazyByteString . getRawEncoding . toCanonicalCBOR Proxy . fst) list
+              decoded = deserialiseFromBytes (customMapDecoder Proxy) $ toLazyByteString $ getRawEncoding $ toCanonicalCBOR Proxy m
            in decoded `shouldBe` Right (BSL.empty, sortedList)
  where
   roundtrip :: forall v a. (Arbitrary a, Typeable a, Show a, Eq a, ToCanonicalCBOR v a, FromCanonicalCBOR v a) => Proxy v -> Proxy a -> SpecWith ()
@@ -73,8 +73,8 @@ tests =
     describe (show $ typeRep p1) $ do
       prop "x == decode . encode x" $ do
         \(x :: a) -> do
-          let encodedBytes = toLazyByteString $ unCanonicalEncoding $ toCanonicalCBOR p (f x)
-              decoded = deserialiseFromBytes (unCanonicalDecoder $ fromCanonicalCBOR @v @x) encodedBytes
+          let encodedBytes = toLazyByteString $ getRawEncoding $ toCanonicalCBOR p (f x)
+              decoded = deserialiseFromBytes (getRawDecoder $ fromCanonicalCBOR @v @x) encodedBytes
           -- Decoded value should match and no bytes left after decoding
           decoded `shouldBe` Right (BSL.empty, Versioned (f x))
   -- Generate list of pairs with no duplicate first element
@@ -95,7 +95,7 @@ tests =
       []
       reverse -- We prepend, so we must reverse at the end
       len
-      ( unCanonicalDecoder $ do
+      ( getRawDecoder $ do
           Versioned a <- fromCanonicalCBOR @v
           Versioned b <- fromCanonicalCBOR @v
           return (a, b)

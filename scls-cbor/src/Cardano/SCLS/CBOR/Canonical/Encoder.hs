@@ -16,7 +16,7 @@ module Cardano.SCLS.CBOR.Canonical.Encoder (
   mkEncodablePair,
 ) where
 
-import Cardano.SCLS.CBOR.Canonical (CanonicalEncoding (unCanonicalEncoding), unsafeToCanonicalEncoding)
+import Cardano.SCLS.CBOR.Canonical (CanonicalEncoding (getRawEncoding), unsafeToCanonicalEncoding)
 import Codec.CBOR.ByteArray.Sliced qualified as BAS
 import Codec.CBOR.Encoding qualified as E
 import Codec.CBOR.Write (toStrictByteString)
@@ -296,7 +296,7 @@ encodeAsMap f =
   (len, l) =
     mapAccumL
       ( \(!n) (SomeEncodablePair k val) ->
-          let !kBytes = toStrictByteString $ unCanonicalEncoding $ toCanonicalCBOR (Proxy @v) k
+          let !kBytes = toStrictByteString $ getRawEncoding $ toCanonicalCBOR (Proxy @v) k
               valEncoding = toCanonicalCBOR (Proxy @v) val
            in (n + 1, (kBytes, valEncoding))
       )
@@ -318,4 +318,4 @@ instance (ToCanonicalCBOR v a) => (ToCanonicalCBOR v (Set.Set a)) where
         <> foldMap E.encodePreEncoded encSorted
    where
     size = Set.size s
-    encSorted = List.sort $ map (toStrictByteString . unCanonicalEncoding . toCanonicalCBOR v) $ Set.toList s
+    encSorted = List.sort $ map (toStrictByteString . getRawEncoding . toCanonicalCBOR v) $ Set.toList s
