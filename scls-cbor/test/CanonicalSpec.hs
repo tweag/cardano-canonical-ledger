@@ -11,7 +11,7 @@ import Cardano.SCLS.CBOR.Canonical.Encoder (ToCanonicalCBOR (toCanonicalCBOR))
 import Cardano.SCLS.Versioned
 import Codec.CBOR.Decoding (Decoder)
 import Codec.CBOR.Decoding qualified as D
-import Codec.CBOR.Read (deserialiseFromBytes)
+import Codec.CBOR.FlatTerm (fromFlatTerm, toFlatTerm)
 import Codec.CBOR.Term (Term (..), decodeTerm)
 import Codec.CBOR.Write (toLazyByteString)
 import Control.Monad (forM_)
@@ -67,8 +67,8 @@ tests =
               Proxy
               (Proxy @Term)
               ( \x ->
-                  let encodedBytes = toLazyByteString $ getRawEncoding $ toCanonicalCBOR Proxy (x :: Term)
-                      Right (_, decoded) = deserialiseFromBytes decodeTerm encodedBytes
+                  let encodedBytes = toFlatTerm $ getRawEncoding $ toCanonicalCBOR Proxy (x :: Term)
+                      Right decoded = fromFlatTerm decodeTerm encodedBytes
                    in decoded
               )
       )
@@ -77,8 +77,8 @@ tests =
         \list ->
           let m = Map.fromList list
               sortedList = sortOn (toLazyByteString . getRawEncoding . toCanonicalCBOR Proxy . fst) list
-              decoded = deserialiseFromBytes (customMapDecoder Proxy) $ toLazyByteString $ getRawEncoding $ toCanonicalCBOR Proxy m
-           in decoded `shouldBe` Right (BSL.empty, sortedList)
+              decoded = fromFlatTerm (customMapDecoder Proxy) $ toFlatTerm $ getRawEncoding $ toCanonicalCBOR Proxy m
+           in decoded `shouldBe` Right sortedList
  where
   roundtrip :: forall v a. (Arbitrary a, Typeable a, Show a, Eq a, ToCanonicalCBOR v a, FromCanonicalCBOR v a) => Proxy v -> Proxy a -> SpecWith ()
   roundtrip p p1 = roundtripWith p p1 id
@@ -87,10 +87,10 @@ tests =
     describe (show $ typeRep p1) $ do
       prop "x == decode . encode x" $ do
         \(x :: a) -> do
-          let encodedBytes = toLazyByteString $ getRawEncoding $ toCanonicalCBOR p (f x)
-              decoded = deserialiseFromBytes (getRawDecoder $ fromCanonicalCBOR @v @x) encodedBytes
+          let encodedBytes = toFlatTerm $ getRawEncoding $ toCanonicalCBOR p (f x)
+              decoded = fromFlatTerm (getRawDecoder $ fromCanonicalCBOR @v @x) encodedBytes
           -- Decoded value should match and no bytes left after decoding
-          decoded `shouldBe` Right (BSL.empty, Versioned (f x))
+          decoded `shouldBe` Right (Versioned (f x))
   -- Generate list of pairs with no duplicate first element
   genNonDuplicateList :: (Eq a) => Gen a -> Gen b -> Gen [(a, b)]
   genNonDuplicateList g1 g2 =

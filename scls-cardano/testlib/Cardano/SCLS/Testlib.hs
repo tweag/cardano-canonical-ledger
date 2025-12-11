@@ -29,13 +29,12 @@ import Cardano.SCLS.CDDL.Validate
 import Cardano.SCLS.NamespaceCodec
 import Cardano.SCLS.Versioned
 import Codec.CBOR.Cuddle.CBOR.Validator (CBORTermResult (..), CDDLResult (Valid))
-import Codec.CBOR.Read (deserialiseFromBytes)
+import Codec.CBOR.FlatTerm (fromFlatTerm, toFlatTerm)
 import Codec.CBOR.Term (decodeTerm)
-import Codec.CBOR.Write (toLazyByteString, toStrictByteString)
+import Codec.CBOR.Write (toStrictByteString)
 
 import Data.ByteString qualified as B
 import Data.ByteString.Base16 qualified as Base16
-import Data.ByteString.Lazy qualified as BL
 import Data.Either (isRight)
 import Data.Proxy
 import Data.Text qualified as T
@@ -109,11 +108,10 @@ propTypeConformsToSpec t = \a ->
 
 propNamespaceEntryIsCanonical :: forall ns. (KnownSymbol ns, KnownNamespace ns, Arbitrary (NamespaceEntry ns)) => NamespaceEntry ns -> IO ()
 propNamespaceEntryIsCanonical = \a ->
-  let encodedData = toLazyByteString (getRawEncoding $ encodeEntry @ns a)
-   in case deserialiseFromBytes (decodeTerm) encodedData of
-        Right (b, decodedAsTerm) -> annotate "(b, t) = decode @Term (encode x)" $ do
-          b `shouldSatisfy` BL.null
-          let encodedTerm = toLazyByteString (getRawEncoding $ toCanonicalCBOR (Proxy @ns) decodedAsTerm)
+  let encodedData = toFlatTerm (getRawEncoding $ encodeEntry @ns a)
+   in case fromFlatTerm (decodeTerm) encodedData of
+        Right decodedAsTerm -> annotate "(b, t) = decode @Term (encode x)" $ do
+          let encodedTerm = toFlatTerm (getRawEncoding $ toCanonicalCBOR (Proxy @ns) decodedAsTerm)
           encodedTerm `shouldBe` encodedData
         r -> r `shouldSatisfy` isRight
 
@@ -132,13 +130,11 @@ decoding will put the value in it's canonical form.
 -}
 propNamespaceEntryRoundTrip :: forall ns. (KnownNamespace ns, Arbitrary (NamespaceEntry ns), Eq (NamespaceEntry ns), Show (NamespaceEntry ns)) => NamespaceEntry ns -> IO ()
 propNamespaceEntryRoundTrip = \a -> do
-  case deserialiseFromBytes (getRawDecoder $ decodeEntry @ns) (toLazyByteString (getRawEncoding $ encodeEntry @ns a)) of
-    Right (b, Versioned a') -> annotate "(b, a') = decode (encode a)" $ do
-      b `shouldSatisfy` BL.null
+  case fromFlatTerm (getRawDecoder $ decodeEntry @ns) (toFlatTerm (getRawEncoding $ encodeEntry @ns a)) of
+    Right (Versioned a') -> annotate "(b, a') = decode (encode a)" $ do
       a' `shouldBe` a
-      case deserialiseFromBytes (getRawDecoder $ decodeEntry @ns) (toLazyByteString (getRawEncoding $ encodeEntry @ns a')) of
-        Right (b', Versioned a'') -> annotate "(b', a'') = decode (encode a')" $ do
-          b' `shouldSatisfy` BL.null
+      case fromFlatTerm (getRawDecoder $ decodeEntry @ns) (toFlatTerm (getRawEncoding $ encodeEntry @ns a')) of
+        Right (Versioned a'') -> annotate "(b', a'') = decode (encode a')" $ do
           a'' `shouldBe` a'
         r -> r `shouldSatisfy` isRight
     r -> r `shouldSatisfy` isRight
@@ -154,10 +150,9 @@ debugEncodeType a = Base16.encode $ toStrictByteString $ getRawEncoding (toCanon
 
 propTypeIsCanonical :: forall ns a. (KnownSymbol ns, ToCanonicalCBOR ns a) => a -> IO ()
 propTypeIsCanonical = \a ->
-  let encodedData = toLazyByteString (getRawEncoding $ toCanonicalCBOR (Proxy @ns) a)
-   in case deserialiseFromBytes (decodeTerm) encodedData of
-        Right (b, decodedAsTerm) -> annotate "(b, t) = decode @Term (encode x)" $ do
-          b `shouldSatisfy` BL.null
-          let encodedTerm = toLazyByteString (getRawEncoding $ toCanonicalCBOR (Proxy @ns) decodedAsTerm)
+  let encodedData = toFlatTerm (getRawEncoding $ toCanonicalCBOR (Proxy @ns) a)
+   in case fromFlatTerm decodeTerm encodedData of
+        Right decodedAsTerm -> annotate "(b, t) = decode @Term (encode x)" $ do
+          let encodedTerm = toFlatTerm (getRawEncoding $ toCanonicalCBOR (Proxy @ns) decodedAsTerm)
           encodedTerm `shouldBe` encodedData
         r -> r `shouldSatisfy` isRight
