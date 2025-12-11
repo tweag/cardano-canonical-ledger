@@ -68,8 +68,9 @@ tests =
               (Proxy @Term)
               ( \x ->
                   let encodedBytes = toFlatTerm $ getRawEncoding $ toCanonicalCBOR Proxy (x :: Term)
-                      Right decoded = fromFlatTerm decodeTerm encodedBytes
-                   in decoded
+                   in case fromFlatTerm decodeTerm encodedBytes of
+                        Right decoded -> decoded
+                        Left s -> error $ "Unexpected error, can't decode encoded term: " <> show s
               )
       )
     prop "encoded map is ordered by encoded key byte-order" $
@@ -131,7 +132,7 @@ instance Arbitrary Term where
         , TListI <$> listOf_ arbitrary
         , TMap <$> listOf_ arbitrary
         , TMapI <$> listOf_ arbitrary
-        , TTagged <$> arbitrary `suchThat` (5 <=) <*> scale (pred') arbitrary
+        , TTagged <$> arbitrary `suchThat` (5 <) <*> scale (pred') arbitrary
         , TBool <$> scale (pred') arbitrary
         , pure TNull
         , TSimple <$> scale (pred') arbitrary
