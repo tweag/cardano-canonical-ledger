@@ -251,12 +251,12 @@ instance
   (ToCanonicalCBOR v k, ToCanonicalCBOR v val) =>
   ToCanonicalCBOR v (Map.Map k val)
   where
-  toCanonicalCBOR v m =
+  toCanonicalCBOR _v m =
     encodeAsMap l
    where
     l =
       Map.foldlWithKey'
-        (\acc k val -> SomeEncodablePair v k val : acc)
+        (\acc k val -> SomeEncodablePair @v k val : acc)
         []
         m
 
@@ -270,13 +270,13 @@ as CBOR maps, where the key and value types may vary but all support
 Use 'mkEncodablePair' to construct values of this type.
 -}
 data SomeEncodablePair v where
-  SomeEncodablePair :: (ToCanonicalCBOR v k, ToCanonicalCBOR v val) => proxy v -> k -> val -> SomeEncodablePair v
+  SomeEncodablePair :: (ToCanonicalCBOR v k, ToCanonicalCBOR v val) => k -> val -> SomeEncodablePair v
 
 {- | Construct a 'SomeEncodablePair' from a key and value, given that both
 support 'ToCanonicalCBOR' for the version `v`.
 -}
-mkEncodablePair :: forall v k val. (ToCanonicalCBOR v k, ToCanonicalCBOR v val) => k -> val -> SomeEncodablePair v
-mkEncodablePair = SomeEncodablePair (Proxy @v)
+mkEncodablePair :: (ToCanonicalCBOR v k, ToCanonicalCBOR v val) => proxy v -> k -> val -> SomeEncodablePair v
+mkEncodablePair _ = SomeEncodablePair
 
 {- |
   Helper for encoding map-like structures in canonical CBOR form.
@@ -284,7 +284,7 @@ mkEncodablePair = SomeEncodablePair (Proxy @v)
   using definite length encoding. Keys are sorted by their canonical CBOR-encoded byte representation,
   as required by the canonical CBOR specification.
 -}
-encodeAsMap :: (Foldable t) => t (SomeEncodablePair v) -> CanonicalEncoding
+encodeAsMap :: forall v t. (Foldable t) => t (SomeEncodablePair v) -> CanonicalEncoding
 encodeAsMap f =
   (unsafeToCanonicalEncoding (E.encodeMapLen len))
     <> foldMap
@@ -294,9 +294,9 @@ encodeAsMap f =
   -- Order map by the byte-wise ordering of the canonically encoded map keys
   (len, l) =
     F.foldl'
-      ( \(n, acc) (SomeEncodablePair v k val) ->
-          let kBytes = toStrictByteString $ unCanonicalEncoding $ toCanonicalCBOR v k
-              valEncoding = toCanonicalCBOR v val
+      ( \(n, acc) (SomeEncodablePair k val) ->
+          let kBytes = toStrictByteString $ unCanonicalEncoding $ toCanonicalCBOR (Proxy @v) k
+              valEncoding = toCanonicalCBOR (Proxy @v) val
            in (n + 1, (kBytes, valEncoding) : acc)
       )
       (0, [])
