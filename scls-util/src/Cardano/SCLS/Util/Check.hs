@@ -17,6 +17,8 @@ module Cardano.SCLS.Util.Check (
   CheckError (..),
 ) where
 
+import Cardano.SCLS.CBOR.Canonical (getRawEncoding)
+import Cardano.SCLS.CBOR.Canonical.Encoder (toCanonicalCBOR)
 import Cardano.SCLS.CDDL (NamespaceInfo (..), namespaces)
 import Cardano.SCLS.Internal.Entry.CBOREntry (GenericCBOREntry (..))
 import Cardano.SCLS.Internal.Entry.ChunkEntry (ChunkEntry (..))
@@ -40,7 +42,9 @@ import Codec.CBOR.Cuddle.CDDL.Resolve (
 import Codec.CBOR.Cuddle.Huddle (toCDDL)
 import Codec.CBOR.Cuddle.Pretty ()
 import Codec.CBOR.Pretty
-import Codec.CBOR.Term (Term, encodeTerm)
+import Codec.CBOR.Read (deserialiseFromBytes)
+import Codec.CBOR.Term (Term, decodeTerm, encodeTerm)
+import Codec.CBOR.Write (toLazyByteString)
 import Control.Exception (SomeException, catch)
 import Control.Monad (unless, when)
 import Control.Monad.Trans.Reader (runReader)
@@ -51,6 +55,7 @@ import Data.List (intercalate)
 import Data.List.NonEmpty qualified as NE
 import Data.Map.Strict qualified as Map
 import Data.MemPack.Extra (CBORTerm (..), Entry (..), RawBytes (..))
+import Data.Proxy
 import Data.Text (Text)
 import Data.Text qualified as T
 import Data.Word (Word32, Word64)
@@ -79,7 +84,13 @@ data CheckError
   | -- | Failed to parse CBOR data
     CBORParseError
       { entryIndex :: Int
-      , errorMessage :: String
+      , errorMessage :: Text
+      }
+  | -- | Value encoding is not canonical
+    CBORIsNotCanonicalError
+      { entryIndex :: Int
+      , errorExpectedCanonical :: Term
+      , errorCurrentTerm :: Term
       }
   deriving (Show)
 
@@ -219,8 +230,25 @@ validateChunk cddlTrees Chunk{..} = do
       , chunkErrors = checksumError <> dataErrors
       }
 
-validateAgainst :: CTreeRoot' Identity MonoRef -> (Int, GenericCBOREntry n) -> Maybe CheckError
-validateAgainst cddl@(CTreeRoot cddlTree) (seqNum, GenericCBOREntry (ChunkEntry _key (CBORTerm term))) =
+validateAgainst :: forall n. CTreeRoot' Identity MonoRef -> (Int, GenericCBOREntry n) -> Maybe CheckError
+validateAgainst t v@(i, GenericCBOREntry (ChunkEntry _ (CBORTerm term))) =
+  case validateCDDLAgainst t v of
+    Just e -> Just e
+    Nothing -> case checkCanonical of
+      Nothing -> Nothing
+      Just expected -> Just (CBORIsNotCanonicalError i expected term)
+ where
+  checkCanonical =
+    let encodedData = toLazyByteString (getRawEncoding $ toCanonicalCBOR Proxy term)
+     in case deserialiseFromBytes (decodeTerm) encodedData of
+          Right (_, decodedAsTerm) ->
+            if term == decodedAsTerm
+              then Nothing
+              else Just decodedAsTerm
+          _ -> Nothing
+
+validateCDDLAgainst :: CTreeRoot' Identity MonoRef -> (Int, GenericCBOREntry n) -> Maybe CheckError
+validateCDDLAgainst cddl@(CTreeRoot cddlTree) (seqNum, GenericCBOREntry (ChunkEntry _key (CBORTerm term))) =
   let name = Name (T.pack "record_entry") mempty
    in case Map.lookup name cddlTree of
         Nothing -> Nothing
@@ -244,7 +272,15 @@ formatError = \case
       ++ "\n\nData:\n"
       ++ prettyHexEnc (encodeTerm term)
   CBORParseError idx msg ->
-    "CBOR parse error at entry " ++ show idx ++ ": " ++ msg
+    "CBOR parse error at entry " ++ show idx ++ ": " ++ T.unpack msg
+  CBORIsNotCanonicalError idx expected current ->
+    "CBOR is not canonical at entry #"
+      ++ show idx
+      ++ ":\n"
+      ++ "    Expected: "
+      ++ show expected
+      ++ "\n    Current: "
+      ++ show current
 
 prettyError :: CDDLResult -> String
 prettyError Valid{} = "sorry, everything is valid"
