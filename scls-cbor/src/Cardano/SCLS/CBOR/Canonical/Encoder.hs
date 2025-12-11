@@ -16,7 +16,7 @@ module Cardano.SCLS.CBOR.Canonical.Encoder (
   mkEncodablePair,
 ) where
 
-import Cardano.SCLS.CBOR.Canonical (CanonicalEncoding (getRawEncoding), unsafeToCanonicalEncoding)
+import Cardano.SCLS.CBOR.Canonical (CanonicalEncoding (getRawEncoding), assumeCanonicalEncoding)
 import Codec.CBOR.ByteArray.Sliced qualified as BAS
 import Codec.CBOR.Encoding qualified as E
 import Codec.CBOR.Write (toStrictByteString)
@@ -53,52 +53,52 @@ instance ToCanonicalCBOR v CanonicalEncoding where
 --------------------------------------------------------------------------------
 
 instance ToCanonicalCBOR v () where
-  toCanonicalCBOR _ = unsafeToCanonicalEncoding . const E.encodeNull
+  toCanonicalCBOR _ = assumeCanonicalEncoding . const E.encodeNull
 
 instance ToCanonicalCBOR v Bool where
-  toCanonicalCBOR _ = unsafeToCanonicalEncoding . E.encodeBool
+  toCanonicalCBOR _ = assumeCanonicalEncoding . E.encodeBool
 
 --------------------------------------------------------------------------------
 -- Numeric data
 --------------------------------------------------------------------------------
 
 instance ToCanonicalCBOR v Integer where
-  toCanonicalCBOR _ = unsafeToCanonicalEncoding . E.encodeInteger
+  toCanonicalCBOR _ = assumeCanonicalEncoding . E.encodeInteger
 
 instance ToCanonicalCBOR v Word where
-  toCanonicalCBOR _ = unsafeToCanonicalEncoding . E.encodeWord
+  toCanonicalCBOR _ = assumeCanonicalEncoding . E.encodeWord
 
 instance ToCanonicalCBOR v Word8 where
-  toCanonicalCBOR _ = unsafeToCanonicalEncoding . E.encodeWord8
+  toCanonicalCBOR _ = assumeCanonicalEncoding . E.encodeWord8
 
 instance ToCanonicalCBOR v Word16 where
-  toCanonicalCBOR _ = unsafeToCanonicalEncoding . E.encodeWord16
+  toCanonicalCBOR _ = assumeCanonicalEncoding . E.encodeWord16
 
 instance ToCanonicalCBOR v Word32 where
-  toCanonicalCBOR _ = unsafeToCanonicalEncoding . E.encodeWord32
+  toCanonicalCBOR _ = assumeCanonicalEncoding . E.encodeWord32
 
 instance ToCanonicalCBOR v Word64 where
-  toCanonicalCBOR _ = unsafeToCanonicalEncoding . E.encodeWord64
+  toCanonicalCBOR _ = assumeCanonicalEncoding . E.encodeWord64
 
 instance ToCanonicalCBOR v Int where
-  toCanonicalCBOR _ = unsafeToCanonicalEncoding . E.encodeInt
+  toCanonicalCBOR _ = assumeCanonicalEncoding . E.encodeInt
 
 instance ToCanonicalCBOR v Int32 where
-  toCanonicalCBOR _ = unsafeToCanonicalEncoding . E.encodeInt32
+  toCanonicalCBOR _ = assumeCanonicalEncoding . E.encodeInt32
 
 instance ToCanonicalCBOR v Int64 where
-  toCanonicalCBOR _ = unsafeToCanonicalEncoding . E.encodeInt64
+  toCanonicalCBOR _ = assumeCanonicalEncoding . E.encodeInt64
 
 --------------------------------------------------------------------------------
 -- Bytes
 --------------------------------------------------------------------------------
 
 instance ToCanonicalCBOR v ByteString where
-  toCanonicalCBOR _ = unsafeToCanonicalEncoding . E.encodeBytes
+  toCanonicalCBOR _ = assumeCanonicalEncoding . E.encodeBytes
 
 instance ToCanonicalCBOR v SBS.ShortByteString where
   toCanonicalCBOR _ sbs@(SBS ba) =
-    unsafeToCanonicalEncoding $
+    assumeCanonicalEncoding $
       E.encodeByteArray $
         BAS.SBA (Prim.ByteArray ba) 0 (SBS.length sbs)
 
@@ -107,7 +107,7 @@ instance ToCanonicalCBOR v SBS.ShortByteString where
 --------------------------------------------------------------------------------
 
 instance ToCanonicalCBOR v Text where
-  toCanonicalCBOR _ = unsafeToCanonicalEncoding . E.encodeString
+  toCanonicalCBOR _ = assumeCanonicalEncoding . E.encodeString
 
 --------------------------------------------------------------------------------
 -- Tuples
@@ -118,7 +118,7 @@ instance
   ToCanonicalCBOR v (a, b)
   where
   toCanonicalCBOR v (a, b) =
-    unsafeToCanonicalEncoding (E.encodeListLen 2)
+    assumeCanonicalEncoding (E.encodeListLen 2)
       <> toCanonicalCBOR v a
       <> toCanonicalCBOR v b
 
@@ -130,7 +130,7 @@ instance
   ToCanonicalCBOR v (a, b, c)
   where
   toCanonicalCBOR v (a, b, c) =
-    unsafeToCanonicalEncoding (E.encodeListLen 3)
+    assumeCanonicalEncoding (E.encodeListLen 3)
       <> toCanonicalCBOR v a
       <> toCanonicalCBOR v b
       <> toCanonicalCBOR v c
@@ -144,7 +144,7 @@ instance
   ToCanonicalCBOR v (a, b, c, d)
   where
   toCanonicalCBOR v (a, b, c, d) =
-    unsafeToCanonicalEncoding (E.encodeListLen 4)
+    assumeCanonicalEncoding (E.encodeListLen 4)
       <> toCanonicalCBOR v a
       <> toCanonicalCBOR v b
       <> toCanonicalCBOR v c
@@ -160,7 +160,7 @@ instance
   ToCanonicalCBOR v (a, b, c, d, e)
   where
   toCanonicalCBOR v (a, b, c, d, e) =
-    unsafeToCanonicalEncoding (E.encodeListLen 5)
+    assumeCanonicalEncoding (E.encodeListLen 5)
       <> toCanonicalCBOR v a
       <> toCanonicalCBOR v b
       <> toCanonicalCBOR v c
@@ -178,7 +178,7 @@ instance
   ToCanonicalCBOR v (a, b, c, d, e, f)
   where
   toCanonicalCBOR v (a, b, c, d, e, f) =
-    unsafeToCanonicalEncoding (E.encodeListLen 6)
+    assumeCanonicalEncoding (E.encodeListLen 6)
       <> toCanonicalCBOR v a
       <> toCanonicalCBOR v b
       <> toCanonicalCBOR v c
@@ -198,7 +198,7 @@ instance
   ToCanonicalCBOR v (a, b, c, d, e, f, g)
   where
   toCanonicalCBOR v (a, b, c, d, e, f, g) =
-    unsafeToCanonicalEncoding (E.encodeListLen 7)
+    assumeCanonicalEncoding (E.encodeListLen 7)
       <> toCanonicalCBOR v a
       <> toCanonicalCBOR v b
       <> toCanonicalCBOR v c
@@ -220,7 +220,7 @@ instance
   ToCanonicalCBOR v (a, b, c, d, e, f, g, h)
   where
   toCanonicalCBOR v (a, b, c, d, e, f, g, h) =
-    unsafeToCanonicalEncoding (E.encodeListLen 8)
+    assumeCanonicalEncoding (E.encodeListLen 8)
       <> toCanonicalCBOR v a
       <> toCanonicalCBOR v b
       <> toCanonicalCBOR v c
@@ -237,11 +237,11 @@ instance
 -- | We always encode lists with the definite length encoding.
 instance (ToCanonicalCBOR v a) => ToCanonicalCBOR v [a] where
   toCanonicalCBOR v xs =
-    (unsafeToCanonicalEncoding (E.encodeListLen (fromIntegral $ length xs))) <> foldMap (toCanonicalCBOR v) xs
+    (assumeCanonicalEncoding (E.encodeListLen (fromIntegral $ length xs))) <> foldMap (toCanonicalCBOR v) xs
 
 instance (ToCanonicalCBOR v a) => ToCanonicalCBOR v (Seq.Seq a) where
   toCanonicalCBOR v xs =
-    (unsafeToCanonicalEncoding (E.encodeListLen (fromIntegral $ length xs))) <> foldMap (toCanonicalCBOR v) xs
+    (assumeCanonicalEncoding (E.encodeListLen (fromIntegral $ length xs))) <> foldMap (toCanonicalCBOR v) xs
 
 --------------------------------------------------------------------------------
 -- Maps
@@ -287,9 +287,9 @@ mkEncodablePair _ = SomeEncodablePair
 -}
 encodeAsMap :: forall v t. (Traversable t) => t (SomeEncodablePair v) -> CanonicalEncoding
 encodeAsMap f =
-  (unsafeToCanonicalEncoding (E.encodeMapLen len))
+  (assumeCanonicalEncoding (E.encodeMapLen len))
     <> foldMap
-      (\(kBytes, valEncoding) -> unsafeToCanonicalEncoding (E.encodePreEncoded kBytes) <> valEncoding)
+      (\(kBytes, valEncoding) -> assumeCanonicalEncoding (E.encodePreEncoded kBytes) <> valEncoding)
       sorted
  where
   -- Order map by the byte-wise ordering of the canonically encoded map keys
@@ -312,7 +312,7 @@ encodeAsMap f =
 -- for details about the implementation.
 instance (ToCanonicalCBOR v a) => (ToCanonicalCBOR v (Set.Set a)) where
   toCanonicalCBOR v s =
-    unsafeToCanonicalEncoding $
+    assumeCanonicalEncoding $
       E.encodeTag 258
         <> E.encodeListLen (fromIntegral size)
         <> foldMap E.encodePreEncoded encSorted

@@ -1,8 +1,8 @@
 module Cardano.SCLS.CBOR.Canonical (
   CanonicalEncoding (getRawEncoding),
   CanonicalDecoder (getRawDecoder),
-  unsafeToCanonicalEncoding,
-  unsafeToCanonicalDecoder,
+  assumeCanonicalEncoding,
+  assumeCanonicalDecoder,
 ) where
 
 import Codec.CBOR.Decoding (Decoder)
@@ -12,18 +12,18 @@ import Codec.CBOR.Encoding (Encoding)
 newtype CanonicalEncoding = CanonicalEncoding {getRawEncoding :: Encoding}
   deriving (Semigroup, Monoid)
 
-{- | Unsafe lifting `Encoding` to `CanonicalEncoding`. Does not ensure that `Encoding` was defined according to canonical rules.
+{- | Unchecked lifting from `Encoding` to `CanonicalEncoding`.
 It's the user responsibility to ensure the underlying encoding follows deterministic rules.
 -}
-unsafeToCanonicalEncoding :: Encoding -> CanonicalEncoding
-unsafeToCanonicalEncoding = CanonicalEncoding
+assumeCanonicalEncoding :: Encoding -> CanonicalEncoding
+assumeCanonicalEncoding = CanonicalEncoding
 
 -- | Decoder type wrapper for decoders following deterministic rules.
 newtype CanonicalDecoder s a = CanonicalDecoder {getRawDecoder :: Decoder s a}
   deriving (Functor, Applicative, Monad, MonadFail)
 
-{- | Unsafe lifting `Decoder` to `CanonicalDecoder`. Does not ensure that `Decoder` was defined according to canonical rules.
+{- | Unchecked lifting from `Decoder` to `CanonicalDecoder`.
 It's the user responsibility to ensure the underlying decoder follows deterministic rules.
 -}
-unsafeToCanonicalDecoder :: Decoder s a -> CanonicalDecoder s a
-unsafeToCanonicalDecoder = CanonicalDecoder
+assumeCanonicalDecoder :: Decoder s a -> CanonicalDecoder s a
+assumeCanonicalDecoder = CanonicalDecoder
