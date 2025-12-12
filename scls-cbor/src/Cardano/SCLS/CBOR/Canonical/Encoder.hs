@@ -15,11 +15,13 @@ module Cardano.SCLS.CBOR.Canonical.Encoder (
   encodeAsMap,
   SomeEncodablePair (..),
   mkEncodablePair,
+  forceCanonical,
 ) where
 
 import Cardano.SCLS.CBOR.Canonical (CanonicalEncoding (getRawEncoding), assumeCanonicalEncoding)
 import Codec.CBOR.ByteArray.Sliced qualified as BAS
 import Codec.CBOR.Encoding qualified as E
+import Codec.CBOR.FlatTerm (fromFlatTerm, toFlatTerm)
 import Codec.CBOR.Term
 import Codec.CBOR.Write (toStrictByteString)
 import Data.Array.Byte qualified as Prim
@@ -361,3 +363,9 @@ in the canonical format
 toCanonicalTagged :: proxy (v :: Symbol) -> Word64 -> Term -> CanonicalEncoding
 toCanonicalTagged v 258 (TList ns) = toCanonicalCBOR v (Set.fromList ns)
 toCanonicalTagged v t term = assumeCanonicalEncoding (E.encodeTag64 t) <> toCanonicalCBOR v term
+
+-- | Slow version to convert any encoding to canonical
+forceCanonical :: proxy (v :: Symbol) -> E.Encoding -> CanonicalEncoding
+forceCanonical p x = case fromFlatTerm decodeTerm (toFlatTerm x) of
+  Left e -> error $ "Unable to decode: " <> show e
+  Right y -> toCanonicalCBOR p y
