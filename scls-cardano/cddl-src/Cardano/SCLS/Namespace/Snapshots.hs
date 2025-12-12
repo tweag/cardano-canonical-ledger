@@ -115,7 +115,7 @@ relay =
     / sarr [1, a single_host_name]
     / sarr [2, a multi_host_name]
 
-single_host_addr :: Named Group
+single_host_addr :: GroupDef
 single_host_addr =
   comment [str| A single host address relay |] $
     "single_host_addr"
@@ -125,12 +125,12 @@ single_host_addr =
         , a (ipv6 / VNil)
         ]
 
-single_host_name :: Named Group
+single_host_name :: GroupDef
 single_host_name =
   "single_host_name"
     =:~ grp [a (port / VNil), a dns_name]
 
-multi_host_name :: Named Group
+multi_host_name :: GroupDef
 multi_host_name =
   "multi_host_name" =:~ grp [a dns_name]
 

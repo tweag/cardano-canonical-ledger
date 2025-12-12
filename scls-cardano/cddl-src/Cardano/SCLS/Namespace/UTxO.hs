@@ -120,22 +120,22 @@ native_script =
     -- This field specifies the left (included) endpoint a.
     / arr [a invalid_hereafter]
 
-script_pubkey :: Named Group
+script_pubkey :: GroupDef
 script_pubkey = "script_pubkey" =:~ grp [0, a hash28]
 
-script_all :: Named Group
+script_all :: GroupDef
 script_all = "script_all" =:~ grp [1, a (arr [0 <+ a native_script])]
 
-script_any :: Named Group
+script_any :: GroupDef
 script_any = "script_any" =:~ grp [2, a (arr [0 <+ a native_script])]
 
-script_n_of_k :: Named Group
+script_n_of_k :: GroupDef
 script_n_of_k =
   "script_n_of_k"
     =:~ grp [3, "n" ==> int64, a (arr [0 <+ a native_script])]
 
-invalid_before :: Named Group
+invalid_before :: GroupDef
 invalid_before = "invalid_before" =:~ grp [4, a slot_no]
 
-invalid_hereafter :: Named Group
+invalid_hereafter :: GroupDef
 invalid_hereafter = "invalid_hereafter" =:~ grp [5, a slot_no]
