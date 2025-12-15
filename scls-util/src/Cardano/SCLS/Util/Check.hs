@@ -30,9 +30,9 @@ import Cardano.Types.Namespace (Namespace)
 import Cardano.Types.Namespace qualified as Namespace
 import Codec.CBOR.Cuddle.CBOR.Validator (CBORTermResult (..), CDDLResult (..), validateTerm)
 import Codec.CBOR.Cuddle.CDDL (Name (..))
-import Codec.CBOR.Cuddle.CDDL.CTree (CTreeRoot' (..))
+import Codec.CBOR.Cuddle.CDDL.CTree (CTreeRoot (..))
 import Codec.CBOR.Cuddle.CDDL.Resolve (
-  MonoRef,
+  MonoReferenced,
   NameResolutionFailure (..),
   asMap,
   buildMonoCTree,
@@ -50,7 +50,6 @@ import Control.Monad (unless, when)
 import Control.Monad.Trans.Reader (runReader)
 import Data.Foldable (for_)
 import Data.Function ((&))
-import Data.Functor.Identity
 import Data.List (intercalate)
 import Data.List.NonEmpty qualified as NE
 import Data.Map.Strict qualified as Map
@@ -176,7 +175,7 @@ check filePath = do
       pure OtherError
 
 -- | Build CDDL validation trees for all namespaces, skipping any that fail to compile.
-processNamespaceInfo :: Map.Map Text NamespaceInfo -> (Map.Map Text NameResolutionFailure, Map.Map Text (CTreeRoot' Identity MonoRef, Natural))
+processNamespaceInfo :: Map.Map Text NamespaceInfo -> (Map.Map Text NameResolutionFailure, Map.Map Text (CTreeRoot MonoReferenced, Natural))
 processNamespaceInfo =
   Map.mapEitherWithKey \_namespace NamespaceInfo{..} -> do
     case buildMonoCTree =<< buildResolvedCTree (buildRefCTree $ asMap $ toCDDL namespaceSpec) of
@@ -184,7 +183,7 @@ processNamespaceInfo =
       Right tree -> Right (tree, namespaceKeySize)
 
 -- | Validate a single chunk.
-validateChunk :: Map.Map Text (CTreeRoot' Identity MonoRef, Natural) -> Chunk -> IO ChunkCheckResult
+validateChunk :: Map.Map Text (CTreeRoot MonoReferenced, Natural) -> Chunk -> IO ChunkCheckResult
 validateChunk cddlTrees Chunk{..} = do
   let nsString = Namespace.asText chunkNamespace
       isKnown = Map.member nsString cddlTrees
@@ -230,7 +229,7 @@ validateChunk cddlTrees Chunk{..} = do
       , chunkErrors = checksumError <> dataErrors
       }
 
-validateAgainst :: forall n. CTreeRoot' Identity MonoRef -> (Int, GenericCBOREntry n) -> Maybe CheckError
+validateAgainst :: forall n. CTreeRoot MonoReferenced -> (Int, GenericCBOREntry n) -> Maybe CheckError
 validateAgainst t v@(i, GenericCBOREntry (ChunkEntry _ cTerm)) =
   case validateCDDLAgainst t v of
     Just e -> Just e
@@ -247,9 +246,9 @@ validateAgainst t v@(i, GenericCBOREntry (ChunkEntry _ cTerm)) =
               else Just decodedAsTerm
           _ -> Nothing
 
-validateCDDLAgainst :: CTreeRoot' Identity MonoRef -> (Int, GenericCBOREntry n) -> Maybe CheckError
+validateCDDLAgainst :: CTreeRoot MonoReferenced -> (Int, GenericCBOREntry n) -> Maybe CheckError
 validateCDDLAgainst cddl@(CTreeRoot cddlTree) (seqNum, GenericCBOREntry (ChunkEntry _key cTerm)) =
-  let name = Name (T.pack "record_entry") mempty
+  let name = Name (T.pack "record_entry")
    in case Map.lookup name cddlTree of
         Nothing -> Nothing
         Just rule ->
