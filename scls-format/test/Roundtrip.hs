@@ -109,7 +109,7 @@ mkRoundtripTestsFor groupName serialize =
             withKnownNat snat do
               fmap nubByKey $ replicateM 1024 $ do
                 key <- uniformByteStringM (fromIntegral kSize) globalStdGen
-                term <- applyAtomicGen (generateCBORTerm' mt (Name (T.pack "record_entry") mempty)) globalStdGen
+                term <- applyAtomicGen (generateCBORTerm' mt (Name (T.pack "record_entry"))) globalStdGen
                 Right (_, canonicalTerm) <- pure $ deserialiseFromBytes decodeTerm $ toLazyByteString (encodeTerm term)
                 pure $! SomeCBOREntry (GenericCBOREntry $ ChunkEntry (ByteStringSized @n key) (mkCBORTerm canonicalTerm))
         mEntries <-

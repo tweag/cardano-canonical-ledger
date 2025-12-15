@@ -16,9 +16,9 @@ import Cardano.Types.Network (NetworkId (..))
 import Cardano.Types.SlotNo (SlotNo (..))
 import Codec.CBOR.Cuddle.CBOR.Gen (generateCBORTerm')
 import Codec.CBOR.Cuddle.CDDL (Name (..))
-import Codec.CBOR.Cuddle.CDDL.CTree (CTreeRoot')
+import Codec.CBOR.Cuddle.CDDL.CTree (CTreeRoot)
 import Codec.CBOR.Cuddle.CDDL.Resolve (
-  MonoRef,
+  MonoReferenced,
   asMap,
   buildMonoCTree,
   buildRefCTree,
@@ -31,7 +31,6 @@ import Data.ByteString.Base16 qualified as Base16
 import Data.ByteString.Char8 qualified as B8
 import Data.Function ((&))
 import Data.Functor ((<&>))
-import Data.Functor.Identity (Identity (..))
 import Data.Map.Strict qualified as Map
 import Data.Maybe (fromMaybe)
 import Data.MemPack.Extra
@@ -71,11 +70,11 @@ generateDebugFile outputFile namespaceEntries = do
       )
   pure Ok
 
-generateNamespaceEntries :: forall n. (KnownNat n) => Int -> CTreeRoot' Identity MonoRef -> S.Stream (S.Of (GenericCBOREntry n)) IO ()
+generateNamespaceEntries :: forall n. (KnownNat n) => Int -> CTreeRoot MonoReferenced -> S.Stream (S.Of (GenericCBOREntry n)) IO ()
 generateNamespaceEntries count spec = replicateM_ count do
   let size = fromSNat @n SNat
   keyIn <- liftIO $ uniformByteStringM (fromIntegral size) globalStdGen
-  term <- liftIO $ applyAtomicGen (generateCBORTerm' spec (Name (T.pack "record_entry") mempty)) globalStdGen
+  term <- liftIO $ applyAtomicGen (generateCBORTerm' spec (Name (T.pack "record_entry"))) globalStdGen
   S.yield $ GenericCBOREntry $ ChunkEntry (ByteStringSized @n keyIn) (mkCBORTerm term)
 
 printHexEntries :: FilePath -> T.Text -> Int -> IO Result

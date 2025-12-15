@@ -11,9 +11,9 @@ module Cardano.SCLS.CDDL.Validate (
 import Cardano.SCLS.CDDL
 import Codec.CBOR.Cuddle.CBOR.Validator (CBORTermResult (..), validateTerm)
 import Codec.CBOR.Cuddle.CDDL (Name (..))
-import Codec.CBOR.Cuddle.CDDL.CTree (CTreeRoot' (..))
+import Codec.CBOR.Cuddle.CDDL.CTree (CTreeRoot (..))
 import Codec.CBOR.Cuddle.CDDL.Resolve (
-  MonoRef,
+  MonoReferenced,
   NameResolutionFailure,
   asMap,
   buildMonoCTree,
@@ -27,13 +27,12 @@ import Control.Monad.Trans.Reader (runReader)
 import Data.ByteString (ByteString)
 import Data.ByteString.Lazy qualified as BSL
 import Data.Functor ((<&>))
-import Data.Functor.Identity (Identity (..))
 import Data.Map.Strict qualified as Map
 import Data.Text (Text)
 
 -- | Pre-compiled CDDL specifications for all supported namespaces.
 invalidSpecs :: Map.Map Text NameResolutionFailure
-validSpecs :: Map.Map Text (CTreeRoot' Identity Codec.CBOR.Cuddle.CDDL.Resolve.MonoRef)
+validSpecs :: Map.Map Text (CTreeRoot Codec.CBOR.Cuddle.CDDL.Resolve.MonoReferenced)
 (invalidSpecs, validSpecs) = Map.mapEither
   do
     \NamespaceInfo{..} -> do
@@ -45,7 +44,7 @@ validSpecs :: Map.Map Text (CTreeRoot' Identity Codec.CBOR.Cuddle.CDDL.Resolve.M
 -- | Validate a parsed CBOR term against a rule in the namespace.
 validateTermAgainst :: Term -> Text -> Text -> Maybe CBORTermResult
 validateTermAgainst term namespace name =
-  let cddlName = Name name mempty
+  let cddlName = Name name
    in Map.lookup namespace validSpecs >>= \cddl@(CTreeRoot cddlTree) ->
         Map.lookup cddlName cddlTree <&> \rule ->
           runReader (validateTerm term (runIdentity rule)) cddl
