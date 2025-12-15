@@ -28,7 +28,7 @@ import Cardano.SCLS.Internal.Record.Chunk (Chunk (..))
 import Cardano.SCLS.Util.Result
 import Cardano.Types.Namespace (Namespace)
 import Cardano.Types.Namespace qualified as Namespace
-import Codec.CBOR.Cuddle.CBOR.Validator (CBORTermResult (..), CDDLResult (..), validateTerm)
+import Codec.CBOR.Cuddle.CBOR.Validator (CBORTermResult (..), CDDLResult (..), validateCBOR)
 import Codec.CBOR.Cuddle.CDDL (Name (..))
 import Codec.CBOR.Cuddle.CDDL.CTree (CTreeRoot (..))
 import Codec.CBOR.Cuddle.CDDL.Resolve (
@@ -45,10 +45,9 @@ import Codec.CBOR.Cuddle.Pretty ()
 import Codec.CBOR.Pretty
 import Codec.CBOR.Read (deserialiseFromBytes)
 import Codec.CBOR.Term (Term, decodeTerm, encodeTerm)
-import Codec.CBOR.Write (toLazyByteString)
+import Codec.CBOR.Write (toLazyByteString, toStrictByteString)
 import Control.Exception (SomeException, catch)
 import Control.Monad (unless, when)
-import Control.Monad.Trans.Reader (runReader)
 import Data.Foldable (for_)
 import Data.Function ((&))
 import Data.List (intercalate)
@@ -248,6 +247,7 @@ validateAgainst t v@(i, GenericCBOREntry (ChunkEntry _ cTerm)) =
           _ -> Nothing
 
 validateCDDLAgainst :: CTreeRoot MonoReferenced -> (Int, GenericCBOREntry n) -> Maybe CheckError
+<<<<<<< HEAD
 validateCDDLAgainst cddl@(CTreeRoot cddlTree) (seqNum, GenericCBOREntry (ChunkEntry _key cTerm)) =
   let name = Name (T.pack "record_entry")
    in case Map.lookup name cddlTree of
@@ -256,6 +256,14 @@ validateCDDLAgainst cddl@(CTreeRoot cddlTree) (seqNum, GenericCBOREntry (ChunkEn
           case runReader (validateTerm (getRawTerm cTerm) (runIdentity rule)) cddl of
             CBORTermResult _term Valid{} -> Nothing
             CBORTermResult bad_term problem -> Just (CDDLValidationError seqNum problem bad_term)
+=======
+validateCDDLAgainst cddl (seqNum, GenericCBOREntry (ChunkEntry _key (CBORTerm term))) =
+  let name = Name (T.pack "record_entry")
+      termBytes = toStrictByteString $ encodeTerm term
+   in case validateCBOR termBytes name (mapIndex cddl) of
+        CBORTermResult _term Valid{} -> Nothing
+        CBORTermResult bad_term problem -> Just (CDDLValidationError seqNum problem bad_term)
+>>>>>>> ba389c5 (Use validateCBOR)
 
 -- | Format an error for display.
 formatError :: CheckError -> String
