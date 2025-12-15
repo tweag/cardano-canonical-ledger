@@ -60,12 +60,10 @@ library validate
   build-depends:
     base >=4.18 && <5,
     bytestring,
-    cborg,
     containers,
     cuddle >=1.1,
     scls-cardano,
-    text,
-    transformers
+    text
 
   hs-source-dirs:
     cddl-validate

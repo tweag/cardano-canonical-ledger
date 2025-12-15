@@ -17,7 +17,7 @@ module Data.MemPack.Extra (
   Entry (..),
   ByteStringSized (..),
   SomeByteStringSized (..),
-  CBORTerm (getRawTerm),
+  CBORTerm (getRawTerm, getEncodedBytes),
   mkCBORTerm,
   RawBytes (..),
   Unpack',

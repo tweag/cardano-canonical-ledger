@@ -45,7 +45,7 @@ import Codec.CBOR.Cuddle.Pretty ()
 import Codec.CBOR.Pretty
 import Codec.CBOR.Read (deserialiseFromBytes)
 import Codec.CBOR.Term (Term, decodeTerm, encodeTerm)
-import Codec.CBOR.Write (toLazyByteString, toStrictByteString)
+import Codec.CBOR.Write (toLazyByteString)
 import Control.Exception (SomeException, catch)
 import Control.Monad (unless, when)
 import Data.Foldable (for_)
@@ -247,23 +247,11 @@ validateAgainst t v@(i, GenericCBOREntry (ChunkEntry _ cTerm)) =
           _ -> Nothing
 
 validateCDDLAgainst :: CTreeRoot MonoReferenced -> (Int, GenericCBOREntry n) -> Maybe CheckError
-<<<<<<< HEAD
-validateCDDLAgainst cddl@(CTreeRoot cddlTree) (seqNum, GenericCBOREntry (ChunkEntry _key cTerm)) =
+validateCDDLAgainst cddl (seqNum, GenericCBOREntry (ChunkEntry _key cTerm)) =
   let name = Name (T.pack "record_entry")
-   in case Map.lookup name cddlTree of
-        Nothing -> Nothing
-        Just rule ->
-          case runReader (validateTerm (getRawTerm cTerm) (runIdentity rule)) cddl of
-            CBORTermResult _term Valid{} -> Nothing
-            CBORTermResult bad_term problem -> Just (CDDLValidationError seqNum problem bad_term)
-=======
-validateCDDLAgainst cddl (seqNum, GenericCBOREntry (ChunkEntry _key (CBORTerm term))) =
-  let name = Name (T.pack "record_entry")
-      termBytes = toStrictByteString $ encodeTerm term
-   in case validateCBOR termBytes name (mapIndex cddl) of
+   in case validateCBOR (getEncodedBytes cTerm) name (mapIndex cddl) of
         CBORTermResult _term Valid{} -> Nothing
         CBORTermResult bad_term problem -> Just (CDDLValidationError seqNum problem bad_term)
->>>>>>> ba389c5 (Use validateCBOR)
 
 -- | Format an error for display.
 formatError :: CheckError -> String
