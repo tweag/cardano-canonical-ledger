@@ -21,6 +21,7 @@ import Codec.CBOR.Cuddle.CDDL.Resolve (
   buildResolvedCTree,
  )
 import Codec.CBOR.Cuddle.Huddle (toCDDL)
+import Codec.CBOR.Cuddle.IndexMappable (IndexMappable (mapIndex), mapCDDLDropExt)
 import Codec.CBOR.Read qualified as CBOR
 import Codec.CBOR.Term (Term, decodeTerm)
 import Control.Monad.Trans.Reader (runReader)
@@ -36,7 +37,7 @@ validSpecs :: Map.Map Text (CTreeRoot Codec.CBOR.Cuddle.CDDL.Resolve.MonoReferen
 (invalidSpecs, validSpecs) = Map.mapEither
   do
     \NamespaceInfo{..} -> do
-      case buildMonoCTree =<< buildResolvedCTree (buildRefCTree $ asMap $ toCDDL namespaceSpec) of
+      case buildMonoCTree =<< buildResolvedCTree (buildRefCTree $ asMap $ mapCDDLDropExt $ toCDDL namespaceSpec) of
         Left e -> Left e
         Right tree -> Right tree
   do namespaces

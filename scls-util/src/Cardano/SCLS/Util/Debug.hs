@@ -41,6 +41,7 @@ import System.Random.Stateful (applyAtomicGen, globalStdGen, uniformByteStringM)
 import Cardano.SCLS.Internal.Entry.CBOREntry (GenericCBOREntry (GenericCBOREntry), SomeCBOREntry (SomeCBOREntry))
 import Cardano.SCLS.Internal.Entry.ChunkEntry (ChunkEntry (..))
 import Cardano.SCLS.Util.Result
+import Codec.CBOR.Cuddle.IndexMappable (mapCDDLDropExt)
 import GHC.TypeNats
 
 -- | Generate a scls file with random data for debugging purposes.
@@ -58,7 +59,7 @@ generateDebugFile outputFile namespaceEntries = do
                   case Map.lookup (Namespace.asText namespace) namespaces of
                     Nothing -> error $ "Unknown namespace: " ++ Namespace.asString namespace
                     Just NamespaceInfo{..} -> do
-                      case buildMonoCTree =<< buildResolvedCTree (buildRefCTree $ asMap $ toCDDL namespaceSpec) of
+                      case buildMonoCTree =<< buildResolvedCTree (buildRefCTree $ asMap $ mapCDDLDropExt $ toCDDL namespaceSpec) of
                         Left err -> error $ "Failed to parse cuddle specification: " ++ show err
                         Right mt ->
                           withSomeSNat namespaceKeySize \(snat :: SNat n) -> do

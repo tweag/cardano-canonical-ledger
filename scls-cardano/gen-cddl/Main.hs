@@ -5,8 +5,10 @@ module Main where
 
 import Cardano.SCLS.CDDL (NamespaceInfo (..), namespaces)
 
+import Codec.CBOR.Cuddle.CDDL (CDDL)
 import Codec.CBOR.Cuddle.Huddle qualified as Cuddle
-import Codec.CBOR.Cuddle.Pretty ()
+import Codec.CBOR.Cuddle.IndexMappable (IndexMappable (mapIndex))
+import Codec.CBOR.Cuddle.Pretty (PrettyStage)
 import Control.Monad (forM_)
 import Data.Map.Strict qualified as Map
 import Data.Text qualified as T
@@ -28,7 +30,7 @@ main =
 
 writeSpec :: Cuddle.Huddle -> FilePath -> IO ()
 writeSpec hddl path =
-  let cddl = Cuddle.toCDDLNoRoot hddl
+  let cddl :: CDDL PrettyStage = mapIndex $ Cuddle.toCDDLNoRoot hddl
       preface = "; This file was auto-generated from huddle. Please do not modify it directly!\n"
    in withFile path WriteMode $ \h -> do
         hPutStrLn h preface

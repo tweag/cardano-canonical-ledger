@@ -40,6 +40,7 @@ import Codec.CBOR.Cuddle.CDDL.Resolve (
   buildResolvedCTree,
  )
 import Codec.CBOR.Cuddle.Huddle (toCDDL)
+import Codec.CBOR.Cuddle.IndexMappable (IndexMappable (mapIndex), mapCDDLDropExt)
 import Codec.CBOR.Cuddle.Pretty ()
 import Codec.CBOR.Pretty
 import Codec.CBOR.Read (deserialiseFromBytes)
@@ -178,7 +179,7 @@ check filePath = do
 processNamespaceInfo :: Map.Map Text NamespaceInfo -> (Map.Map Text NameResolutionFailure, Map.Map Text (CTreeRoot MonoReferenced, Natural))
 processNamespaceInfo =
   Map.mapEitherWithKey \_namespace NamespaceInfo{..} -> do
-    case buildMonoCTree =<< buildResolvedCTree (buildRefCTree $ asMap $ toCDDL namespaceSpec) of
+    case buildMonoCTree =<< buildResolvedCTree (buildRefCTree $ asMap $ mapCDDLDropExt $ toCDDL namespaceSpec) of
       Left err -> Left err
       Right tree -> Right (tree, namespaceKeySize)
 

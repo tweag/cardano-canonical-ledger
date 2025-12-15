@@ -30,6 +30,7 @@ import Codec.CBOR.Cuddle.CDDL.Resolve (
   buildResolvedCTree,
  )
 import Codec.CBOR.Cuddle.Huddle (toCDDL)
+import Codec.CBOR.Cuddle.IndexMappable (mapCDDLDropExt)
 import Codec.CBOR.Read
 import Codec.CBOR.Term
 import Codec.CBOR.Write
@@ -60,7 +61,7 @@ mkRoundtripTestsFor :: String -> SerializeF -> Spec
 mkRoundtripTestsFor groupName serialize =
   describe groupName $ do
     sequence_
-      [ context (Namespace.asString n) $ it "should succeed with stream roundtrip" $ roundtrip n (namespaceKeySize ns, toCDDL (namespaceSpec ns))
+      [ context (Namespace.asString n) $ it "should succeed with stream roundtrip" $ roundtrip n (namespaceKeySize ns, mapCDDLDropExt $ toCDDL (namespaceSpec ns))
       | (Namespace.fromText -> n, ns) <- Map.toList namespaces
       ]
     it "should write/read manifest comment" $ do
