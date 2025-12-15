@@ -11,7 +11,6 @@
 module Cardano.SCLS.Namespace.UTxO where
 
 import Cardano.SCLS.Common
-import Codec.CBOR.Cuddle.Comments ((//-))
 import Codec.CBOR.Cuddle.Huddle
 import Data.Function (($))
 import Text.Heredoc (str)
@@ -104,9 +103,9 @@ script :: Rule
 script =
   "script"
     =:= arr [0, a native_script]
-    / (arr [1, a VBytes] //- "Plutus V1")
-    / (arr [2, a VBytes] //- "Plutus V2")
-    / (arr [3, a VBytes] //- "Plutus V3")
+    / (arr [1, a VBytes])
+    / (arr [2, a VBytes])
+    / (arr [3, a VBytes])
 
 native_script :: Rule
 native_script =

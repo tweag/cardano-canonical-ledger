@@ -54,7 +54,7 @@ value = "value" =:= coin / sarr [a coin, a (multiasset positive_coin)]
 --------------------------------------------------------------------------------
 
 slot_no :: Rule
-slot_no = "slot_no" =:= VUInt `sized` (8 :: Word)
+slot_no = "slot_no" =:= VUInt `le` (maxBound :: Word64)
 
 --------------------------------------------------------------------------------
 -- Address

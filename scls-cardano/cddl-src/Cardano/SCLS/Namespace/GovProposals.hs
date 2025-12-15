@@ -12,7 +12,6 @@ module Cardano.SCLS.Namespace.GovProposals where
 import Cardano.SCLS.Common
 import Cardano.SCLS.Namespace.GovConstitution (constitution)
 import Cardano.SCLS.Namespace.GovPParams
-import Codec.CBOR.Cuddle.Comments ((//-))
 import Codec.CBOR.Cuddle.Huddle
 import Data.Function (($))
 import Data.Word (Word64)
@@ -82,17 +81,15 @@ gov_action =
             , "update" ==> gov_params_update
             , "hash" ==> (script_hash / VNil)
             ]
-            //- "Params update"
         )
-    / (arr [1, a (gov_action_id / VNil), a protocol_version] //- "Hard fork")
+    / (arr [1, a (gov_action_id / VNil), a protocol_version])
     / ( arr
           [ 2
           , "withdrawls" ==> mp [0 <+ asKey reward_account ==> coin]
           , a (script_hash / VNil)
           ]
-          //- "Treasury withdraw"
       )
-    / (arr [3, "purpose" ==> (gov_action_id / VNil)] //- "No confidence")
+    / (arr [3, "purpose" ==> (gov_action_id / VNil)])
     / ( arr
           [ 4
           , "purpose" ==> (gov_action_id / VNil)
@@ -100,10 +97,9 @@ gov_action =
           , "added" ==> mp [0 <+ asKey credential ==> epoch_no]
           , "threshold" ==> unit_interval
           ]
-          //- "Committee membership update"
       )
-    / (arr [5, "purpose" ==> (gov_action_id / VNil), "constitution" ==> constitution] //- "New constitution")
-    / (arr [6, a VNil] //- "Info action")
+    / (arr [5, "purpose" ==> (gov_action_id / VNil), "constitution" ==> constitution])
+    / (arr [6, a VNil])
 
 gov_action_id :: Rule
 gov_action_id =
