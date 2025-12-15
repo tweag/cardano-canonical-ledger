@@ -310,7 +310,7 @@ prettyError (InvalidRule rule) =
   "The rule is invalid: " ++ (show rule) ++ "\n"
 prettyError (InvalidTagged rule _result) =
   "The tagged rule is invalid: " ++ (show rule) ++ "\n"
-prettyError (UnapplicableRule rule) =
+prettyError (UnapplicableRule _info rule) =
   "The rule is unapplicable: " ++ (show rule) ++ "\n"
 
 prettyErrorShort :: CDDLResult -> String
