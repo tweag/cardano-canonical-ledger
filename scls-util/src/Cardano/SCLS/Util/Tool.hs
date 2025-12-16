@@ -1,6 +1,7 @@
 {-# LANGUAGE BlockArguments #-}
 {-# LANGUAGE RecordWildCards #-}
 
+-- | File manipulation utilities for SCLS files.
 module Cardano.SCLS.Util.Tool (splitFile, mergeFiles, extract, ExtractOptions (..)) where
 
 import Cardano.SCLS.Internal.Reader
@@ -25,6 +26,10 @@ import System.Directory (createDirectoryIfMissing)
 import System.FilePath ((</>))
 import System.IO
 
+{- | Split a single SCLS file into multiple files by namespace.
+Takes a source SCLS file and an output directory, and creates separate files
+for each namespace found in the source file.
+-}
 splitFile :: FilePath -> FilePath -> IO Result
 splitFile sourceFile outputDir = do
   putStrLn $ "Splitting file: " ++ sourceFile
@@ -55,6 +60,11 @@ splitFile sourceFile outputDir = do
       putStrLn $ "Error: " ++ show e
       pure OtherError
 
+{- | Merge multiple SCLS files into a single output file.
+
+Takes a list of input files and combines their namespace data into a single
+output file.
+-}
 mergeFiles :: FilePath -> [FilePath] -> IO Result
 mergeFiles _ [] = do
   putStrLn "No source files provided for merging"
@@ -126,6 +136,10 @@ data ExtractOptions = ExtractOptions
   { extractNamespaces :: Maybe [Namespace]
   }
 
+{- | Extract specific data from an SCLS file into a new file.
+Takes a source SCLS file, an output file, and extraction options specifying
+which data to extract.
+-}
 extract :: FilePath -> FilePath -> ExtractOptions -> IO Result
 extract sourceFile outputFile ExtractOptions{..} = do
   putStrLn $ "Extracting from file: " ++ sourceFile
