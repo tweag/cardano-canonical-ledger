@@ -17,7 +17,6 @@ import Cardano.Types.SlotNo (SlotNo (SlotNo))
 import Control.Exception (SomeException, bracket, catch)
 import Control.Monad (foldM)
 import Data.Function ((&))
-import Data.Map (Map)
 import Data.Map.Strict qualified as Map
 import Data.MemPack.Extra
 import Streaming qualified as S
@@ -115,6 +114,7 @@ mergeFiles outputFile sourceFiles = do
       files
   -- Open file handles for each namespace's files, execute the given action,
   -- and ensure all handles are closed afterwards.
+  withNamespaceHandles :: Map.Map Namespace [FilePath] -> ([(Namespace, [Handle])] -> IO a) -> IO a
   withNamespaceHandles nsToFiles =
     bracket
       ( Map.foldrWithKey
