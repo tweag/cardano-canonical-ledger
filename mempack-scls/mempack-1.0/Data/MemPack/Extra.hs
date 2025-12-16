@@ -17,7 +17,8 @@ module Data.MemPack.Extra (
   Entry (..),
   ByteStringSized (..),
   SomeByteStringSized (..),
-  CBORTerm (..),
+  CBORTerm (getRawTerm),
+  mkCBORTerm,
   RawBytes (..),
   Unpack',
   hPutBuffer,
@@ -212,15 +213,18 @@ instance (KnownNat n) => MemPack (ByteStringSized n) where
     pure (ByteStringSized bs)
 
 -- | Helper to store CBOR terms directly as entries.
-newtype CBORTerm = CBORTerm CBOR.Term
+data CBORTerm = CBORTerm {getRawTerm :: !CBOR.Term, getEncodedBytes :: ByteString}
   deriving (Eq, Ord, Show)
 
-instance MemPack CBORTerm where
-  packedByteCount (CBORTerm t) =
-    BS.length (CBOR.toStrictByteString (CBOR.encodeTerm t))
+mkCBORTerm :: CBOR.Term -> CBORTerm
+mkCBORTerm t = CBORTerm t (CBOR.toStrictByteString (CBOR.encodeTerm t))
 
-  packM (CBORTerm t) =
-    packByteStringM (CBOR.toStrictByteString (CBOR.encodeTerm t))
+instance MemPack CBORTerm where
+  packedByteCount (CBORTerm _ bs) =
+    BS.length bs
+
+  packM (CBORTerm _ bs) =
+    packByteStringM bs
 
   unpackM = do
     start <- gets fromIntegral
@@ -229,7 +233,7 @@ instance MemPack CBORTerm where
       Left err -> failUnpack $ TextError $ "CBOR term deserialisation failed: " <> T.pack (show err)
       Right (_rest, bytesRead, term) -> do
         put (start + fromIntegral bytesRead)
-        pure (CBORTerm term)
+        pure (CBORTerm term bytes)
 
 hPutBuffer :: (Buffer u) => Handle -> u -> IO ()
 hPutBuffer handle u =
