@@ -231,29 +231,29 @@ validateChunk cddlTrees Chunk{..} = do
       }
 
 validateAgainst :: forall n. CTreeRoot' Identity MonoRef -> (Int, GenericCBOREntry n) -> Maybe CheckError
-validateAgainst t v@(i, GenericCBOREntry (ChunkEntry _ (CBORTerm term))) =
+validateAgainst t v@(i, GenericCBOREntry (ChunkEntry _ cTerm)) =
   case validateCDDLAgainst t v of
     Just e -> Just e
     Nothing -> case checkCanonical of
       Nothing -> Nothing
-      Just expected -> Just (CBORIsNotCanonicalError i expected term)
+      Just expected -> Just (CBORIsNotCanonicalError i expected (getRawTerm cTerm))
  where
   checkCanonical =
-    let encodedData = toLazyByteString (getRawEncoding $ toCanonicalCBOR Proxy term)
+    let encodedData = toLazyByteString (getRawEncoding $ toCanonicalCBOR Proxy $ getRawTerm cTerm)
      in case deserialiseFromBytes (decodeTerm) encodedData of
           Right (_, decodedAsTerm) ->
-            if term == decodedAsTerm
+            if getRawTerm cTerm == decodedAsTerm
               then Nothing
               else Just decodedAsTerm
           _ -> Nothing
 
 validateCDDLAgainst :: CTreeRoot' Identity MonoRef -> (Int, GenericCBOREntry n) -> Maybe CheckError
-validateCDDLAgainst cddl@(CTreeRoot cddlTree) (seqNum, GenericCBOREntry (ChunkEntry _key (CBORTerm term))) =
+validateCDDLAgainst cddl@(CTreeRoot cddlTree) (seqNum, GenericCBOREntry (ChunkEntry _key cTerm)) =
   let name = Name (T.pack "record_entry") mempty
    in case Map.lookup name cddlTree of
         Nothing -> Nothing
         Just rule ->
-          case runReader (validateTerm term (runIdentity rule)) cddl of
+          case runReader (validateTerm (getRawTerm cTerm) (runIdentity rule)) cddl of
             CBORTermResult _term Valid{} -> Nothing
             CBORTermResult bad_term problem -> Just (CDDLValidationError seqNum problem bad_term)
 

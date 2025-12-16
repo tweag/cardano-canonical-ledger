@@ -111,7 +111,7 @@ mkRoundtripTestsFor groupName serialize =
                 key <- uniformByteStringM (fromIntegral kSize) globalStdGen
                 term <- applyAtomicGen (generateCBORTerm' mt (Name (T.pack "record_entry") mempty)) globalStdGen
                 Right (_, canonicalTerm) <- pure $ deserialiseFromBytes decodeTerm $ toLazyByteString (encodeTerm term)
-                pure $! SomeCBOREntry (GenericCBOREntry $ ChunkEntry (ByteStringSized @n key) (CBORTerm canonicalTerm))
+                pure $! SomeCBOREntry (GenericCBOREntry $ ChunkEntry (ByteStringSized @n key) (mkCBORTerm canonicalTerm))
         mEntries <-
           replicateM 1024 $ do
             MetadataEntry
