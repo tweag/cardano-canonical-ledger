@@ -41,7 +41,7 @@ queryEntry filePath namespace key = do
  where
   query handle = do
     hSeek handle AbsoluteSeek 0
-    flip fix (headerOffset, S.each []) \rec (offset, prev) -> do
+    flip fix (headerOffset, S.each []) \go (offset, prev) -> do
       fetchNextFrame handle offset >>= \case
         Nothing ->
           -- No more records. If the entry exists, it must be on the previous record.
@@ -59,9 +59,9 @@ queryEntry filePath namespace key = do
                           -- The key of the current block's first entry is bigger than the queried key.
                           -- If the entry exists, it must be on the previous record.
                           findInStream prev
-                      | otherwise -> rec (nextOffset, entries)
-                    Nothing -> rec (nextOffset, prev)
-            _ -> rec (nextOffset, prev)
+                      | otherwise -> go (nextOffset, entries)
+                    Nothing -> go (nextOffset, prev)
+            _ -> go (nextOffset, prev)
 
   findInStream stream = do
     S.head_ (S.dropWhile ((< key) . getKey) stream)
