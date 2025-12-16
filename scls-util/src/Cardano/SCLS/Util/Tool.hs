@@ -14,8 +14,9 @@ import Cardano.Types.Namespace qualified as Namespace
 import Cardano.Types.Network (NetworkId (Mainnet))
 import Cardano.Types.SlotNo (SlotNo (SlotNo))
 import Control.Exception (SomeException, catch)
-import Control.Monad (foldM)
+import Control.Monad (foldM, forM_)
 import Data.Function ((&))
+import Data.Map (Map)
 import Data.Map.Strict qualified as Map
 import Data.MemPack.Extra
 import Streaming qualified as S
@@ -66,25 +67,21 @@ mergeFiles outputFile sourceFiles = do
 
       putStrLn $ "Found " ++ show (Map.size nsToFiles) ++ " unique namespace(s)"
 
-      let stream =
-            S.each (Map.toList nsToFiles)
-              & S.mapM_ \(ns, files) -> do
-                S.each files
-                  & S.mapM
-                    ( \file -> do
-                        s <- withNamespacedData @RawBytes file ns $ \s ->
-                          -- eagerly load each stream to avoid issues with file handles
-                          -- FIXME: use a different data structure like Vector
-                          -- FIXME: concerns about loading entire namespace data into memory
-                          S.toList_ s
-                        pure (ns S.:> S.each s)
-                    )
+      withNamespaceHandles nsToFiles $ \nsHandles -> do
+        let stream =
+              S.each nsHandles
+                & S.mapM_ \(ns, handles) -> do
+                  S.each handles
+                    & S.map
+                      ( \handle ->
+                          (ns S.:> namespacedData @RawBytes handle ns)
+                      )
 
-      serialize
-        outputFile
-        Mainnet
-        (SlotNo 1)
-        (defaultSerializationPlan & addChunks stream)
+        serialize
+          outputFile
+          Mainnet
+          (SlotNo 1)
+          (defaultSerializationPlan & addChunks stream)
 
       putStrLn "Merge complete"
       pure Ok
@@ -106,6 +103,24 @@ mergeFiles outputFile sourceFiles = do
       )
       mempty
       files
+  withNamespaceHandles :: Map Namespace [FilePath] -> ([(Namespace, [Handle])] -> IO a) -> IO a
+  withNamespaceHandles nsToFiles action = do
+    nsHandles <-
+      Map.foldrWithKey
+        ( \ns files acc -> do
+            handles <- mapM (\file -> openFile file ReadMode) files
+            (:) (ns, handles) <$> acc
+        )
+        (pure [])
+        nsToFiles
+
+    result <- action nsHandles
+
+    forM_
+      nsHandles
+      (mapM_ hClose . snd)
+
+    pure result
 
 data ExtractOptions = ExtractOptions
   { extractNamespaces :: Maybe [Namespace]
@@ -119,26 +134,20 @@ extract sourceFile outputFile ExtractOptions{..} = do
     do
       Hdr{..} <- withHeader sourceFile pure
 
-      let chunks =
-            case extractNamespaces of
-              Nothing -> S.each []
-              Just nsList ->
-                S.each nsList
-                  & S.mapM
-                    ( \ns -> do
-                        s <- withNamespacedData @RawBytes sourceFile ns $ \s ->
-                          -- eagerly load each stream to avoid issues with file handles
-                          -- FIXME: use a different data structure like Vector
-                          -- FIXME: concerns about loading entire namespace data into memory
-                          S.toList_ s
-                        pure (ns S.:> S.each s)
-                    )
+      withBinaryFile sourceFile ReadMode \handle -> do
+        let chunks =
+              case extractNamespaces of
+                Nothing -> S.each []
+                Just nsList ->
+                  S.each nsList
+                    & S.map
+                      (\ns -> (ns S.:> namespacedData @RawBytes handle ns))
 
-      serialize
-        outputFile
-        networkId
-        slotNo
-        (defaultSerializationPlan & addChunks chunks)
+        serialize
+          outputFile
+          networkId
+          slotNo
+          (defaultSerializationPlan & addChunks chunks)
 
       pure Ok
     \(e :: SomeException) -> do
