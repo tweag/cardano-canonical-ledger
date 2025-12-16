@@ -14,8 +14,8 @@ import Cardano.Types.Namespace (Namespace (..))
 import Cardano.Types.Namespace qualified as Namespace
 import Cardano.Types.Network (NetworkId (Mainnet))
 import Cardano.Types.SlotNo (SlotNo (SlotNo))
-import Control.Exception (SomeException, catch)
-import Control.Monad (foldM, forM_)
+import Control.Exception (SomeException, bracket, catch)
+import Control.Monad (foldM)
 import Data.Function ((&))
 import Data.Map (Map)
 import Data.Map.Strict qualified as Map
@@ -114,23 +114,17 @@ mergeFiles outputFile sourceFiles = do
       mempty
       files
   withNamespaceHandles :: Map Namespace [FilePath] -> ([(Namespace, [Handle])] -> IO a) -> IO a
-  withNamespaceHandles nsToFiles action = do
-    nsHandles <-
-      Map.foldrWithKey
-        ( \ns files acc -> do
-            handles <- mapM (\file -> openFile file ReadMode) files
-            (:) (ns, handles) <$> acc
-        )
-        (pure [])
-        nsToFiles
-
-    result <- action nsHandles
-
-    forM_
-      nsHandles
-      (mapM_ hClose . snd)
-
-    pure result
+  withNamespaceHandles nsToFiles =
+    bracket
+      ( Map.foldrWithKey
+          ( \ns files acc -> do
+              handles <- mapM (\file -> openFile file ReadMode) files
+              (:) (ns, handles) <$> acc
+          )
+          (pure [])
+          nsToFiles
+      )
+      (mapM_ (mapM_ hClose . snd))
 
 data ExtractOptions = ExtractOptions
   { extractNamespaces :: Maybe [Namespace]
