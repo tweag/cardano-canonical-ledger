@@ -80,8 +80,7 @@ basicTests =
 
         serializeTestData fileName [(ns, entries)]
 
-        result <- queryEntry fileName ns key
-        result `shouldBe` Just (mkTestEntry 100 1 value)
+        queryEntry fileName ns key `shouldReturn` Just (mkTestEntry 100 1 value)
 
     it "returns Nothing when entry doesn't exist" $
       withSystemTempDirectory "query-test-XXXXXX" $ \tmpDir -> do
@@ -92,8 +91,7 @@ basicTests =
 
         serializeTestData fileName [(ns, entries)]
 
-        result <- queryEntry @TestEntry fileName ns searchKey
-        result `shouldBe` Nothing
+        queryEntry @TestEntry fileName ns searchKey `shouldReturn` Nothing
 
     it "finds entry among multiple entries" $
       withSystemTempDirectory "query-test-XXXXXX" $ \tmpDir -> do
@@ -109,8 +107,7 @@ basicTests =
 
         serializeTestData fileName [(ns, entries)]
 
-        result <- queryEntry fileName ns searchKey
-        result `shouldBe` Just (mkTestEntry 150 5 value)
+        queryEntry fileName ns searchKey `shouldReturn` Just (mkTestEntry 150 5 value)
 
 edgeCaseTests :: Spec
 edgeCaseTests =
@@ -123,8 +120,7 @@ edgeCaseTests =
 
         serializeTestData fileName [(ns, [])]
 
-        result <- queryEntry @TestEntry fileName ns searchKey
-        result `shouldBe` Nothing
+        queryEntry @TestEntry fileName ns searchKey `shouldReturn` Nothing
 
     it "returns Nothing for non-existent namespace" $
       withSystemTempDirectory "query-test-XXXXXX" $ \tmpDir -> do
@@ -136,8 +132,7 @@ edgeCaseTests =
 
         serializeTestData fileName [(existingNs, entries)]
 
-        result <- queryEntry @TestEntry fileName nonExistentNs searchKey
-        result `shouldBe` Nothing
+        queryEntry @TestEntry fileName nonExistentNs searchKey `shouldReturn` Nothing
 
     it "returns first match when there are duplicate keys" $
       withSystemTempDirectory "query-test-XXXXXX" $ \tmpDir -> do
@@ -153,8 +148,7 @@ edgeCaseTests =
 
         serializeTestData fileName [(ns, entries)]
 
-        result <- queryEntry fileName ns searchKey
-        result `shouldBe` Just (mkTestEntry 100 1 firstValue)
+        queryEntry fileName ns searchKey `shouldReturn` Just (mkTestEntry 100 1 firstValue)
 
     it "finds single entry in namespace" $
       withSystemTempDirectory "query-test-XXXXXX" $ \tmpDir -> do
@@ -166,8 +160,7 @@ edgeCaseTests =
 
         serializeTestData fileName [(ns, entries)]
 
-        result <- queryEntry fileName ns searchKey
-        result `shouldBe` Just (mkTestEntry 42 7 value)
+        queryEntry fileName ns searchKey `shouldReturn` Just (mkTestEntry 42 7 value)
 
 multiNamespaceTests :: Spec
 multiNamespaceTests =
@@ -185,11 +178,9 @@ multiNamespaceTests =
 
         serializeTestData fileName [(ns1, entries1), (ns2, entries2)]
 
-        result1 <- queryEntry fileName ns1 searchKey
-        result1 `shouldBe` Just (mkTestEntry 100 1 value1)
+        queryEntry fileName ns1 searchKey `shouldReturn` Just (mkTestEntry 100 1 value1)
 
-        result2 <- queryEntry fileName ns2 searchKey
-        result2 `shouldBe` Just (mkTestEntry 100 1 value2)
+        queryEntry fileName ns2 searchKey `shouldReturn` Just (mkTestEntry 100 1 value2)
 
     it "correctly isolates namespaces - entry exists in one but not another" $
       withSystemTempDirectory "query-test-XXXXXX" $ \tmpDir -> do
@@ -202,11 +193,9 @@ multiNamespaceTests =
 
         serializeTestData fileName [(ns1, entries1), (ns2, entries2)]
 
-        result1 <- queryEntry fileName ns1 searchKey
-        result1 `shouldBe` Just (mkTestEntry 100 1 "exists-here")
+        queryEntry fileName ns1 searchKey `shouldReturn` Just (mkTestEntry 100 1 "exists-here")
 
-        result2 <- queryEntry @TestEntry fileName ns2 searchKey
-        result2 `shouldBe` Nothing
+        queryEntry @TestEntry fileName ns2 searchKey `shouldReturn` Nothing
 
     it "handles many namespaces efficiently" $
       withSystemTempDirectory "query-test-XXXXXX" $ \tmpDir -> do
@@ -222,5 +211,4 @@ multiNamespaceTests =
 
         serializeTestData fileName namespaces
 
-        result <- queryEntry fileName searchNs searchKey
-        result `shouldBe` Just (mkTestEntry 5 1 (BS.pack [5]))
+        queryEntry fileName searchNs searchKey `shouldReturn` Just (mkTestEntry 5 1 (BS.pack [5]))
