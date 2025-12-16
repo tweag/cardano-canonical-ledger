@@ -23,7 +23,7 @@ import Cardano.SCLS.CDDL (NamespaceInfo (..), namespaces)
 import Cardano.SCLS.Internal.Entry.CBOREntry (GenericCBOREntry (..))
 import Cardano.SCLS.Internal.Entry.ChunkEntry (ChunkEntry (..))
 import Cardano.SCLS.Internal.Hash (Digest (..), digest)
-import Cardano.SCLS.Internal.Reader (decodeChunkEntries, extractNamespaceList, withRecordData)
+import Cardano.SCLS.Internal.Reader (extractNamespaceList, streamChunkEntries, withRecordData)
 import Cardano.SCLS.Internal.Record.Chunk (Chunk (..))
 import Cardano.SCLS.Util.Result
 import Cardano.Types.Namespace (Namespace)
@@ -201,7 +201,7 @@ validateChunk cddlTrees Chunk{..} = do
       -- We do not known how to decode values inside, so we just read the data
       -- this way we can calculate count and check digest
       actualCount <-
-        decodeChunkEntries @(Entry RawBytes) chunkData & S.length_
+        streamChunkEntries @(Entry RawBytes) chunkData & S.length_
       pure $
         if actualCount /= fromIntegral chunkEntriesCount
           then [EntryCountMismatch chunkEntriesCount actualCount]
@@ -210,7 +210,7 @@ validateChunk cddlTrees Chunk{..} = do
       withSomeSNat keySize \(snat :: SNat n) -> do
         withKnownNat snat do
           (actualCount S.:> formatErrors S.:> ()) <-
-            decodeChunkEntries @(GenericCBOREntry n) chunkData
+            streamChunkEntries @(GenericCBOREntry n) chunkData
               & S.copy
               & S.zip (S.enumFrom 1)
               & S.mapMaybe (validateAgainst spec)
