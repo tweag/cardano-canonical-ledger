@@ -19,7 +19,7 @@ module Cardano.SCLS.Internal.Reader (
   knownNamespacedData,
 
   -- * Low-level functions
-  decodeChunkEntries,
+  streamChunkEntries,
 ) where
 
 import Cardano.SCLS.Internal.Frame
@@ -51,13 +51,11 @@ import GHC.TypeLits (KnownSymbol)
 import Streaming qualified as S
 import Streaming.Prelude qualified as S
 
-{- | Decode entries from chunk data into a stream.
-
-This function provides a stream of the Chunk entries
+{- | This function provides a stream of the Chunk entries
 stored in the data field of the 'Chunk'.
 -}
-decodeChunkEntries :: (Typeable u, MemPack u) => BS.ByteString -> S.Stream (S.Of u) IO ()
-decodeChunkEntries = go
+streamChunkEntries :: (Typeable u, MemPack u) => BS.ByteString -> S.Stream (S.Of u) IO ()
+streamChunkEntries = go
  where
   go !bs
     | BS.null bs = pure ()
@@ -170,7 +168,7 @@ namespacedData handle namespace = stream
           fetchOffsetFrame handle next_record
         for_ (decodeFrame dataRecord) \chunkRecord -> do
           when (chunkNamespace (frameViewContent (chunkRecord)) == namespace) do
-            decodeChunkEntries (chunkData $ frameViewContent chunkRecord)
+            streamChunkEntries (chunkData $ frameViewContent chunkRecord)
         go next_record
 
 knownNamespacedData :: forall ns. (KnownSymbol ns, KnownNamespace ns) => Handle -> Proxy ns -> S.Stream (S.Of (ChunkEntry (NamespaceKey ns) (NamespaceEntry ns))) IO ()

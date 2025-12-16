@@ -4,7 +4,7 @@
 module Cardano.SCLS.Query (queryEntry) where
 
 import Cardano.SCLS.Internal.Frame (FrameView (frameViewContent), decodeFrame, fetchNextFrame, fetchOffsetFrame, headerOffset)
-import Cardano.SCLS.Internal.Reader (decodeChunkEntries)
+import Cardano.SCLS.Internal.Reader (streamChunkEntries)
 import Cardano.SCLS.Internal.Record.Chunk (Chunk (chunkData, chunkNamespace))
 import Cardano.SCLS.Internal.Serializer.HasKey (HasKey (..))
 import Cardano.Types.Namespace (Namespace)
@@ -51,7 +51,7 @@ queryEntry filePath namespace key = do
           case frameViewContent <$> decodeFrame dataRecord of
             Right chunk
               | chunkNamespace chunk == namespace -> do
-                  let entries = decodeChunkEntries (chunkData chunk)
+                  let entries = streamChunkEntries (chunkData chunk)
                   S.head_ entries >>= \case
                     Just entry
                       | (getKey entry == key) -> pure $ Just entry
