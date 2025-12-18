@@ -38,6 +38,7 @@ import Data.ByteString.Lazy qualified as BSL
 import Data.MemPack
 import Data.MemPack.Buffer
 import Data.MemPack.Error
+import Data.Primitive.ByteArray
 import Data.Primitive.Ptr
 import Data.String (IsString)
 import Data.Text qualified as T
@@ -240,12 +241,19 @@ hPutBuffer handle u =
   buffer
     u
     ( \bytes -> do
-        withForeignPtr (pinnedByteArrayToForeignPtr bytes) $ \ptr -> do
+        pinnedBytes <- pinIfNeeded (ByteArray bytes)
+        withForeignPtr (byteArrayAsForeignPtr pinnedBytes) $ \ptr -> do
           hPutBuf handle ptr len
     )
-    (\addr -> hPutBuf handle (Ptr addr) len) -- Write Ptr#
+    (\addr -> hPutBuf handle (Ptr addr) len)
  where
   len = bufferByteCount u
+  pinIfNeeded bytes
+    | isByteArrayPinned bytes = return bytes
+    | otherwise = do
+        dest <- newPinnedByteArray len
+        copyByteArray dest 0 bytes 0 len
+        unsafeFreezeByteArray dest
 
 runDecode :: (IsString e) => Fail e a -> Either e a
 runDecode f = runFailLast f
