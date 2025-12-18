@@ -15,6 +15,7 @@ import Cardano.SCLS.Namespace.GovCommittee qualified as GovCommittee
 import Cardano.SCLS.Namespace.GovConstitution qualified as GovConstitution
 import Cardano.SCLS.Namespace.GovPParams qualified as GovPParams
 import Cardano.SCLS.Namespace.GovProposals qualified as GovProposals
+import Cardano.SCLS.Namespace.Nonces qualified as Nonces
 import Cardano.SCLS.Namespace.PoolStake qualified as PoolStake
 import Cardano.SCLS.Namespace.Pots qualified as Pots
 import Cardano.SCLS.Namespace.Snapshots qualified as Snapshots
@@ -46,6 +47,7 @@ namespaces =
     , mkDefinition @"pots/v0" Pots.record_entry
     , mkDefinition @"pool_stake/v0" PoolStake.record_entry
     , mkDefinition @"snapshots/v0" Snapshots.record_entry
+    , mkDefinition @"nonces/v0" Nonces.record_entry
     , mkDefinition @"gov/committee/v0" GovCommittee.record_entry
     , mkDefinition @"gov/constitution/v0" GovConstitution.record_entry
     , mkDefinition @"gov/pparams/v0" GovPParams.record_entry
@@ -64,6 +66,7 @@ mkDefinition r =
 
 type instance Spec.NamespaceKeySize "utxo/v0" = 34
 type instance Spec.NamespaceKeySize "blocks/v0" = 36 -- 28 bytes for key, and 8 for epoch in BE
+type instance Spec.NamespaceKeySize "nonces/v0" = 1 -- Just zero
 type instance Spec.NamespaceKeySize "pots/v0" = 8 -- Key is epoch number
 type instance Spec.NamespaceKeySize "pool_stake/v0" = 28 -- 28 bytes for key
 type instance Spec.NamespaceKeySize "snapshots/v0" = 32 -- 1 byte for hash type, 1 byte for stage, 29 bytes for hash (cred 29, key 28+1),  1 for value type

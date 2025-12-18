@@ -119,6 +119,9 @@ big_nint = "big_nint" =:= tag 3 bounded_bytes
 int64 :: Rule
 int64 = "int64" =:= toInteger (minBound @Int64) ... toInteger (maxBound @Int64)
 
+word64 :: Rule
+word64 = "word64" =:= VUInt `sized` (8 :: Word)
+
 -------------------------------------------------------------------------------
 -- Utility
 --------------------------------------------------------------------------------
