@@ -2,6 +2,7 @@
 
 module Main (main) where
 
+import ChecksumSpec
 import InfoSpec
 import MergeSpec
 import SplitSpec
@@ -11,9 +12,10 @@ import VerifySpec
 main :: IO ()
 main = hspec $ do
   describe "scls-util binary tests" do
-    verifyCommandTests
+    checksumCommandTests
     verifyNsCommandTests
     infoCommandTests
     listNsCommandTests
     splitCommandTests
     mergeCommandTests
+    verifyCommandTests

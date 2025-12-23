@@ -1,56 +1,39 @@
 {-# LANGUAGE BlockArguments #-}
-{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE LambdaCase #-}
 
-module Cardano.SCLS.Util.Info (listNamespaces, displayInfo) where
+module Cardano.SCLS.Util.Info (InfoCmd (..), runInfoCmd) where
 
-import Cardano.SCLS.Internal.Reader
-import Cardano.SCLS.Internal.Record.Manifest
+import Cardano.SCLS.CDDL
 import Cardano.SCLS.Util.Result
-import Cardano.Types.Namespace qualified as Namespace
-import Control.Exception (SomeException, catch)
+import Codec.CBOR.Cuddle.CDDL (CDDL)
+import Codec.CBOR.Cuddle.Huddle qualified as Cuddle
+import Codec.CBOR.Cuddle.IndexMappable (IndexMappable (mapIndex))
+import Codec.CBOR.Cuddle.Pretty (PrettyStage)
+import Data.Foldable (for_)
 import Data.Map.Strict qualified as Map
+import Data.Text qualified as T
+import Prettyprinter (pretty)
+import Prettyprinter.Render.Text (hPutDoc)
+import System.IO
 
-displayInfo :: FilePath -> IO Result
-displayInfo filePath = do
-  putStrLn $ "File: " ++ filePath
-  catch
-    do
-      Manifest{..} <- withLatestManifestFrame pure filePath
+data InfoCmd
+  = Namespaces
+  | CDDL T.Text
 
-      putStrLn "\n=== File Information ==="
-      putStrLn $ "Root Hash: " ++ show rootHash
-      putStrLn $ "Total Entries: " ++ show totalEntries
-      putStrLn $ "Total Chunks: " ++ show totalChunks
-
-      putStrLn "\n=== Namespaces ==="
-      if null nsInfo
-        then putStrLn "(No namespaces)"
-        else do
-          mapM_
-            ( \(ns, NamespaceInfo{..}) -> do
-                putStrLn $ "\n" ++ Namespace.asString ns ++ ":"
-                putStrLn $ "  Hash: " ++ show namespaceHash
-                putStrLn $ "  Entries: " ++ show namespaceEntries
-                putStrLn $ "  Chunks: " ++ show namespaceChunks
-            )
-            $ Map.toList nsInfo
-
-      pure Ok
-    \(e :: SomeException) -> do
-      putStrLn $ "Error: " ++ show e
-      pure OtherError
-
-listNamespaces :: FilePath -> IO Result
-listNamespaces filePath = do
-  catch
-    do
-      namespaces <- extractNamespaceList filePath
-      if null namespaces
-        then putStrLn "No namespaces found"
-        else do
-          putStrLn "Namespaces:"
-          mapM_ (putStrLn . ("  - " <>) . Namespace.asString) namespaces
-      pure Ok
-    \(e :: SomeException) -> do
-      putStrLn $ "Error: " ++ show e
-      pure OtherError
+runInfoCmd :: InfoCmd -> IO Result
+runInfoCmd = \case
+  Namespaces -> do
+    for_ (Map.keys namespaces) (putStrLn . T.unpack)
+    return Ok
+  CDDL namespace -> do
+    case Map.lookup namespace namespaces of
+      Nothing -> do
+        putStrLn $ "Unknown namespace: " ++ T.unpack namespace
+        return OtherError
+      Just NamespaceInfo{namespaceSpec = hddl} -> do
+        let cddl :: CDDL PrettyStage = mapIndex $ Cuddle.toCDDLNoRoot hddl
+        let outputHandle = stdout
+        hPutDoc outputHandle (pretty cddl)
+        -- Write an empty line at the end of the file
+        hPutStrLn outputHandle ""
+        return Ok
